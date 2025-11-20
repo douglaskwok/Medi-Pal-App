@@ -59,6 +59,7 @@ export default function ProfileScreen() {
   ];
 
   const handleSignOut = async () => {
+    setSignOutModalVisible(false);
     try {
       await supabase.auth.signOut().catch((error) => {
         console.error('Error signing out:', error);

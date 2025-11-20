@@ -1,15 +1,13 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { Theme } from '../../constants/Theme';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 export function CustomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const [tabWidth, setTabWidth] = React.useState(0);
 
   const tabs = [
     {
@@ -44,32 +42,11 @@ export function CustomTabBar() {
     },
   ];
 
-  const activeIndex = tabs.findIndex((tab) => pathname === tab.route);
-
-  useEffect(() => {
-    if (activeIndex >= 0 && tabWidth > 0) {
-      slideAnim.setValue(activeIndex);
-      Animated.spring(slideAnim, {
-        toValue: activeIndex,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 8,
-      }).start();
-    }
-  }, [activeIndex, tabWidth, pathname]);
-
   return (
     <View style={styles.container}>
-      <View 
-        style={styles.tabBar}
-        onLayout={(e) => {
-          const containerWidth = e.nativeEvent.layout.width;
-          const tabWidth = (containerWidth - 6) / tabs.length;
-          setTabWidth(tabWidth);
-        }}
-      >
-        {tabs.map((tab, index) => {
-          const isActive = pathname === tab.route;
+      <View style={styles.tabBar}>
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.route || pathname.startsWith(tab.route);
           return (
             <TouchableOpacity
               key={tab.name}
@@ -80,7 +57,7 @@ export function CustomTabBar() {
               <Ionicons
                 name={tab.icon as any}
                 size={24}
-                color={isActive ? Theme.colors.primary : Theme.colors.textSecondary}
+                color={isActive ? Theme.colors.primaryDark : Theme.colors.textSecondary}
               />
               <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                 {tab.label}
@@ -88,24 +65,6 @@ export function CustomTabBar() {
             </TouchableOpacity>
           );
         })}
-        {tabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.slider,
-              {
-                width: tabWidth,
-                transform: [
-                    {
-                      translateX: slideAnim.interpolate({
-                        inputRange: tabs.map((_, i) => i),
-                        outputRange: tabs.map((_, i) => i * tabWidth + 3),
-                      }),
-                    },
-                ],
-              },
-            ]}
-          />
-        )}
       </View>
     </View>
   );
@@ -146,22 +105,12 @@ const styles = StyleSheet.create({
     ...Theme.shadows.lg,
     justifyContent: 'space-around',
     alignItems: 'center',
-    position: 'relative',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Theme.spacing.xs,
-    zIndex: 2,
-  },
-  slider: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    height: 3,
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 2,
   },
   tabLabel: {
     fontSize: 11,
@@ -169,7 +118,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   tabLabelActive: {
-    color: Theme.colors.primary,
+    color: Theme.colors.primaryDark,
     fontFamily: Theme.fonts.semibold,
   },
 });
