@@ -102,7 +102,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: 200,
+    width: 240,
     marginRight: Theme.spacing.md,
     borderRadius: Theme.borderRadius.lg,
     backgroundColor: Theme.colors.backgroundLight,
@@ -118,11 +118,11 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 100,
+    height: 120,
     position: 'relative',
   },
   imageContainerSmall: {
-    height: 80,
+    height: 100,
   },
   image: {
     width: '100%',
@@ -144,9 +144,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Theme.spacing.md,
+    minHeight: 100,
   },
   name: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.xs,
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Theme.spacing.xs,
     gap: Theme.spacing.sm,
+    flexWrap: 'wrap',
   },
   rating: {
     flexDirection: 'row',
@@ -163,19 +165,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ratingText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
   },
   distance: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },
   address: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
+    lineHeight: 16,
   },
 });
 

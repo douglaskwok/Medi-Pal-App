@@ -33,8 +33,9 @@ export default function RootLayout() {
 
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/signin');
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)/home');
     }
-    // Note: Tab navigation will be added in Step 2
   }, [user, segments, isLoading]);
 
   if (isLoading) {
@@ -48,6 +49,7 @@ export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
 }
