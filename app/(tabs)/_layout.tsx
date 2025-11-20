@@ -46,7 +46,7 @@ export function CustomTabBar() {
     <View style={styles.container}>
       <View style={styles.tabBar}>
         {tabs.map((tab) => {
-          const isActive = pathname === tab.route || pathname.startsWith(tab.route);
+          const isActive = pathname === tab.route || pathname === `/${tab.name}` || pathname.includes(`/${tab.name}`);
           return (
             <TouchableOpacity
               key={tab.name}
