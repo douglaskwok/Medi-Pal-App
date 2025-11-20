@@ -1,15 +1,15 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { Theme } from '../../constants/Theme';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export function CustomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const insets = useSafeAreaInsets();
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [tabWidth, setTabWidth] = React.useState(0);
 
   const tabs = [
     {
@@ -44,30 +44,69 @@ export function CustomTabBar() {
     },
   ];
 
+  const activeIndex = tabs.findIndex((tab) => pathname === tab.route);
+
+  useEffect(() => {
+    if (activeIndex >= 0 && tabWidth > 0) {
+      slideAnim.setValue(activeIndex);
+      Animated.spring(slideAnim, {
+        toValue: activeIndex,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }).start();
+    }
+  }, [activeIndex, tabWidth, pathname]);
+
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
-      {tabs.map((tab) => {
-        const isActive = pathname === tab.route;
-        return (
-          <TouchableOpacity
-            key={tab.name}
-            style={[styles.tab, isActive && styles.tabActive]}
-            onPress={() => router.push(tab.route as any)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+    <View style={styles.container}>
+      <View 
+        style={styles.tabBar}
+        onLayout={(e) => {
+          const containerWidth = e.nativeEvent.layout.width;
+          const tabWidth = (containerWidth - 6) / tabs.length;
+          setTabWidth(tabWidth);
+        }}
+      >
+        {tabs.map((tab, index) => {
+          const isActive = pathname === tab.route;
+          return (
+            <TouchableOpacity
+              key={tab.name}
+              style={styles.tab}
+              onPress={() => router.push(tab.route as any)}
+              activeOpacity={0.7}
+            >
               <Ionicons
                 name={tab.icon as any}
-                size={22}
+                size={24}
                 color={isActive ? Theme.colors.primary : Theme.colors.textSecondary}
               />
-            </View>
-            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.slider,
+              {
+                width: tabWidth,
+                transform: [
+                    {
+                      translateX: slideAnim.interpolate({
+                        inputRange: tabs.map((_, i) => i),
+                        outputRange: tabs.map((_, i) => i * tabWidth + 3),
+                      }),
+                    },
+                ],
+              },
+            ]}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -90,49 +129,47 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: Theme.colors.backgroundLight,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.borderLight,
-    paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.xs,
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: 3,
     ...Theme.shadows.lg,
     justifyContent: 'space-around',
     alignItems: 'center',
+    position: 'relative',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.md,
+    gap: Theme.spacing.xs,
+    zIndex: 2,
   },
-  tabActive: {
-    backgroundColor: Theme.colors.primary + '15',
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Theme.spacing.xs,
-    backgroundColor: Theme.colors.background,
-  },
-  iconContainerActive: {
+  slider: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 3,
     backgroundColor: Theme.colors.primary,
-    ...Theme.shadows.md,
+    borderRadius: 2,
   },
   tabLabel: {
     fontSize: 11,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
-    marginTop: 2,
   },
   tabLabelActive: {
     color: Theme.colors.primary,
     fontFamily: Theme.fonts.semibold,
   },
 });
-
