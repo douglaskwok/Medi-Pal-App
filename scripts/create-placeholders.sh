@@ -11,3 +11,4 @@ echo "- splash.png (1242x2436 recommended)"
 echo "- adaptive-icon.png (1024x1024 recommended)"
 echo "- favicon.png (48x48 recommended)"
 
+

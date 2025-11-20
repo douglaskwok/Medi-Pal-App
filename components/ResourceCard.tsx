@@ -70,9 +70,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
       >
         <View style={[styles.imageContainer, small && styles.imageContainerSmall]}>
           <Image
-            source={{
-              uri: `https://picsum.photos/280/160?random=${parseInt(id)}`,
-            }}
+            source={image}
             style={styles.image}
             resizeMode="cover"
           />

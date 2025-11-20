@@ -41,31 +41,6 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-
-    if (params.initialQuery) {
-      setInputText(params.initialQuery as string);
-      handleSend(params.initialQuery as string);
-    } else {
-      const welcomeMessage: Message = {
-        id: '1',
-        text: "Hello! I'm your Medi-Pal AI assistant. How can I help you with your healthcare needs today?",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages([welcomeMessage]);
-    }
-  }, []);
-
-  useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
-
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
@@ -121,6 +96,36 @@ export default function ChatScreen() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+
+    if (params.initialQuery) {
+      const query = params.initialQuery as string;
+      setInputText(query);
+      // Use setTimeout to ensure state is updated before calling handleSend
+      setTimeout(() => {
+        handleSend(query);
+      }, 100);
+    } else {
+      const welcomeMessage: Message = {
+        id: '1',
+        text: "Hello! I'm your Medi-Pal AI assistant. How can I help you with your healthcare needs today?",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages([welcomeMessage]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.initialQuery]);
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
 
   return (
     <SafeAreaView style={styles.container}>
