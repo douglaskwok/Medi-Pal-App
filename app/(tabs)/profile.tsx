@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { CustomModal } from '../../components/Modal';
 import { CustomTabBar } from './_layout';
+import { NotificationPopup } from '../../components/NotificationPopup';
 
 interface UserProfile {
   firstName: string;
@@ -41,6 +42,10 @@ export default function ProfileScreen() {
     lastName: '',
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
+  const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
+  const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -282,7 +287,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.smallMenuItem}
               activeOpacity={0.6}
-              onPress={() => {}}
+              onPress={() => setNotificationVisible(true)}
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons
@@ -368,6 +373,78 @@ export default function ProfileScreen() {
         cancelText="Cancel"
         destructive={true}
       />
+      <NotificationPopup
+        visible={notificationVisible}
+        onDismiss={() => setNotificationVisible(false)}
+        onSaveSuccess={() => {
+          setSaveSuccessModalVisible(true);
+          Animated.parallel([
+            Animated.timing(saveSuccessAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.spring(saveSuccessScale, {
+              toValue: 1,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 8,
+            }),
+          ]).start();
+          setTimeout(() => {
+            Animated.parallel([
+              Animated.timing(saveSuccessAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(saveSuccessScale, {
+                toValue: 0.9,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setSaveSuccessModalVisible(false);
+            });
+          }, 2000);
+        }}
+      />
+      {saveSuccessModalVisible && (
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 2000,
+              opacity: saveSuccessAnim,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              {
+                backgroundColor: Theme.colors.backgroundLight,
+                borderRadius: Theme.borderRadius.lg,
+                padding: Theme.spacing.xl,
+                alignItems: 'center',
+                ...Theme.shadows.lg,
+                transform: [{ scale: saveSuccessScale }],
+              },
+            ]}
+          >
+            <Ionicons name="checkmark-circle" size={48} color={Theme.colors.success} />
+            <Text style={{ fontSize: 18, fontFamily: Theme.fonts.semibold, color: Theme.colors.text, marginTop: Theme.spacing.md }}>
+              Saved Successfully
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
       <CustomTabBar />
     </SafeAreaView>
   );

@@ -127,7 +127,7 @@ export default function ResourcesScreen() {
   }, []);
 
   useEffect(() => {
-    // Handle navigation from home page
+    // Handle navigation from home page or notification
     if (params.resourceId) {
       const resource = dummyResources.find(r => r.id === params.resourceId);
       if (resource) {
@@ -135,8 +135,27 @@ export default function ResourcesScreen() {
           handleResourceSelect(resource);
         }, 500);
       }
+    } else if (params.name && params.latitude && params.longitude) {
+      // Handle custom resource from notification (YMCA)
+      const yMCAResource = {
+        id: 'ymca_palo_alto',
+        name: params.name as string,
+        type: 'Gym',
+        address: params.address as string || '3412 Ross Road, Palo Alto, CA 94303',
+        latitude: parseFloat(params.latitude as string),
+        longitude: parseFloat(params.longitude as string),
+        rating: 4.5,
+        distance: '2.3 mi',
+        image: require('../../assets/generic.jpg'),
+        phone: '650-856-9622',
+        email: 'membersupport@ymcasv.org',
+        hours: 'Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm',
+      };
+      setTimeout(() => {
+        handleResourceSelect(yMCAResource as typeof dummyResources[0]);
+      }, 500);
     }
-  }, [params.resourceId]);
+  }, [params.resourceId, params.name, params.latitude, params.longitude]);
 
   useEffect(() => {
     // Check if current destination/resource is saved
@@ -671,7 +690,11 @@ export default function ResourcesScreen() {
           {resource.hours && (
             <View style={styles.detailRow}>
               <Ionicons name="time-outline" size={18} color={Theme.colors.primary} />
-              <Text style={styles.detailText}>{resource.hours}</Text>
+              <View style={{ flex: 1 }}>
+                {resource.hours.split('\n').map((dayHours, index) => (
+                  <Text key={index} style={styles.detailText}>{dayHours.trim()}</Text>
+                ))}
+              </View>
             </View>
           )}
         </ScrollView>
