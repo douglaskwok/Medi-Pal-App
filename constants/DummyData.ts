@@ -9,6 +9,9 @@ export const dummyResources = [
     latitude: 37.4419,
     longitude: -122.1430,
     image: require('../assets/peninsula.jpg'),
+    phone: '650-853-0321',
+    email: 'support@peninsulahcc.org',
+    hours: 'Mon-Fri: 9am-4pm\nSat-Sun: Closed',
   },
   {
     id: '2',
@@ -20,6 +23,9 @@ export const dummyResources = [
     latitude: 37.4689,
     longitude: -122.1411,
     image: require('../assets/ravenswood.jpg'),
+    phone: '650-330-7400',
+    email: 'medicalrecords@ravenswoodfhn.org',
+    hours: 'Mon: 8am-7pm\nTue: 8am-7pm\nWed: 8am-7pm\nThu: 8am-7pm\nFri: 8am-5pm\nSat: 8am-1pm\nSun: Closed',
   },
   {
     id: '3',
@@ -31,6 +37,9 @@ export const dummyResources = [
     latitude: 37.4680,
     longitude: -122.1415,
     image: require('../assets/samaritan.jpg'),
+    phone: '650-294-4312',
+    email: 'laura@samaritanhousesanmateo.org',
+    hours: 'Mon-Fri: 9am-5pm\nSat-Sun: Closed',
   },
   {
     id: '4',
@@ -42,6 +51,9 @@ export const dummyResources = [
     latitude: 37.3230,
     longitude: -121.8510,
     image: require('../assets/pacific.png'),
+    phone: '650-721-2786',
+    email: 'pfc_clinic@stanford.edu',
+    hours: 'Sat: 8am-12pm\nSun-Fri: Closed',
   },
 ];
 

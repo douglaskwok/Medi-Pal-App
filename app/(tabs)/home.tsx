@@ -265,7 +265,10 @@ export default function HomeScreen() {
               <ResourceCard
                 key={resource.id}
                 {...resource}
-                onPress={() => router.push('/(tabs)/resources')}
+                onPress={() => router.push({
+                  pathname: '/(tabs)/resources',
+                  params: { resourceId: resource.id },
+                })}
               />
             ))}
           </ScrollView>

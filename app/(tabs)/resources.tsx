@@ -16,12 +16,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { Theme } from '../../constants/Theme';
 import { dummyResources } from '../../constants/DummyData';
 import { ResourceCard } from '../../components/ResourceCard';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomTabBar } from './_layout';
+import { supabase } from '../../lib/supabase';
+import { useLocalSearchParams } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 const MAP_HEIGHT = height * 0.35;
@@ -48,18 +49,27 @@ interface DirectionStep {
   maneuver?: string;
 }
 
+interface SavedResource {
+  id: string;
+  user_id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  place_id?: string;
+  created_at: string;
+}
+
+const STANFORD_COORDS = {
+  latitude: 37.4275,
+  longitude: -122.1695,
+};
+
 export default function ResourcesScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
-  // Hardcoded Stanford University address: 550 Lasuen Mall, Stanford, CA 94305
-  // Coordinates for 550 Lasuen Mall, Stanford, CA 94305
-  const STANFORD_COORDS = {
-    latitude: 37.4275,
-    longitude: -122.1695,
-  };
-  
-  // Always use Stanford as user location (hardcoded)
   const [userLocation] = useState<{ latitude: number; longitude: number }>(STANFORD_COORDS);
   const [region, setRegion] = useState({
     latitude: STANFORD_COORDS.latitude,
@@ -69,14 +79,25 @@ export default function ResourcesScreen() {
   });
   const [routeCoordinates, setRouteCoordinates] = useState<RouteCoordinate[]>([]);
   const [directionSteps, setDirectionSteps] = useState<DirectionStep[]>([]);
-  const [selectedDestination, setSelectedDestination] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<{ latitude: number; longitude: number; name: string; address?: string } | null>(null);
   const [routeStarted, setRouteStarted] = useState(false);
   const [selectedResourceForDirections, setSelectedResourceForDirections] = useState<typeof dummyResources[0] | null>(null);
+  const [selectedSavedResource, setSelectedSavedResource] = useState<SavedResource | null>(null);
   const [totalDistance, setTotalDistance] = useState<number>(0);
   const [totalDuration, setTotalDuration] = useState<number>(0);
   const [autocompleteResults, setAutocompleteResults] = useState<Place[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
+  const [activeTab, setActiveTab] = useState<'nearby' | 'saved'>('nearby');
+  const [showDetails, setShowDetails] = useState(false);
+  const [showSaveOption, setShowSaveOption] = useState(false);
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
+  const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
+  const [showEndRouteModal, setShowEndRouteModal] = useState(false);
+  const [isResourceSaved, setIsResourceSaved] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const successModalAnim = useRef(new Animated.Value(0)).current;
+  const successModalScale = useRef(new Animated.Value(0.9)).current;
   const mapRef = useRef<MapView>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -87,7 +108,6 @@ export default function ResourcesScreen() {
       useNativeDriver: true,
     }).start();
     
-    // Always use Stanford University as user location (hardcoded)
     setRegion({
       latitude: STANFORD_COORDS.latitude,
       longitude: STANFORD_COORDS.longitude,
@@ -95,7 +115,6 @@ export default function ResourcesScreen() {
       longitudeDelta: 0.01,
     });
     
-    // Animate map to Stanford location
     if (mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: STANFORD_COORDS.latitude,
@@ -104,7 +123,179 @@ export default function ResourcesScreen() {
         longitudeDelta: 0.01,
       }, 1000);
     }
+    loadSavedResources();
   }, []);
+
+  useEffect(() => {
+    // Handle navigation from home page
+    if (params.resourceId) {
+      const resource = dummyResources.find(r => r.id === params.resourceId);
+      if (resource) {
+        setTimeout(() => {
+          handleResourceSelect(resource);
+        }, 500);
+      }
+    }
+  }, [params.resourceId]);
+
+  useEffect(() => {
+    // Check if current destination/resource is saved
+    if (selectedDestination) {
+      const saved = savedResources.find(
+        r => r.name === selectedDestination.name && 
+        Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
+        Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
+      );
+      setIsResourceSaved(!!saved);
+    } else if (selectedResourceForDirections) {
+      const saved = savedResources.find(
+        r => r.name === selectedResourceForDirections.name && 
+        Math.abs(r.latitude - selectedResourceForDirections.latitude) < 0.0001 &&
+        Math.abs(r.longitude - selectedResourceForDirections.longitude) < 0.0001
+      );
+      setIsResourceSaved(!!saved);
+    } else {
+      setIsResourceSaved(false);
+    }
+  }, [selectedDestination, selectedResourceForDirections, savedResources]);
+
+  const loadSavedResources = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('saved_resources')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setSavedResources(data);
+      }
+    } catch (error) {
+      console.error('Error loading saved resources:', error);
+    }
+  };
+
+  const saveResource = async (resource: { name: string; address: string; latitude: number; longitude: number; place_id?: string }) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('saved_resources')
+        .insert({
+          user_id: user.id,
+          name: resource.name,
+          address: resource.address,
+          latitude: resource.latitude,
+          longitude: resource.longitude,
+          place_id: resource.place_id || null,
+        });
+
+      if (error) throw error;
+      await loadSavedResources();
+      setShowSaveOption(false);
+      setIsResourceSaved(true);
+      setShowSaveSuccessModal(true);
+      Animated.parallel([
+        Animated.timing(successModalAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(successModalScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+      ]).start();
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(successModalAnim, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(successModalScale, {
+            toValue: 0.9,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowSaveSuccessModal(false);
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Error saving resource:', error);
+      Alert.alert('Error', 'Failed to save resource');
+    }
+  };
+
+  const deleteSavedResource = async (resourceId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('saved_resources')
+        .delete()
+        .eq('id', resourceId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      await loadSavedResources();
+      setShowDeleteSuccessModal(true);
+      Animated.parallel([
+        Animated.timing(successModalAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(successModalScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+      ]).start();
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(successModalAnim, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(successModalScale, {
+            toValue: 0.9,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowDeleteSuccessModal(false);
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Error deleting saved resource:', error);
+      Alert.alert('Error', 'Failed to delete resource');
+    }
+  };
+
+  const unsaveResource = async () => {
+    if (!selectedDestination) return;
+    const savedResource = savedResources.find(
+      r => r.name === selectedDestination.name && 
+      Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
+      Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
+    );
+    if (savedResource) {
+      await deleteSavedResource(savedResource.id);
+      setIsResourceSaved(false);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery.length > 2) {
@@ -146,10 +337,17 @@ export default function ResourcesScreen() {
     }
   };
 
+  const truncateAddress = (address: string, maxLength: number = 40) => {
+    if (address.length <= maxLength) return address;
+    return address.substring(0, maxLength) + '...';
+  };
+
   const handlePlaceSelect = async (place: Place) => {
-    setSearchQuery(place.description);
+    const truncatedAddress = truncateAddress(place.description);
+    setSearchQuery(truncatedAddress);
     setShowAutocomplete(false);
     setAutocompleteResults([]);
+    setSearchQuery(''); // Clear search query to prevent autocomplete from reopening
     
     try {
       const response = await fetch(
@@ -162,21 +360,22 @@ export default function ResourcesScreen() {
           latitude: lat,
           longitude: lng,
           name: place.structured_formatting.main_text,
+          address: place.description,
         };
         setSelectedDestination(destination);
         setSelectedResourceForDirections(null);
+        setSelectedSavedResource(null);
         setRouteStarted(false);
         setSelectedResource(null);
+        setShowDetails(false);
+        setShowSaveOption(false);
         
-        // Always use Stanford as origin (hardcoded)
         await getDirections(STANFORD_COORDS, destination);
       }
     } catch (error) {
       console.error('Error fetching place details:', error);
     }
   };
-
-
 
   const decodePolyline = (encoded: string): RouteCoordinate[] => {
     const coordinates: RouteCoordinate[] = [];
@@ -246,7 +445,6 @@ export default function ResourcesScreen() {
         setRouteCoordinates(decoded);
         setSelectedDestination(destination);
 
-        // Extract all steps from all legs
         const steps: DirectionStep[] = [];
         let totalDist = 0;
         let totalDur = 0;
@@ -268,20 +466,18 @@ export default function ResourcesScreen() {
         setTotalDistance(totalDist);
         setTotalDuration(totalDur);
 
-        // Calculate bounding box for user location and destination only
         if (mapRef.current && decoded.length > 0 && origin) {
           const minLat = Math.min(origin.latitude, destination.latitude);
           const maxLat = Math.max(origin.latitude, destination.latitude);
           const minLng = Math.min(origin.longitude, destination.longitude);
           const maxLng = Math.max(origin.longitude, destination.longitude);
           
-          const latDelta = (maxLat - minLat) * 1.5; // Add 50% padding
+          const latDelta = (maxLat - minLat) * 1.5;
           const lngDelta = (maxLng - minLng) * 1.5;
           
           const centerLat = (minLat + maxLat) / 2;
           const centerLng = (minLng + maxLng) / 2;
           
-          // Ensure minimum zoom level (don't zoom out too far)
           const minDelta = 0.01;
           const finalLatDelta = Math.max(latDelta, minDelta);
           const finalLngDelta = Math.max(lngDelta, minDelta);
@@ -302,11 +498,33 @@ export default function ResourcesScreen() {
     }
   };
 
-  const handleGetDirections = async (resource: typeof dummyResources[0]) => {
-    // Always use Stanford as origin (hardcoded)
+  const handleResourceSelect = async (resource: typeof dummyResources[0]) => {
     setSelectedResource(resource.id);
     setSelectedResourceForDirections(resource);
+    setSelectedSavedResource(null);
+    setSelectedDestination(null);
     setRouteStarted(false);
+    setShowDetails(true);
+    setShowSaveOption(false);
+    await getDirections(STANFORD_COORDS, {
+      latitude: resource.latitude,
+      longitude: resource.longitude,
+      name: resource.name,
+    });
+  };
+
+  const handleSavedResourceSelect = async (resource: SavedResource) => {
+    setSelectedSavedResource(resource);
+    setSelectedResourceForDirections(null);
+    setSelectedDestination({
+      latitude: resource.latitude,
+      longitude: resource.longitude,
+      name: resource.name,
+      address: resource.address,
+    });
+    setRouteStarted(false);
+    setShowDetails(false);
+    setShowSaveOption(false);
     await getDirections(STANFORD_COORDS, {
       latitude: resource.latitude,
       longitude: resource.longitude,
@@ -316,7 +534,7 @@ export default function ResourcesScreen() {
 
   const handleStartRoute = () => {
     setRouteStarted(true);
-    // Zoom into Stanford location when starting route (hardcoded)
+    setShowDetails(false);
     if (mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: STANFORD_COORDS.latitude,
@@ -328,12 +546,34 @@ export default function ResourcesScreen() {
   };
 
   const handleCancelDirections = () => {
+    if (routeStarted) {
+      setShowEndRouteModal(true);
+    } else {
+      setRouteCoordinates([]);
+      setDirectionSteps([]);
+      setSelectedDestination(null);
+      setRouteStarted(false);
+      setSelectedResourceForDirections(null);
+      setSelectedSavedResource(null);
+      setSelectedResource(null);
+      setShowDetails(false);
+      setShowSaveOption(false);
+      setTotalDistance(0);
+      setTotalDuration(0);
+    }
+  };
+
+  const handleConfirmEndRoute = () => {
+    setShowEndRouteModal(false);
     setRouteCoordinates([]);
     setDirectionSteps([]);
     setSelectedDestination(null);
     setRouteStarted(false);
     setSelectedResourceForDirections(null);
+    setSelectedSavedResource(null);
     setSelectedResource(null);
+    setShowDetails(false);
+    setShowSaveOption(false);
     setTotalDistance(0);
     setTotalDuration(0);
   };
@@ -361,8 +601,141 @@ export default function ResourcesScreen() {
     return html.replace(/<[^>]*>/g, '').trim();
   };
 
-  // Always show all nearby resources - search bar is only for Google Places autocomplete
   const filteredResources = dummyResources;
+
+  const renderResourceDetails = () => {
+    if (!selectedResourceForDirections) return null;
+    const resource = selectedResourceForDirections;
+    
+    return (
+      <View style={[styles.detailsSection, { paddingBottom: insets.bottom + 100 }]}>
+        <View style={styles.detailsHeader}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleCancelDirections}
+          >
+            <Ionicons name="close" size={24} color={Theme.colors.text} />
+          </TouchableOpacity>
+          <View style={styles.detailsHeaderLeft}>
+            <Text style={styles.detailsTitle} numberOfLines={1}>
+              {resource.name.length > 30 ? resource.name.substring(0, 30) + '...' : resource.name}
+            </Text>
+          </View>
+          <View style={styles.routeControls}>
+            <TouchableOpacity
+              style={[styles.saveResourceCircularButton, isResourceSaved && styles.unsaveResourceCircularButton]}
+              onPress={() => {
+                if (isResourceSaved) {
+                  unsaveResource();
+                } else if (selectedResourceForDirections) {
+                  saveResource({
+                    name: selectedResourceForDirections.name,
+                    address: selectedResourceForDirections.address,
+                    latitude: selectedResourceForDirections.latitude,
+                    longitude: selectedResourceForDirections.longitude,
+                  });
+                }
+              }}
+            >
+              <Ionicons name={isResourceSaved ? "trash-outline" : "add"} size={18} color={isResourceSaved ? Theme.colors.backgroundLight : Theme.colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.startRouteButton}
+              onPress={handleStartRoute}
+            >
+              <Text style={styles.startRouteText}>Start Route</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <ScrollView style={styles.detailsContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.eligibilityRow, { marginBottom: Theme.spacing.md }]}>
+            <Ionicons name="checkmark-circle" size={20} color={Theme.colors.success} />
+            <Text style={styles.eligibilityText}>You are eligible for this service</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="location-outline" size={18} color={Theme.colors.primary} />
+            <Text style={styles.detailText}>{resource.address}</Text>
+          </View>
+          {resource.phone && (
+            <View style={styles.detailRow}>
+              <Ionicons name="call-outline" size={18} color={Theme.colors.primary} />
+              <Text style={styles.detailText}>{resource.phone}</Text>
+            </View>
+          )}
+          {resource.email && (
+            <View style={styles.detailRow}>
+              <Ionicons name="mail-outline" size={18} color={Theme.colors.primary} />
+              <Text style={styles.detailText}>{resource.email}</Text>
+            </View>
+          )}
+          {resource.hours && (
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={18} color={Theme.colors.primary} />
+              <Text style={styles.detailText}>{resource.hours}</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderDirections = () => {
+    if (!routeStarted || directionSteps.length === 0) return null;
+    const destinationName = selectedDestination?.name || selectedResourceForDirections?.name || selectedSavedResource?.name || 'Directions';
+
+    return (
+      <View style={styles.directionsSection}>
+        <View style={styles.directionsHeader}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              if (routeStarted) {
+                setShowEndRouteModal(true);
+              } else {
+                handleCancelDirections();
+              }
+            }}
+          >
+            <Ionicons name="close" size={24} color={Theme.colors.text} />
+          </TouchableOpacity>
+          <View style={styles.directionsHeaderLeft}>
+            <Text style={styles.directionsTitle} numberOfLines={1}>
+              {destinationName.length > 30 ? destinationName.substring(0, 30) + '...' : destinationName}
+            </Text>
+            <View style={styles.directionsMeta}>
+              <Text style={styles.directionsMetaText}>{formatDistance(totalDistance)}</Text>
+              <Text style={styles.directionsMetaText}>•</Text>
+              <Text style={styles.directionsMetaText}>{formatDuration(totalDuration)}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.routeControlButton, styles.imHereButton]}
+            onPress={handleImHere}
+          >
+            <Text style={[styles.routeControlText, styles.imHereText]}>I'm here!</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={styles.stepsList}>
+          {directionSteps.map((step, index) => (
+            <View key={index} style={styles.directionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>{index + 1}</Text>
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepInstruction}>
+                  {stripHtmlTags(step.html_instructions)}
+                </Text>
+                <View style={styles.stepMeta}>
+                  <Text style={styles.stepDistance}>{step.distance.text}</Text>
+                  <Text style={styles.stepDuration}>{step.duration.text}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -384,9 +757,6 @@ export default function ResourcesScreen() {
             />
             <Text style={styles.title}>Resources</Text>
           </View>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={20} color={Theme.colors.text} />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.searchContainer}>
@@ -411,11 +781,8 @@ export default function ResourcesScreen() {
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => {
               setSearchQuery('');
-              setRouteCoordinates([]);
-              setDirectionSteps([]);
-              setSelectedDestination(null);
+              handleCancelDirections();
               setShowAutocomplete(false);
-              setSelectedResourceForDirections(null);
             }}>
               <Ionicons name="close-circle" size={20} color={Theme.colors.text} />
             </TouchableOpacity>
@@ -433,8 +800,12 @@ export default function ResourcesScreen() {
                 >
                   <Ionicons name="location" size={20} color={Theme.colors.primary} />
                   <View style={styles.autocompleteText}>
-                    <Text style={styles.autocompleteMain}>{place.structured_formatting.main_text}</Text>
-                    <Text style={styles.autocompleteSecondary}>{place.structured_formatting.secondary_text}</Text>
+                    <Text style={styles.autocompleteMain} numberOfLines={1}>
+                      {truncateAddress(place.structured_formatting.main_text, 35)}
+                    </Text>
+                    <Text style={styles.autocompleteSecondary} numberOfLines={1}>
+                      {truncateAddress(place.structured_formatting.secondary_text, 40)}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -459,7 +830,6 @@ export default function ResourcesScreen() {
             rotateEnabled={true}
             onRegionChangeComplete={setRegion}
           >
-            {/* Hardcoded Stanford location marker */}
             <Marker
               coordinate={STANFORD_COORDS}
               title="Your Location"
@@ -469,8 +839,7 @@ export default function ResourcesScreen() {
                 <Ionicons name="location" size={24} color={Theme.colors.primary} />
               </View>
             </Marker>
-            {/* Only show nearby resource markers when no route is active */}
-            {!selectedDestination && filteredResources.map((resource) => (
+            {!selectedDestination && !showDetails && filteredResources.map((resource) => (
               <Marker
                 key={resource.id}
                 coordinate={{
@@ -518,31 +887,49 @@ export default function ResourcesScreen() {
               </Marker>
             )}
           </MapView>
-          
         </View>
 
-        {/* Show steps section when a resource is selected OR a place from search is selected, otherwise show nearby resources */}
-        {(selectedResourceForDirections || (selectedDestination && directionSteps.length > 0)) && directionSteps.length > 0 ? (
+        {/* Show details, directions, or resource list */}
+        {showDetails && !routeStarted ? (
+          renderResourceDetails()
+        ) : routeStarted ? (
+          renderDirections()
+        ) : selectedDestination && directionSteps.length > 0 && !showDetails ? (
           <View style={styles.directionsSection}>
             <View style={styles.directionsHeader}>
-            <View style={styles.directionsHeaderLeft}>
-              <Text style={styles.directionsTitle} numberOfLines={1}>
-                {(selectedDestination?.name || selectedResourceForDirections?.name || 'Directions').substring(0, 30)}
-                {((selectedDestination?.name || selectedResourceForDirections?.name || '').length > 30) ? '...' : ''}
-              </Text>
-              <View style={styles.directionsMeta}>
-                <Text style={styles.directionsMetaText}>{formatDistance(totalDistance)}</Text>
-                <Text style={styles.directionsMetaText}>•</Text>
-                <Text style={styles.directionsMetaText}>{formatDuration(totalDuration)}</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleCancelDirections}
+              >
+                <Ionicons name="close" size={24} color={Theme.colors.text} />
+              </TouchableOpacity>
+              <View style={styles.directionsHeaderLeft}>
+                <Text style={styles.directionsTitle} numberOfLines={1}>
+                  {selectedDestination.name.length > 30 ? selectedDestination.name.substring(0, 30) + '...' : selectedDestination.name}
+                </Text>
+                <View style={styles.directionsMeta}>
+                  <Text style={styles.directionsMetaText}>{formatDistance(totalDistance)}</Text>
+                  <Text style={styles.directionsMetaText}>•</Text>
+                  <Text style={styles.directionsMetaText}>{formatDuration(totalDuration)}</Text>
+                </View>
               </View>
-            </View>
-            {!routeStarted ? (
               <View style={styles.routeControls}>
                 <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancelDirections}
+                  style={[styles.saveResourceCircularButton, isResourceSaved && styles.unsaveResourceCircularButton]}
+                  onPress={() => {
+                    if (isResourceSaved) {
+                      unsaveResource();
+                    } else if (selectedDestination) {
+                      saveResource({
+                        name: selectedDestination.name,
+                        address: selectedDestination.address || '',
+                        latitude: selectedDestination.latitude,
+                        longitude: selectedDestination.longitude,
+                      });
+                    }
+                  }}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Ionicons name={isResourceSaved ? "trash-outline" : "add"} size={18} color={isResourceSaved ? Theme.colors.backgroundLight : Theme.colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.startRouteButton}
@@ -551,24 +938,8 @@ export default function ResourcesScreen() {
                   <Text style={styles.startRouteText}>Start Route</Text>
                 </TouchableOpacity>
               </View>
-            ) : (
-              <View style={styles.routeControls}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancelDirections}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.routeControlButton, styles.imHereButton]}
-                  onPress={handleImHere}
-                >
-                  <Text style={[styles.routeControlText, styles.imHereText]}>I'm here!</Text>
-                </TouchableOpacity>
-              </View>
-            )}
             </View>
-            <ScrollView style={styles.stepsList}>
+            <ScrollView style={styles.stepsList} showsVerticalScrollIndicator={false}>
               {directionSteps.map((step, index) => (
                 <View key={index} style={styles.directionStep}>
                   <View style={styles.stepNumber}>
@@ -589,25 +960,128 @@ export default function ResourcesScreen() {
           </View>
         ) : (
           <View style={styles.resourcesSection}>
-            <Text style={styles.listTitle}>Nearby Resources</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.resourcesScroll}
-            >
-              {filteredResources.map((resource) => (
-                <ResourceCard
-                  key={resource.id}
-                  {...resource}
-                  onPress={() => handleGetDirections(resource)}
-                />
-              ))}
-            </ScrollView>
+            <View style={styles.tabSelectorContainer}>
+              <View style={styles.tabSelector}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'nearby' && styles.tabActive]}
+                  onPress={() => setActiveTab('nearby')}
+                >
+                  <Text style={[styles.tabText, activeTab === 'nearby' && styles.tabTextActive]}>
+                    Nearby Resources
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'saved' && styles.tabActive]}
+                  onPress={() => setActiveTab('saved')}
+                >
+                  <Text style={[styles.tabText, activeTab === 'saved' && styles.tabTextActive]}>
+                    Saved Resources
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            {activeTab === 'nearby' ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.resourcesScroll}
+              >
+                {filteredResources.map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    {...resource}
+                    onPress={() => handleResourceSelect(resource)}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              <ScrollView
+                style={styles.savedResourcesScroll}
+                contentContainerStyle={styles.savedResourcesContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {savedResources.length > 0 ? (
+                  savedResources.map((resource) => (
+                    <TouchableOpacity
+                      key={resource.id}
+                      style={styles.savedResourceCard}
+                      onPress={() => handleSavedResourceSelect(resource)}
+                    >
+                      <View style={styles.savedResourceContent}>
+                        <Ionicons name="pin" size={20} color={Theme.colors.primary} />
+                        <View style={styles.savedResourceText}>
+                          <Text style={styles.savedResourceName} numberOfLines={1}>
+                            {resource.name}
+                          </Text>
+                          <Text style={styles.savedResourceAddress} numberOfLines={1}>
+                            {truncateAddress(resource.address, 50)}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.deleteSavedButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            deleteSavedResource(resource.id);
+                          }}
+                        >
+                          <Ionicons name="trash-outline" size={20} color={Theme.colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.emptySaved}>
+                    <Text style={styles.emptySavedText}>No saved resources</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
           </View>
         )}
       </Animated.View>
+      {(showSaveSuccessModal || showDeleteSuccessModal) && (
+        <Animated.View 
+          style={[
+            styles.successModalOverlay,
+            { opacity: successModalAnim }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.successModal,
+              { transform: [{ scale: successModalScale }] }
+            ]}
+          >
+            <Ionicons name="checkmark-circle" size={48} color={Theme.colors.success} />
+            <Text style={styles.successModalText}>
+              {showSaveSuccessModal ? 'Saved Successfully' : 'Deleted Successfully'}
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
+      {showEndRouteModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>End Route?</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to end the current route?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => setShowEndRouteModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalConfirmButton]}
+                onPress={handleConfirmEndRoute}
+              >
+                <Text style={styles.modalConfirmText}>End Route</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
       <CustomTabBar />
-
     </SafeAreaView>
   );
 }
@@ -643,12 +1117,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
     fontWeight: 'bold',
   },
-  filterButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -671,14 +1139,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
     paddingVertical: Theme.spacing.sm,
   },
-  autocompleteOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 998,
-  },
   autocompleteContainer: {
     position: 'absolute',
     top: 120,
@@ -699,6 +1159,7 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.borderLight,
+    minHeight: 60,
   },
   autocompleteText: {
     marginLeft: Theme.spacing.sm,
@@ -765,19 +1226,168 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Theme.borderRadius.xl,
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.xl,
+    minHeight: height * 0.3,
     ...Theme.shadows.lg,
   },
-  listTitle: {
-    fontSize: 24,
-    fontFamily: Theme.fonts.bold,
-    color: Theme.colors.text,
-    fontWeight: 'bold',
+  tabSelectorContainer: {
     paddingHorizontal: Theme.spacing.lg,
     marginBottom: Theme.spacing.md,
+  },
+  tabSelector: {
+    flexDirection: 'row',
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.borderRadius.md,
+    padding: 3,
+    gap: Theme.spacing.xs,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: {
+    backgroundColor: Theme.colors.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.textSecondary,
+  },
+  tabTextActive: {
+    color: Theme.colors.backgroundLight,
+    fontFamily: Theme.fonts.semibold,
+  },
+  savedResourcesScroll: {
+    minHeight: 280,
+  },
+  savedResourcesContent: {
+    paddingHorizontal: Theme.spacing.lg,
+    paddingTop: Theme.spacing.md,
+    paddingBottom: Theme.spacing.xl,
   },
   resourcesScroll: {
     paddingHorizontal: Theme.spacing.lg,
     paddingBottom: Theme.spacing.md,
+  },
+  savedResourceCard: {
+    width: '100%',
+    marginBottom: Theme.spacing.sm,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    ...Theme.shadows.sm,
+  },
+  savedResourceContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Theme.spacing.sm,
+  },
+  savedResourceText: {
+    flex: 1,
+  },
+  savedResourceName: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginBottom: Theme.spacing.xs,
+  },
+  savedResourceAddress: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+  },
+  emptySaved: {
+    padding: Theme.spacing.xl,
+    alignItems: 'center',
+  },
+  emptySavedText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+  },
+  detailsSection: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderTopLeftRadius: Theme.borderRadius.xl,
+    borderTopRightRadius: Theme.borderRadius.xl,
+    paddingTop: Theme.spacing.md,
+    paddingBottom: Theme.spacing.xl,
+    maxHeight: height * 0.5,
+    ...Theme.shadows.lg,
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Theme.spacing.lg,
+    paddingBottom: Theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.borderLight,
+    gap: Theme.spacing.sm,
+  },
+  detailsHeaderLeft: {
+    flex: 1,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.bold,
+    color: Theme.colors.text,
+    fontWeight: 'bold',
+  },
+  detailsContent: {
+    paddingHorizontal: Theme.spacing.lg,
+    paddingTop: Theme.spacing.md,
+    maxHeight: height * 0.25,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Theme.spacing.md,
+    gap: Theme.spacing.sm,
+  },
+  detailText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.text,
+    lineHeight: 20,
+  },
+  eligibilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Theme.spacing.sm,
+    gap: Theme.spacing.sm,
+  },
+  eligibilityText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.success,
+  },
+  detailsButtons: {
+    flexDirection: 'row',
+    gap: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.lg,
+    paddingTop: Theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.borderLight,
+    alignItems: 'center',
+  },
+  standardButton: {
+    flex: 1,
+    paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 100,
+    minHeight: 44,
+    backgroundColor: Theme.colors.error,
+  },
+  standardButtonText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.backgroundLight,
   },
   directionsSection: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -796,6 +1406,13 @@ const styles = StyleSheet.create({
     paddingBottom: Theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.borderLight,
+    gap: Theme.spacing.sm,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   directionsHeaderLeft: {
     flex: 1,
@@ -817,16 +1434,10 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
-  startRouteButton: {
-    backgroundColor: Theme.colors.primary,
-    paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.md,
-  },
-  startRouteText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.backgroundLight,
+  routeControls: {
+    flexDirection: 'row',
+    gap: Theme.spacing.sm,
+    alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: Theme.colors.error,
@@ -834,16 +1445,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
     marginRight: Theme.spacing.sm,
+    minWidth: 80,
   },
   cancelButtonText: {
     fontSize: 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
   },
-  routeControls: {
-    flexDirection: 'row',
-    gap: Theme.spacing.sm,
-    alignItems: 'center',
+  startRouteButton: {
+    backgroundColor: Theme.colors.primary,
+    paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.md,
+    minWidth: 100,
+  },
+  startRouteText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.backgroundLight,
   },
   routeControlButton: {
     paddingVertical: Theme.spacing.sm,
@@ -852,18 +1471,61 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background,
     borderWidth: 1,
     borderColor: Theme.colors.border,
-  },
-  imHereButton: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
+    minWidth: 80,
   },
   routeControlText: {
     fontSize: 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },
+  imHereButton: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
   imHereText: {
     color: Theme.colors.backgroundLight,
+  },
+  saveResourceCircularButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.backgroundLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    ...Theme.shadows.md,
+  },
+  unsaveResourceCircularButton: {
+    backgroundColor: Theme.colors.error,
+    borderColor: Theme.colors.error,
+  },
+  deleteSavedButton: {
+    padding: Theme.spacing.xs,
+  },
+  successModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
+  },
+  successModal: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.lg,
+    padding: Theme.spacing.xl,
+    alignItems: 'center',
+    gap: Theme.spacing.md,
+    ...Theme.shadows.lg,
+  },
+  successModalText: {
+    fontSize: 18,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
   },
   stepsList: {
     maxHeight: height * 0.3,
@@ -915,16 +1577,65 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
-  routeSummary: {
-    padding: Theme.spacing.lg,
-    backgroundColor: Theme.colors.backgroundLight,
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.borderLight,
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
   },
-  routeSummaryText: {
-    fontSize: 16,
+  modalContainer: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.lg,
+    padding: Theme.spacing.xl,
+    width: '85%',
+    maxWidth: 400,
+    ...Theme.shadows.lg,
+  },
+  modalTitle: {
+    fontSize: 20,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
-    marginBottom: Theme.spacing.xs,
+    marginBottom: Theme.spacing.md,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.xl,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Theme.spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  modalConfirmButton: {
+    backgroundColor: Theme.colors.error,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.text,
+  },
+  modalConfirmText: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.backgroundLight,
   },
 });
