@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,20 +13,20 @@ import {
   Alert,
   Platform,
   TouchableWithoutFeedback,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import { Theme } from '../../constants/Theme';
-import { dummyResources } from '../../constants/DummyData';
-import { ResourceCard } from '../../components/ResourceCard';
-import { Ionicons } from '@expo/vector-icons';
-import { CustomTabBar } from './_layout';
-import { supabase } from '../../lib/supabase';
-import { useLocalSearchParams } from 'expo-router';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
+import { Theme } from "../../constants/Theme";
+import { dummyResources } from "../../constants/DummyData";
+import { ResourceCard } from "../../components/ResourceCard";
+import { Ionicons } from "@expo/vector-icons";
+import { CustomTabBar } from "./_layout";
+import { supabase } from "../../lib/supabase";
+import { useLocalSearchParams } from "expo-router";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 const MAP_HEIGHT = height * 0.35;
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 interface Place {
   place_id: string;
@@ -68,27 +68,49 @@ const STANFORD_COORDS = {
 export default function ResourcesScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
-  const [userLocation] = useState<{ latitude: number; longitude: number }>(STANFORD_COORDS);
+  const [userLocation] = useState<{ latitude: number; longitude: number }>(
+    STANFORD_COORDS
+  );
   const [region, setRegion] = useState({
     latitude: STANFORD_COORDS.latitude,
     longitude: STANFORD_COORDS.longitude,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const [routeCoordinates, setRouteCoordinates] = useState<RouteCoordinate[]>([]);
+  const [routeCoordinates, setRouteCoordinates] = useState<RouteCoordinate[]>(
+    []
+  );
   const [directionSteps, setDirectionSteps] = useState<DirectionStep[]>([]);
-  const [selectedDestination, setSelectedDestination] = useState<{ latitude: number; longitude: number; name: string; address?: string } | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<{
+    latitude: number;
+    longitude: number;
+    name: string;
+    address?: string;
+  } | null>(null);
+  // const [tipsShown, setTipsShown] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
+  const prepTipsChecklist = [
+    { id: "1", title: "Arrive 10 minutes early.", completed: false },
+    { id: "2", title: "Bring your Medi-Cal card.", completed: false },
+    { id: "3", title: "Bring a photo ID", completed: false },
+    // { id: '4', title: 'Have water and snacks available', completed: false },
+    // { id: '5', title: 'Take breaks every 2 hours if driving long distance', completed: false },
+    // { id: '6', title: 'Keep emergency contacts accessible', completed: false },
+  ];
+  const [tipsChecklist, setTipsChecklist] = useState(prepTipsChecklist);
   const [routeStarted, setRouteStarted] = useState(false);
-  const [selectedResourceForDirections, setSelectedResourceForDirections] = useState<typeof dummyResources[0] | null>(null);
-  const [selectedSavedResource, setSelectedSavedResource] = useState<SavedResource | null>(null);
+  const [selectedResourceForDirections, setSelectedResourceForDirections] =
+    useState<(typeof dummyResources)[0] | null>(null);
+  const [selectedSavedResource, setSelectedSavedResource] =
+    useState<SavedResource | null>(null);
   const [totalDistance, setTotalDistance] = useState<number>(0);
   const [totalDuration, setTotalDuration] = useState<number>(0);
   const [autocompleteResults, setAutocompleteResults] = useState<Place[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
-  const [activeTab, setActiveTab] = useState<'nearby' | 'saved'>('nearby');
+  const [activeTab, setActiveTab] = useState<"nearby" | "saved">("nearby");
   const [showDetails, setShowDetails] = useState(false);
   const [showSaveOption, setShowSaveOption] = useState(false);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
@@ -107,21 +129,24 @@ export default function ResourcesScreen() {
       duration: 400,
       useNativeDriver: true,
     }).start();
-    
+
     setRegion({
       latitude: STANFORD_COORDS.latitude,
       longitude: STANFORD_COORDS.longitude,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
-    
+
     if (mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: STANFORD_COORDS.latitude,
-        longitude: STANFORD_COORDS.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
+      mapRef.current.animateToRegion(
+        {
+          latitude: STANFORD_COORDS.latitude,
+          longitude: STANFORD_COORDS.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000
+      );
     }
     loadSavedResources();
   }, []);
@@ -129,7 +154,7 @@ export default function ResourcesScreen() {
   useEffect(() => {
     // Handle navigation from home page or notification
     if (params.resourceId) {
-      const resource = dummyResources.find(r => r.id === params.resourceId);
+      const resource = dummyResources.find((r) => r.id === params.resourceId);
       if (resource) {
         setTimeout(() => {
           handleResourceSelect(resource);
@@ -138,21 +163,23 @@ export default function ResourcesScreen() {
     } else if (params.name && params.latitude && params.longitude) {
       // Handle custom resource from notification (YMCA)
       const yMCAResource = {
-        id: 'ymca_palo_alto',
+        id: "ymca_palo_alto",
         name: params.name as string,
-        type: 'Gym',
-        address: params.address as string || '3412 Ross Road, Palo Alto, CA 94303',
+        type: "Gym",
+        address:
+          (params.address as string) || "3412 Ross Road, Palo Alto, CA 94303",
         latitude: parseFloat(params.latitude as string),
         longitude: parseFloat(params.longitude as string),
         rating: 4.5,
-        distance: '2.3 mi',
-        image: require('../../assets/generic.jpg'),
-        phone: '650-856-9622',
-        email: 'membersupport@ymcasv.org',
-        hours: 'Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm',
+        distance: "2.3 mi",
+        image: require("../../assets/generic.jpg"),
+        phone: "650-856-9622",
+        email: "membersupport@ymcasv.org",
+        hours:
+          "Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm",
       };
       setTimeout(() => {
-        handleResourceSelect(yMCAResource as typeof dummyResources[0]);
+        handleResourceSelect(yMCAResource as (typeof dummyResources)[0]);
       }, 500);
     }
   }, [params.resourceId, params.name, params.latitude, params.longitude]);
@@ -161,16 +188,20 @@ export default function ResourcesScreen() {
     // Check if current destination/resource is saved
     if (selectedDestination) {
       const saved = savedResources.find(
-        r => r.name === selectedDestination.name && 
-        Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
-        Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
+        (r) =>
+          r.name === selectedDestination.name &&
+          Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
+          Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
       );
       setIsResourceSaved(!!saved);
     } else if (selectedResourceForDirections) {
       const saved = savedResources.find(
-        r => r.name === selectedResourceForDirections.name && 
-        Math.abs(r.latitude - selectedResourceForDirections.latitude) < 0.0001 &&
-        Math.abs(r.longitude - selectedResourceForDirections.longitude) < 0.0001
+        (r) =>
+          r.name === selectedResourceForDirections.name &&
+          Math.abs(r.latitude - selectedResourceForDirections.latitude) <
+            0.0001 &&
+          Math.abs(r.longitude - selectedResourceForDirections.longitude) <
+            0.0001
       );
       setIsResourceSaved(!!saved);
     } else {
@@ -180,39 +211,47 @@ export default function ResourcesScreen() {
 
   const loadSavedResources = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('saved_resources')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .from("saved_resources")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       if (data) {
         setSavedResources(data);
       }
     } catch (error) {
-      console.error('Error loading saved resources:', error);
+      console.error("Error loading saved resources:", error);
     }
   };
 
-  const saveResource = async (resource: { name: string; address: string; latitude: number; longitude: number; place_id?: string }) => {
+  const saveResource = async (resource: {
+    name: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    place_id?: string;
+  }) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from('saved_resources')
-        .insert({
-          user_id: user.id,
-          name: resource.name,
-          address: resource.address,
-          latitude: resource.latitude,
-          longitude: resource.longitude,
-          place_id: resource.place_id || null,
-        });
+      const { error } = await supabase.from("saved_resources").insert({
+        user_id: user.id,
+        name: resource.name,
+        address: resource.address,
+        latitude: resource.latitude,
+        longitude: resource.longitude,
+        place_id: resource.place_id || null,
+      });
 
       if (error) throw error;
       await loadSavedResources();
@@ -249,21 +288,23 @@ export default function ResourcesScreen() {
         });
       }, 2000);
     } catch (error) {
-      console.error('Error saving resource:', error);
-      Alert.alert('Error', 'Failed to save resource');
+      console.error("Error saving resource:", error);
+      Alert.alert("Error", "Failed to save resource");
     }
   };
 
   const deleteSavedResource = async (resourceId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { error } = await supabase
-        .from('saved_resources')
+        .from("saved_resources")
         .delete()
-        .eq('id', resourceId)
-        .eq('user_id', user.id);
+        .eq("id", resourceId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
       await loadSavedResources();
@@ -298,17 +339,18 @@ export default function ResourcesScreen() {
         });
       }, 2000);
     } catch (error) {
-      console.error('Error deleting saved resource:', error);
-      Alert.alert('Error', 'Failed to delete resource');
+      console.error("Error deleting saved resource:", error);
+      Alert.alert("Error", "Failed to delete resource");
     }
   };
 
   const unsaveResource = async () => {
     if (!selectedDestination) return;
     const savedResource = savedResources.find(
-      r => r.name === selectedDestination.name && 
-      Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
-      Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
+      (r) =>
+        r.name === selectedDestination.name &&
+        Math.abs(r.latitude - selectedDestination.latitude) < 0.0001 &&
+        Math.abs(r.longitude - selectedDestination.longitude) < 0.0001
     );
     if (savedResource) {
       await deleteSavedResource(savedResource.id);
@@ -337,14 +379,21 @@ export default function ResourcesScreen() {
 
   const fetchAutocompleteResults = async (query: string) => {
     if (!GOOGLE_MAPS_API_KEY) {
-      console.warn('Google Maps API key not found');
+      console.warn("Google Maps API key not found");
       return;
     }
 
     try {
-      const location = userLocation || { latitude: region.latitude, longitude: region.longitude };
+      const location = userLocation || {
+        latitude: region.latitude,
+        longitude: region.longitude,
+      };
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&location=${location.latitude},${location.longitude}&radius=50000&key=${GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+          query
+        )}&location=${location.latitude},${
+          location.longitude
+        }&radius=50000&key=${GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
       if (data.predictions) {
@@ -352,13 +401,13 @@ export default function ResourcesScreen() {
         setShowAutocomplete(true);
       }
     } catch (error) {
-      console.error('Error fetching autocomplete:', error);
+      console.error("Error fetching autocomplete:", error);
     }
   };
 
   const truncateAddress = (address: string, maxLength: number = 40) => {
     if (address.length <= maxLength) return address;
-    return address.substring(0, maxLength) + '...';
+    return address.substring(0, maxLength) + "...";
   };
 
   const handlePlaceSelect = async (place: Place) => {
@@ -366,8 +415,8 @@ export default function ResourcesScreen() {
     setSearchQuery(truncatedAddress);
     setShowAutocomplete(false);
     setAutocompleteResults([]);
-    setSearchQuery(''); // Clear search query to prevent autocomplete from reopening
-    
+    setSearchQuery(""); // Clear search query to prevent autocomplete from reopening
+
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&key=${GOOGLE_MAPS_API_KEY}`
@@ -388,11 +437,11 @@ export default function ResourcesScreen() {
         setSelectedResource(null);
         setShowDetails(false);
         setShowSaveOption(false);
-        
+
         await getDirections(STANFORD_COORDS, destination);
       }
     } catch (error) {
-      console.error('Error fetching place details:', error);
+      console.error("Error fetching place details:", error);
     }
   };
 
@@ -413,7 +462,7 @@ export default function ResourcesScreen() {
         shift += 5;
       } while (byte >= 0x20);
 
-      const deltaLat = (result & 1) ? ~(result >> 1) : (result >> 1);
+      const deltaLat = result & 1 ? ~(result >> 1) : result >> 1;
       lat += deltaLat;
 
       shift = 0;
@@ -425,7 +474,7 @@ export default function ResourcesScreen() {
         shift += 5;
       } while (byte >= 0x20);
 
-      const deltaLng = (result & 1) ? ~(result >> 1) : (result >> 1);
+      const deltaLng = result & 1 ? ~(result >> 1) : result >> 1;
       lng += deltaLng;
 
       coordinates.push({
@@ -442,7 +491,7 @@ export default function ResourcesScreen() {
     destination: { latitude: number; longitude: number; name: string }
   ) => {
     if (!GOOGLE_MAPS_API_KEY) {
-      Alert.alert('Error', 'Google Maps API key not configured.');
+      Alert.alert("Error", "Google Maps API key not configured.");
       return;
     }
 
@@ -452,12 +501,12 @@ export default function ResourcesScreen() {
     try {
       const originStr = `${origin.latitude},${origin.longitude}`;
       const destStr = `${destination.latitude},${destination.longitude}`;
-      
+
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${originStr}&destination=${destStr}&key=${GOOGLE_MAPS_API_KEY}&mode=driving`
       );
       const data = await response.json();
-      
+
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const decoded = decodePolyline(route.overview_polyline.points);
@@ -490,34 +539,37 @@ export default function ResourcesScreen() {
           const maxLat = Math.max(origin.latitude, destination.latitude);
           const minLng = Math.min(origin.longitude, destination.longitude);
           const maxLng = Math.max(origin.longitude, destination.longitude);
-          
+
           const latDelta = (maxLat - minLat) * 1.5;
           const lngDelta = (maxLng - minLng) * 1.5;
-          
+
           const centerLat = (minLat + maxLat) / 2;
           const centerLng = (minLng + maxLng) / 2;
-          
+
           const minDelta = 0.01;
           const finalLatDelta = Math.max(latDelta, minDelta);
           const finalLngDelta = Math.max(lngDelta, minDelta);
-          
-          mapRef.current.animateToRegion({
-            latitude: centerLat,
-            longitude: centerLng,
-            latitudeDelta: finalLatDelta,
-            longitudeDelta: finalLngDelta,
-          }, 1000);
+
+          mapRef.current.animateToRegion(
+            {
+              latitude: centerLat,
+              longitude: centerLng,
+              latitudeDelta: finalLatDelta,
+              longitudeDelta: finalLngDelta,
+            },
+            1000
+          );
         }
       } else {
-        Alert.alert('Error', 'No route found. Please try again.');
+        Alert.alert("Error", "No route found. Please try again.");
       }
     } catch (error) {
-      console.error('Error getting directions:', error);
-      Alert.alert('Error', 'Could not get directions. Please try again.');
+      console.error("Error getting directions:", error);
+      Alert.alert("Error", "Could not get directions. Please try again.");
     }
   };
 
-  const handleResourceSelect = async (resource: typeof dummyResources[0]) => {
+  const handleResourceSelect = async (resource: (typeof dummyResources)[0]) => {
     setSelectedResource(resource.id);
     setSelectedResourceForDirections(resource);
     setSelectedSavedResource(null);
@@ -550,18 +602,34 @@ export default function ResourcesScreen() {
       name: resource.name,
     });
   };
-
+  const resetTipsChecklist = () => {
+    setTipsChecklist(
+      prepTipsChecklist.map((item) => ({ ...item, completed: false }))
+    );
+  };
   const handleStartRoute = () => {
+    resetTipsChecklist();
+    setShowTipsModal(true);
+    return;
+  };
+
+  const handleStartRouteAfterTips = () => {
+    // setTipsShown(true);
+    setShowTipsModal(false);
     setRouteStarted(true);
     setShowDetails(false);
     if (mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: STANFORD_COORDS.latitude,
-        longitude: STANFORD_COORDS.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
+      mapRef.current.animateToRegion(
+        {
+          latitude: STANFORD_COORDS.latitude,
+          longitude: STANFORD_COORDS.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000
+      );
     }
+    // setTipsShown(false);
   };
 
   const handleCancelDirections = () => {
@@ -598,7 +666,7 @@ export default function ResourcesScreen() {
   };
 
   const handleImHere = () => {
-    Alert.alert('Arrived!', 'You have reached your destination.');
+    Alert.alert("Arrived!", "You have reached your destination.");
     handleCancelDirections();
   };
 
@@ -617,7 +685,7 @@ export default function ResourcesScreen() {
   };
 
   const stripHtmlTags = (html: string): string => {
-    return html.replace(/<[^>]*>/g, '').trim();
+    return html.replace(/<[^>]*>/g, "").trim();
   };
 
   const filteredResources = dummyResources;
@@ -625,9 +693,11 @@ export default function ResourcesScreen() {
   const renderResourceDetails = () => {
     if (!selectedResourceForDirections) return null;
     const resource = selectedResourceForDirections;
-    
+
     return (
-      <View style={[styles.detailsSection, { paddingBottom: insets.bottom + 100 }]}>
+      <View
+        style={[styles.detailsSection, { paddingBottom: insets.bottom + 100 }]}
+      >
         <View style={styles.detailsHeader}>
           <TouchableOpacity
             style={styles.closeButton}
@@ -637,12 +707,17 @@ export default function ResourcesScreen() {
           </TouchableOpacity>
           <View style={styles.detailsHeaderLeft}>
             <Text style={styles.detailsTitle} numberOfLines={1}>
-              {resource.name.length > 30 ? resource.name.substring(0, 30) + '...' : resource.name}
+              {resource.name.length > 30
+                ? resource.name.substring(0, 30) + "..."
+                : resource.name}
             </Text>
           </View>
           <View style={styles.routeControls}>
             <TouchableOpacity
-              style={[styles.saveResourceCircularButton, isResourceSaved && styles.unsaveResourceCircularButton]}
+              style={[
+                styles.saveResourceCircularButton,
+                isResourceSaved && styles.unsaveResourceCircularButton,
+              ]}
               onPress={() => {
                 if (isResourceSaved) {
                   unsaveResource();
@@ -656,7 +731,15 @@ export default function ResourcesScreen() {
                 }
               }}
             >
-              <Ionicons name={isResourceSaved ? "trash-outline" : "add"} size={18} color={isResourceSaved ? Theme.colors.backgroundLight : Theme.colors.text} />
+              <Ionicons
+                name={isResourceSaved ? "trash-outline" : "add"}
+                size={18}
+                color={
+                  isResourceSaved
+                    ? Theme.colors.backgroundLight
+                    : Theme.colors.text
+                }
+              />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.startRouteButton}
@@ -666,33 +749,62 @@ export default function ResourcesScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <ScrollView style={styles.detailsContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.eligibilityRow, { marginBottom: Theme.spacing.md }]}>
-            <Ionicons name="checkmark-circle" size={20} color={Theme.colors.success} />
-            <Text style={styles.eligibilityText}>You are eligible for this service</Text>
+        <ScrollView
+          style={styles.detailsContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={[styles.eligibilityRow, { marginBottom: Theme.spacing.md }]}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={Theme.colors.success}
+            />
+            <Text style={styles.eligibilityText}>
+              You are eligible for this service
+            </Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={18} color={Theme.colors.primary} />
+            <Ionicons
+              name="location-outline"
+              size={18}
+              color={Theme.colors.primary}
+            />
             <Text style={styles.detailText}>{resource.address}</Text>
           </View>
           {resource.phone && (
             <View style={styles.detailRow}>
-              <Ionicons name="call-outline" size={18} color={Theme.colors.primary} />
+              <Ionicons
+                name="call-outline"
+                size={18}
+                color={Theme.colors.primary}
+              />
               <Text style={styles.detailText}>{resource.phone}</Text>
             </View>
           )}
           {resource.email && (
             <View style={styles.detailRow}>
-              <Ionicons name="mail-outline" size={18} color={Theme.colors.primary} />
+              <Ionicons
+                name="mail-outline"
+                size={18}
+                color={Theme.colors.primary}
+              />
               <Text style={styles.detailText}>{resource.email}</Text>
             </View>
           )}
           {resource.hours && (
             <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={18} color={Theme.colors.primary} />
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color={Theme.colors.primary}
+              />
               <View style={{ flex: 1 }}>
-                {resource.hours.split('\n').map((dayHours, index) => (
-                  <Text key={index} style={styles.detailText}>{dayHours.trim()}</Text>
+                {resource.hours.split("\n").map((dayHours, index) => (
+                  <Text key={index} style={styles.detailText}>
+                    {dayHours.trim()}
+                  </Text>
                 ))}
               </View>
             </View>
@@ -704,7 +816,11 @@ export default function ResourcesScreen() {
 
   const renderDirections = () => {
     if (!routeStarted || directionSteps.length === 0) return null;
-    const destinationName = selectedDestination?.name || selectedResourceForDirections?.name || selectedSavedResource?.name || 'Directions';
+    const destinationName =
+      selectedDestination?.name ||
+      selectedResourceForDirections?.name ||
+      selectedSavedResource?.name ||
+      "Directions";
 
     return (
       <View style={styles.directionsSection}>
@@ -723,19 +839,27 @@ export default function ResourcesScreen() {
           </TouchableOpacity>
           <View style={styles.directionsHeaderLeft}>
             <Text style={styles.directionsTitle} numberOfLines={1}>
-              {destinationName.length > 30 ? destinationName.substring(0, 30) + '...' : destinationName}
+              {destinationName.length > 30
+                ? destinationName.substring(0, 30) + "..."
+                : destinationName}
             </Text>
             <View style={styles.directionsMeta}>
-              <Text style={styles.directionsMetaText}>{formatDistance(totalDistance)}</Text>
+              <Text style={styles.directionsMetaText}>
+                {formatDistance(totalDistance)}
+              </Text>
               <Text style={styles.directionsMetaText}>•</Text>
-              <Text style={styles.directionsMetaText}>{formatDuration(totalDuration)}</Text>
+              <Text style={styles.directionsMetaText}>
+                {formatDuration(totalDuration)}
+              </Text>
             </View>
           </View>
           <TouchableOpacity
             style={[styles.routeControlButton, styles.imHereButton]}
             onPress={handleImHere}
           >
-            <Text style={[styles.routeControlText, styles.imHereText]}>I'm here!</Text>
+            <Text style={[styles.routeControlText, styles.imHereText]}>
+              I'm here!
+            </Text>
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.stepsList}>
@@ -774,7 +898,7 @@ export default function ResourcesScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require("../../assets/icon.png")}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -802,12 +926,18 @@ export default function ResourcesScreen() {
             }}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => {
-              setSearchQuery('');
-              handleCancelDirections();
-              setShowAutocomplete(false);
-            }}>
-              <Ionicons name="close-circle" size={20} color={Theme.colors.text} />
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery("");
+                handleCancelDirections();
+                setShowAutocomplete(false);
+              }}
+            >
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={Theme.colors.text}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -821,13 +951,26 @@ export default function ResourcesScreen() {
                   style={styles.autocompleteItem}
                   onPress={() => handlePlaceSelect(place)}
                 >
-                  <Ionicons name="location" size={20} color={Theme.colors.primary} />
+                  <Ionicons
+                    name="location"
+                    size={20}
+                    color={Theme.colors.primary}
+                  />
                   <View style={styles.autocompleteText}>
                     <Text style={styles.autocompleteMain} numberOfLines={1}>
-                      {truncateAddress(place.structured_formatting.main_text, 35)}
+                      {truncateAddress(
+                        place.structured_formatting.main_text,
+                        35
+                      )}
                     </Text>
-                    <Text style={styles.autocompleteSecondary} numberOfLines={1}>
-                      {truncateAddress(place.structured_formatting.secondary_text, 40)}
+                    <Text
+                      style={styles.autocompleteSecondary}
+                      numberOfLines={1}
+                    >
+                      {truncateAddress(
+                        place.structured_formatting.secondary_text,
+                        40
+                      )}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -859,38 +1002,48 @@ export default function ResourcesScreen() {
               description="550 Lasuen Mall, Stanford, CA 94305"
             >
               <View style={styles.stanfordMarker}>
-                <Ionicons name="location" size={24} color={Theme.colors.primary} />
+                <Ionicons
+                  name="location"
+                  size={24}
+                  color={Theme.colors.primary}
+                />
               </View>
             </Marker>
-            {!selectedDestination && !showDetails && filteredResources.map((resource) => (
-              <Marker
-                key={resource.id}
-                coordinate={{
-                  latitude: resource.latitude,
-                  longitude: resource.longitude,
-                }}
-                title={resource.name}
-                description={resource.address}
-                onPress={() => setSelectedResource(resource.id)}
-              >
-                <View
-                  style={[
-                    styles.marker,
-                    selectedResource === resource.id && styles.markerSelected,
-                  ]}
+            {!selectedDestination &&
+              !showDetails &&
+              filteredResources.map((resource) => (
+                <Marker
+                  key={resource.id}
+                  coordinate={{
+                    latitude: resource.latitude,
+                    longitude: resource.longitude,
+                  }}
+                  title={resource.name}
+                  description={resource.address}
+                  onPress={() => setSelectedResource(resource.id)}
                 >
-                  <Ionicons
-                    name="medical"
-                    size={20}
-                    color={selectedResource === resource.id ? Theme.colors.backgroundLight : Theme.colors.text}
-                  />
-                </View>
-              </Marker>
-            ))}
+                  <View
+                    style={[
+                      styles.marker,
+                      selectedResource === resource.id && styles.markerSelected,
+                    ]}
+                  >
+                    <Ionicons
+                      name="medical"
+                      size={20}
+                      color={
+                        selectedResource === resource.id
+                          ? Theme.colors.backgroundLight
+                          : Theme.colors.text
+                      }
+                    />
+                  </View>
+                </Marker>
+              ))}
             {routeCoordinates.length > 0 && (
               <Polyline
                 coordinates={routeCoordinates}
-                strokeColor={routeStarted ? '#1a237e' : Theme.colors.primary}
+                strokeColor={routeStarted ? "#1a237e" : Theme.colors.primary}
                 strokeWidth={6}
                 lineCap="round"
                 lineJoin="round"
@@ -928,31 +1081,48 @@ export default function ResourcesScreen() {
               </TouchableOpacity>
               <View style={styles.directionsHeaderLeft}>
                 <Text style={styles.directionsTitle} numberOfLines={1}>
-                  {selectedDestination.name.length > 30 ? selectedDestination.name.substring(0, 30) + '...' : selectedDestination.name}
+                  {selectedDestination.name.length > 30
+                    ? selectedDestination.name.substring(0, 30) + "..."
+                    : selectedDestination.name}
                 </Text>
                 <View style={styles.directionsMeta}>
-                  <Text style={styles.directionsMetaText}>{formatDistance(totalDistance)}</Text>
+                  <Text style={styles.directionsMetaText}>
+                    {formatDistance(totalDistance)}
+                  </Text>
                   <Text style={styles.directionsMetaText}>•</Text>
-                  <Text style={styles.directionsMetaText}>{formatDuration(totalDuration)}</Text>
+                  <Text style={styles.directionsMetaText}>
+                    {formatDuration(totalDuration)}
+                  </Text>
                 </View>
               </View>
               <View style={styles.routeControls}>
                 <TouchableOpacity
-                  style={[styles.saveResourceCircularButton, isResourceSaved && styles.unsaveResourceCircularButton]}
+                  style={[
+                    styles.saveResourceCircularButton,
+                    isResourceSaved && styles.unsaveResourceCircularButton,
+                  ]}
                   onPress={() => {
                     if (isResourceSaved) {
                       unsaveResource();
                     } else if (selectedDestination) {
                       saveResource({
                         name: selectedDestination.name,
-                        address: selectedDestination.address || '',
+                        address: selectedDestination.address || "",
                         latitude: selectedDestination.latitude,
                         longitude: selectedDestination.longitude,
                       });
                     }
                   }}
                 >
-                  <Ionicons name={isResourceSaved ? "trash-outline" : "add"} size={18} color={isResourceSaved ? Theme.colors.backgroundLight : Theme.colors.text} />
+                  <Ionicons
+                    name={isResourceSaved ? "trash-outline" : "add"}
+                    size={18}
+                    color={
+                      isResourceSaved
+                        ? Theme.colors.backgroundLight
+                        : Theme.colors.text
+                    }
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.startRouteButton}
@@ -962,7 +1132,10 @@ export default function ResourcesScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <ScrollView style={styles.stepsList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.stepsList}
+              showsVerticalScrollIndicator={false}
+            >
               {directionSteps.map((step, index) => (
                 <View key={index} style={styles.directionStep}>
                   <View style={styles.stepNumber}>
@@ -973,8 +1146,12 @@ export default function ResourcesScreen() {
                       {stripHtmlTags(step.html_instructions)}
                     </Text>
                     <View style={styles.stepMeta}>
-                      <Text style={styles.stepDistance}>{step.distance.text}</Text>
-                      <Text style={styles.stepDuration}>{step.duration.text}</Text>
+                      <Text style={styles.stepDistance}>
+                        {step.distance.text}
+                      </Text>
+                      <Text style={styles.stepDuration}>
+                        {step.duration.text}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -986,24 +1163,40 @@ export default function ResourcesScreen() {
             <View style={styles.tabSelectorContainer}>
               <View style={styles.tabSelector}>
                 <TouchableOpacity
-                  style={[styles.tab, activeTab === 'nearby' && styles.tabActive]}
-                  onPress={() => setActiveTab('nearby')}
+                  style={[
+                    styles.tab,
+                    activeTab === "nearby" && styles.tabActive,
+                  ]}
+                  onPress={() => setActiveTab("nearby")}
                 >
-                  <Text style={[styles.tabText, activeTab === 'nearby' && styles.tabTextActive]}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "nearby" && styles.tabTextActive,
+                    ]}
+                  >
                     Nearby Resources
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.tab, activeTab === 'saved' && styles.tabActive]}
-                  onPress={() => setActiveTab('saved')}
+                  style={[
+                    styles.tab,
+                    activeTab === "saved" && styles.tabActive,
+                  ]}
+                  onPress={() => setActiveTab("saved")}
                 >
-                  <Text style={[styles.tabText, activeTab === 'saved' && styles.tabTextActive]}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "saved" && styles.tabTextActive,
+                    ]}
+                  >
                     Saved Resources
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
-            {activeTab === 'nearby' ? (
+            {activeTab === "nearby" ? (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -1031,12 +1224,22 @@ export default function ResourcesScreen() {
                       onPress={() => handleSavedResourceSelect(resource)}
                     >
                       <View style={styles.savedResourceContent}>
-                        <Ionicons name="pin" size={20} color={Theme.colors.primary} />
+                        <Ionicons
+                          name="pin"
+                          size={20}
+                          color={Theme.colors.primary}
+                        />
                         <View style={styles.savedResourceText}>
-                          <Text style={styles.savedResourceName} numberOfLines={1}>
+                          <Text
+                            style={styles.savedResourceName}
+                            numberOfLines={1}
+                          >
                             {resource.name}
                           </Text>
-                          <Text style={styles.savedResourceAddress} numberOfLines={1}>
+                          <Text
+                            style={styles.savedResourceAddress}
+                            numberOfLines={1}
+                          >
                             {truncateAddress(resource.address, 50)}
                           </Text>
                         </View>
@@ -1047,14 +1250,20 @@ export default function ResourcesScreen() {
                             deleteSavedResource(resource.id);
                           }}
                         >
-                          <Ionicons name="trash-outline" size={20} color={Theme.colors.error} />
+                          <Ionicons
+                            name="trash-outline"
+                            size={20}
+                            color={Theme.colors.error}
+                          />
                         </TouchableOpacity>
                       </View>
                     </TouchableOpacity>
                   ))
                 ) : (
                   <View style={styles.emptySaved}>
-                    <Text style={styles.emptySavedText}>No saved resources</Text>
+                    <Text style={styles.emptySavedText}>
+                      No saved resources
+                    </Text>
                   </View>
                 )}
               </ScrollView>
@@ -1063,21 +1272,24 @@ export default function ResourcesScreen() {
         )}
       </Animated.View>
       {(showSaveSuccessModal || showDeleteSuccessModal) && (
-        <Animated.View 
-          style={[
-            styles.successModalOverlay,
-            { opacity: successModalAnim }
-          ]}
+        <Animated.View
+          style={[styles.successModalOverlay, { opacity: successModalAnim }]}
         >
           <Animated.View
             style={[
               styles.successModal,
-              { transform: [{ scale: successModalScale }] }
+              { transform: [{ scale: successModalScale }] },
             ]}
           >
-            <Ionicons name="checkmark-circle" size={48} color={Theme.colors.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={48}
+              color={Theme.colors.success}
+            />
             <Text style={styles.successModalText}>
-              {showSaveSuccessModal ? 'Saved Successfully' : 'Deleted Successfully'}
+              {showSaveSuccessModal
+                ? "Saved Successfully"
+                : "Deleted Successfully"}
             </Text>
           </Animated.View>
         </Animated.View>
@@ -1086,7 +1298,9 @@ export default function ResourcesScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>End Route?</Text>
-            <Text style={styles.modalMessage}>Are you sure you want to end the current route?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to end the current route?
+            </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
@@ -1099,6 +1313,77 @@ export default function ResourcesScreen() {
                 onPress={handleConfirmEndRoute}
               >
                 <Text style={styles.modalConfirmText}>End Route</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+      {showTipsModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.tipsModalTitle}>Before You Start</Text>
+            <Text style={styles.tipsModalSubtitle}>
+              Remember to do these things before embarking on your journey:
+            </Text>
+
+            <ScrollView style={styles.checklistScroll}>
+              {tipsChecklist.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.checklistItem}
+                  onPress={() => {
+                    setTipsChecklist(
+                      tipsChecklist.map((i) =>
+                        i.id === item.id ? { ...i, completed: !i.completed } : i
+                      )
+                    );
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.checklistCheckbox,
+                      item.completed && styles.checklistCheckboxCompleted,
+                    ]}
+                  >
+                    {item.completed && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={Theme.colors.backgroundLight}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.checklistText,
+                      item.completed && styles.checklistTextCompleted,
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => {
+                  resetTipsChecklist();
+                  setShowTipsModal(false);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalConfirmButton,
+                  { backgroundColor: Theme.colors.primary },
+                ]}
+                onPress={handleStartRouteAfterTips}
+              >
+                <Text style={styles.modalConfirmText}>Start Route</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1118,16 +1403,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Theme.spacing.lg,
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.sm,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   headerLogo: {
@@ -1138,11 +1423,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     paddingHorizontal: Theme.spacing.md,
@@ -1163,7 +1448,7 @@ const styles = StyleSheet.create({
     paddingVertical: Theme.spacing.sm,
   },
   autocompleteContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 120,
     left: Theme.spacing.lg,
     right: Theme.spacing.lg,
@@ -1177,8 +1462,8 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   autocompleteItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.borderLight,
@@ -1204,8 +1489,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 3,
     borderColor: Theme.colors.backgroundLight,
     ...Theme.shadows.md,
@@ -1215,8 +1500,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: Theme.colors.backgroundLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 3,
     borderColor: Theme.colors.error,
     ...Theme.shadows.md,
@@ -1233,8 +1518,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: Theme.colors.backgroundLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
     borderColor: Theme.colors.primary,
     ...Theme.shadows.md,
@@ -1257,7 +1542,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   tabSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     padding: 3,
@@ -1267,8 +1552,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   tabActive: {
     backgroundColor: Theme.colors.primary,
@@ -1295,7 +1580,7 @@ const styles = StyleSheet.create({
     paddingBottom: Theme.spacing.md,
   },
   savedResourceCard: {
-    width: '100%',
+    width: "100%",
     marginBottom: Theme.spacing.sm,
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
@@ -1303,8 +1588,8 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   savedResourceContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   savedResourceText: {
@@ -1323,7 +1608,7 @@ const styles = StyleSheet.create({
   },
   emptySaved: {
     padding: Theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptySavedText: {
     fontSize: 14,
@@ -1340,9 +1625,9 @@ const styles = StyleSheet.create({
     ...Theme.shadows.lg,
   },
   detailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Theme.spacing.lg,
     paddingBottom: Theme.spacing.md,
     borderBottomWidth: 1,
@@ -1356,7 +1641,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   detailsContent: {
     paddingHorizontal: Theme.spacing.lg,
@@ -1364,8 +1649,8 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.25,
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: Theme.spacing.md,
     gap: Theme.spacing.sm,
   },
@@ -1377,8 +1662,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   eligibilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: Theme.spacing.sm,
     gap: Theme.spacing.sm,
   },
@@ -1388,21 +1673,21 @@ const styles = StyleSheet.create({
     color: Theme.colors.success,
   },
   detailsButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
     paddingHorizontal: Theme.spacing.lg,
     paddingTop: Theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.borderLight,
-    alignItems: 'center',
+    alignItems: "center",
   },
   standardButton: {
     flex: 1,
     paddingVertical: Theme.spacing.sm,
     paddingHorizontal: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minWidth: 100,
     minHeight: 44,
     backgroundColor: Theme.colors.error,
@@ -1422,9 +1707,9 @@ const styles = StyleSheet.create({
     ...Theme.shadows.lg,
   },
   directionsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Theme.spacing.lg,
     paddingBottom: Theme.spacing.md,
     borderBottomWidth: 1,
@@ -1434,8 +1719,8 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   directionsHeaderLeft: {
     flex: 1,
@@ -1444,12 +1729,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: Theme.spacing.xs,
   },
   directionsMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   directionsMetaText: {
@@ -1458,9 +1743,9 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   routeControls: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: Theme.colors.error,
@@ -1475,12 +1760,67 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
   },
+
+  checklistScroll: {
+    maxHeight: 300,
+    marginBottom: Theme.spacing.sm,
+  },
+  tipsModalTitle: {
+    fontSize: 24,
+    fontFamily: Theme.fonts.bold,
+    color: Theme.colors.text,
+    marginBottom: Theme.spacing.sm,
+    textAlign: "center",
+    fontWeight: "700",
+  },
+  tipsModalSubtitle: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+    marginBottom: Theme.spacing.sm,
+    // textAlign: "center",
+    lineHeight: 20,
+  },
+  checklistItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.sm,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.borderRadius.md,
+    marginBottom: Theme.spacing.xs,
+  },
+  checklistCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Theme.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Theme.spacing.sm,
+  },
+  checklistCheckboxCompleted: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  checklistText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.text,
+    lineHeight: 20,
+  },
+  checklistTextCompleted: {
+    textDecorationLine: "line-through",
+    color: Theme.colors.textSecondary,
+  },
   startRouteButton: {
     backgroundColor: Theme.colors.primary,
     paddingVertical: Theme.spacing.sm,
     paddingHorizontal: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    minWidth: 100,
+    minWidth: 50, //100,
   },
   startRouteText: {
     fontSize: 14,
@@ -1513,8 +1853,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: Theme.colors.backgroundLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: Theme.colors.border,
     ...Theme.shadows.md,
@@ -1527,21 +1867,21 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.xs,
   },
   successModalOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10000,
   },
   successModal: {
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Theme.spacing.md,
     ...Theme.shadows.lg,
   },
@@ -1556,17 +1896,17 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.md,
   },
   directionStep: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: Theme.spacing.md,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   stepNumber: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: Theme.spacing.md,
     marginTop: 2,
   },
@@ -1586,7 +1926,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   stepMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
     marginTop: Theme.spacing.xs,
   },
@@ -1601,21 +1941,21 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   modalOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10000,
   },
   modalContainer: {
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
-    width: '85%',
+    width: "85%",
     maxWidth: 400,
     ...Theme.shadows.lg,
   },
@@ -1624,24 +1964,24 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalMessage: {
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.xl,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
   },
   modalButton: {
     flex: 1,
     paddingVertical: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalCancelButton: {
     backgroundColor: Theme.colors.backgroundLight,
