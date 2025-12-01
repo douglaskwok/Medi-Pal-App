@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 
@@ -203,7 +204,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
               },
             ]}
           >
-            <View style={[{ paddingRight: 4 }]}>
+            <View style={[{ paddingRight: Theme.spacing.sm }]}>
               <MaterialIcons name="verified" size={18} color="blue" />
             </View>
             <Text style={styles.category}>
@@ -226,11 +227,21 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
         <Text style={styles.title}>
           Free Gym Membership at Palo Alto Family YMCA
         </Text>
+        <View style={[styles.eligibilityRow]}>
+          <Ionicons
+            name="checkmark-circle"
+            size={20}
+            color={Theme.colors.success}
+          />
+          <Text style={styles.eligibilityText}>
+            You are eligible for this service
+          </Text>
+        </View>
 
         <View style={styles.detailRow}>
           <Ionicons
             name="location"
-            size={14}
+            size={20}
             color={Theme.colors.textSecondary}
           />
           <Text style={styles.detailText}>
@@ -249,15 +260,17 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
         <View style={styles.buttons}>
           {/* <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
+            style={[styles.button, styles.iconButton]}
             onPress={handleSaveResource}
           >
-            <Text style={styles.saveButtonText}>Learn More</Text>
-          </TouchableOpacity> */}
+            <Ionicons name="information-circle" size={24} color="black" /> */}
+          {/* <Text style={styles.saveButtonText}>Learn More</Text> */}
+          {/* </TouchableOpacity> */}
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
             onPress={handleSaveResource}
           >
+            {/* <FontAwesome name="bookmark-o" size={24} color="black" /> */}
             <Text style={styles.saveButtonText}>Save Resource</Text>
           </TouchableOpacity>
 
@@ -265,7 +278,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             style={[styles.button, styles.takeMeButton]}
             onPress={handleTakeMeThere}
           >
-            <Text style={styles.takeMeButtonText}>Take me there</Text>
+            <Text style={styles.takeMeButtonText}>Take Me There!</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -309,7 +322,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
@@ -328,7 +341,7 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: Theme.spacing.xs,
+    gap: Theme.spacing.sm,
     marginBottom: Theme.spacing.sm,
   },
   detailText: {
@@ -339,6 +352,17 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlignVertical: "center",
     alignSelf: "center",
+  },
+  eligibilityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Theme.spacing.xs,
+    gap: Theme.spacing.sm,
+  },
+  eligibilityText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.success,
   },
   buttons: {
     flexDirection: "row",
@@ -363,10 +387,17 @@ const styles = StyleSheet.create({
   },
   takeMeButton: {
     backgroundColor: Theme.colors.primary,
+    // flex: 3,
   },
   takeMeButtonText: {
     fontSize: 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
+  },
+  iconButton: {
+    backgroundColor: Theme.colors.background,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    // flex: 1,
   },
 });
