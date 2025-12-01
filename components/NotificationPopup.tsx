@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,14 +7,16 @@ import {
   Animated,
   PanResponder,
   Dimensions,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Theme } from '../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { supabase } from '../lib/supabase';
+  Image,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Theme } from "../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
+import { supabase } from "../lib/supabase";
 
-const { width } = Dimensions.get('window');
+const { height } = Dimensions.get("window");
 
 interface NotificationPopupProps {
   visible: boolean;
@@ -33,32 +35,30 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(-200)).current;
+
+  /** ANIMATION VALUES **/
+  const translateY = useRef(new Animated.Value(200)).current; // start below
   const opacity = useRef(new Animated.Value(0)).current;
   const pan = useRef(new Animated.ValueXY()).current;
+
   const autoDismissTimer = useRef<NodeJS.Timeout | null>(null);
 
+  /** SWIPE DOWN TO DISMISS **/
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 5;
-      },
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
       onPanResponderGrant: () => {
-        pan.setOffset({
-          x: pan.x._value,
-          y: pan.y._value,
-        });
+        pan.setOffset({ x: 0, y: pan.y._value });
       },
       onPanResponderMove: Animated.event([null, { dy: pan.y }], {
         useNativeDriver: false,
       }),
-      onPanResponderRelease: (_, gestureState) => {
+      onPanResponderRelease: (_, g) => {
         pan.flattenOffset();
-        if (gestureState.dy < -50) {
-          // Swipe up to dismiss
+        if (g.dy > 50) {
+          // swipe down
           dismissNotification();
         } else {
-          // Return to original position
           Animated.spring(pan, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: true,
@@ -68,57 +68,57 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
     })
   ).current;
 
+  /** EFFECT: SHOW / HIDE **/
   useEffect(() => {
     if (visible) {
       showNotification();
-      // Auto-dismiss after 6 seconds
       autoDismissTimer.current = setTimeout(() => {
         dismissNotification();
-      }, 6000);
+      }, 30000); // changed to longer
     } else {
-      // Reset animation when hidden
-      translateY.setValue(-200);
+      translateY.setValue(200);
       opacity.setValue(0);
       pan.setValue({ x: 0, y: 0 });
     }
 
     return () => {
-      if (autoDismissTimer.current) {
-        clearTimeout(autoDismissTimer.current);
-      }
+      if (autoDismissTimer.current) clearTimeout(autoDismissTimer.current);
     };
   }, [visible]);
 
+  /** SHOW ANIMATION **/
   const showNotification = () => {
     Animated.parallel([
       Animated.spring(translateY, {
         toValue: 0,
-        useNativeDriver: true,
         tension: 50,
         friction: 8,
+        useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
+  /** DISMISS ANIMATION **/
   const dismissNotification = () => {
     if (autoDismissTimer.current) {
       clearTimeout(autoDismissTimer.current);
       autoDismissTimer.current = null;
     }
+
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -200,
-        duration: 300,
+        toValue: 200,
+        duration: 280,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -127,51 +127,52 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
     });
   };
 
+  /** SAVE HANDLER **/
   const handleSaveResource = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const yMCAResource = {
-        name: 'Palo Alto Family YMCA',
-        address: '3412 Ross Road, Palo Alto, CA 94303',
+      const r = {
+        name: "Palo Alto Family YMCA",
+        address: "3412 Ross Road, Palo Alto, CA 94303",
         latitude: 37.4419,
-        longitude: -122.1430,
-        place_id: 'ymca_palo_alto',
+        longitude: -122.143,
+        place_id: "ymca_palo_alto",
       };
 
-      const { error } = await supabase.from('saved_resources').insert({
+      const { error } = await supabase.from("saved_resources").insert({
         user_id: user.id,
-        name: yMCAResource.name,
-        address: yMCAResource.address,
-        latitude: yMCAResource.latitude,
-        longitude: yMCAResource.longitude,
-        place_id: yMCAResource.place_id,
+        ...r,
       });
 
       if (error) throw error;
-      if (onSaveResource) onSaveResource();
-      if (onSaveSuccess) onSaveSuccess();
+
+      onSaveResource?.();
+      onSaveSuccess?.();
       dismissNotification();
-    } catch (error) {
-      console.error('Error saving resource:', error);
+    } catch (err) {
+      console.error("Error saving resource:", err);
     }
   };
 
+  /** NAVIGATE HANDLER **/
   const handleTakeMeThere = () => {
     dismissNotification();
     setTimeout(() => {
       router.push({
-        pathname: '/(tabs)/resources',
+        pathname: "/(tabs)/resources",
         params: {
-          name: 'Palo Alto Family YMCA',
-          address: '3412 Ross Road, Palo Alto, CA 94303',
-          latitude: '37.4419',
-          longitude: '-122.1430',
+          name: "Palo Alto Family YMCA",
+          address: "3412 Ross Road, Palo Alto, CA 94303",
+          latitude: "37.4419",
+          longitude: "-122.1430",
         },
       });
-    }, 350);
-    if (onTakeMeThere) onTakeMeThere();
+    }, 320);
+    onTakeMeThere?.();
   };
 
   if (!visible) return null;
@@ -181,35 +182,85 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       style={[
         styles.container,
         {
-          top: insets.top + Theme.spacing.sm,
+          bottom: height * 0.25, // ★ popup in bottom half
+          opacity,
           transform: [
             { translateY: Animated.add(translateY, pan.y) },
             { translateX: pan.x },
           ],
-          opacity,
         },
       ]}
       {...panResponder.panHandlers}
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.category}>Nearby Resource</Text>
-          <TouchableOpacity onPress={dismissNotification} style={styles.closeButton}>
-            <Ionicons name="close" size={20} color={Theme.colors.textSecondary} />
+          <View
+            style={[
+              {
+                flexDirection: "row",
+                justifyContent: "space-evenly",
+                alignContent: "center",
+              },
+            ]}
+          >
+            <View style={[{ paddingRight: 4 }]}>
+              <MaterialIcons name="verified" size={18} color="blue" />
+            </View>
+            <Text style={styles.category}>
+              Medi-Pal Verified: Nearby Resource
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={dismissNotification}
+            style={styles.closeButton}
+          >
+            <Ionicons
+              name="close"
+              size={20}
+              color={Theme.colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
-        <Text style={styles.title}>Free Gym Membership at Palo Alto Family YMCA</Text>
+
+        <Text style={styles.title}>
+          Free Gym Membership at Palo Alto Family YMCA
+        </Text>
+
         <View style={styles.detailRow}>
-          <Ionicons name="location" size={14} color={Theme.colors.textSecondary} />
-          <Text style={styles.detailText}>3412 Ross Road, Palo Alto, CA 94303</Text>
+          <Ionicons
+            name="location"
+            size={14}
+            color={Theme.colors.textSecondary}
+          />
+          <Text style={styles.detailText}>
+            3412 Ross Road, Palo Alto, CA 94303
+          </Text>
         </View>
+        <View style={styles.imageContainer}>
+          <Image
+            source={require("../assets/gym.png")}
+            style={styles.image}
+            // height={"100%"}
+            // width={100}
+            resizeMode="contain"
+          />
+        </View>
+
         <View style={styles.buttons}>
+          {/* <TouchableOpacity
+            style={[styles.button, styles.saveButton]}
+            onPress={handleSaveResource}
+          >
+            <Text style={styles.saveButtonText}>Learn More</Text>
+          </TouchableOpacity> */}
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
             onPress={handleSaveResource}
           >
             <Text style={styles.saveButtonText}>Save Resource</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.button, styles.takeMeButton]}
             onPress={handleTakeMeThere}
@@ -222,13 +273,14 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   );
 };
 
+/** STYLES **/
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    zIndex: 1000,
     paddingHorizontal: Theme.spacing.md,
+    zIndex: 999,
   },
   content: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -237,17 +289,21 @@ const styles = StyleSheet.create({
     ...Theme.shadows.lg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Theme.spacing.xs,
   },
   category: {
     fontSize: 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    textAlignVertical: "center",
+    alignSelf: "center",
+    // borderColor: "red",
+    // borderWidth: 2,
   },
   closeButton: {
     padding: 4,
@@ -257,12 +313,23 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
+    fontWeight: "700",
+  },
+  imageContainer: {
+    width: "100%",
+    height: 200,
+    position: "relative",
+    marginBottom: Theme.spacing.md,
+  },
+  image: {
+    width: "100%",
+    height: "100%",
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Theme.spacing.md,
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: Theme.spacing.xs,
+    marginBottom: Theme.spacing.sm,
   },
   detailText: {
     flex: 1,
@@ -270,18 +337,19 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     lineHeight: 18,
+    textAlignVertical: "center",
+    alignSelf: "center",
   },
   buttons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
   },
   button: {
     flex: 1,
     paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   saveButton: {
     backgroundColor: Theme.colors.background,
@@ -302,4 +370,3 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
 });
-
