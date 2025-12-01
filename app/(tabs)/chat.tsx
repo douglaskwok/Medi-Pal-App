@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,27 +11,27 @@ import {
   Platform,
   Animated,
   Image,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Theme } from '../../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { CustomTabBar } from './_layout';
-import { supabase } from '../../lib/supabase';
-import OpenAI from 'openai';
-import { format } from 'date-fns';
-import { Dimensions } from 'react-native';
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Theme } from "../../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { CustomTabBar } from "./_layout";
+import { supabase } from "../../lib/supabase";
+import OpenAI from "openai";
+import { format } from "date-fns";
+import { Dimensions } from "react-native";
 
 interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   timestamp: Date;
 }
 
 interface ChatSession {
   id: string;
-  session_type: 'text' | 'voice';
+  session_type: "text" | "voice";
   created_at: string;
   updated_at: string;
   title?: string;
@@ -39,21 +39,21 @@ interface ChatSession {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || '',
+  apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || "",
   dangerouslyAllowBrowser: true,
 });
 
-type ChatView = 'session-select' | 'text-chat';
+type ChatView = "session-select" | "text-chat";
 
 export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
-  const [currentView, setCurrentView] = useState<ChatView>('session-select');
+  const [currentView, setCurrentView] = useState<ChatView>("session-select");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -65,12 +65,10 @@ export default function ChatScreen() {
       useNativeDriver: true,
     }).start();
     loadSessions();
-    
   }, []);
 
-
   useEffect(() => {
-    if (currentSessionId && currentView !== 'session-select') {
+    if (currentSessionId && currentView !== "session-select") {
       loadMessages(currentSessionId);
     }
   }, [currentSessionId, currentView]);
@@ -81,31 +79,33 @@ export default function ChatScreen() {
 
   const loadSessions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .from("chat_sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
       if (data) {
         setSessions(data);
       }
     } catch (error) {
-      console.error('Error loading sessions:', error);
+      console.error("Error loading sessions:", error);
     }
   };
 
   const loadMessages = async (sessionId: string) => {
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
+        .from("chat_messages")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       if (data) {
@@ -113,27 +113,31 @@ export default function ChatScreen() {
           data.map((msg) => ({
             id: msg.id,
             content: msg.content,
-            role: msg.role as 'user' | 'assistant' | 'system',
+            role: msg.role as "user" | "assistant" | "system",
             timestamp: new Date(msg.created_at),
           }))
         );
       }
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error("Error loading messages:", error);
     }
   };
 
-  const createSession = async (type: 'text' | 'voice'): Promise<string | null> => {
+  const createSession = async (
+    type: "text" | "voice"
+  ): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from('chat_sessions')
+        .from("chat_sessions")
         .insert({
           user_id: user.id,
           session_type: type,
-          title: type === 'text' ? 'Text Chat' : 'Voice Chat',
+          title: type === "text" ? "Text Chat" : "Voice Chat",
         })
         .select()
         .single();
@@ -141,17 +145,23 @@ export default function ChatScreen() {
       if (error) throw error;
       return data?.id || null;
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error("Error creating session:", error);
       return null;
     }
   };
 
-  const saveMessage = async (sessionId: string, content: string, role: 'user' | 'assistant' | 'system') => {
+  const saveMessage = async (
+    sessionId: string,
+    content: string,
+    role: "user" | "assistant" | "system"
+  ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase.from('chat_messages').insert({
+      const { error } = await supabase.from("chat_messages").insert({
         session_id: sessionId,
         user_id: user.id,
         content,
@@ -162,22 +172,22 @@ export default function ChatScreen() {
 
       // Update session with last message preview
       await supabase
-        .from('chat_sessions')
+        .from("chat_sessions")
         .update({
           last_message_preview: content.substring(0, 50),
           updated_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
+        .eq("id", sessionId);
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error("Error saving message:", error);
     }
   };
 
   const handleStartTextSession = async () => {
-    const sessionId = await createSession('text');
+    const sessionId = await createSession("text");
     if (sessionId) {
       setCurrentSessionId(sessionId);
-      setCurrentView('text-chat');
+      setCurrentView("text-chat");
       setMessages([]);
       await loadSessions();
     }
@@ -187,9 +197,12 @@ export default function ChatScreen() {
     // Voice mode not implemented
   };
 
-  const handleResumeSession = async (sessionId: string, type: 'text' | 'voice') => {
+  const handleResumeSession = async (
+    sessionId: string,
+    type: "text" | "voice"
+  ) => {
     setCurrentSessionId(sessionId);
-    setCurrentView('text-chat');
+    setCurrentView("text-chat");
     await loadMessages(sessionId);
   };
 
@@ -201,31 +214,32 @@ export default function ChatScreen() {
     const userMessage: Message = {
       id: Date.now().toString(),
       content: messageText,
-      role: 'user',
+      role: "user",
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    await saveMessage(currentSessionId, messageText, 'user');
-    setInputText('');
+    await saveMessage(currentSessionId, messageText, "user");
+    setInputText("");
     setIsLoading(true);
 
     try {
       const conversationHistory = messages.map((msg) => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+        role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       }));
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: "gpt-3.5-turbo",
         messages: [
           {
-            role: 'system',
-            content: 'You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.',
+            role: "system",
+            content:
+              "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.",
           },
           ...conversationHistory,
           {
-            role: 'user',
+            role: "user",
             content: messageText,
           },
         ],
@@ -233,23 +247,26 @@ export default function ChatScreen() {
         temperature: 0.7,
       });
 
-      const aiResponse = completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response. Please try again.';
+      const aiResponse =
+        completion.choices[0]?.message?.content ||
+        "I apologize, but I could not generate a response. Please try again.";
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: aiResponse,
-        role: 'assistant',
+        role: "assistant",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-      await saveMessage(currentSessionId, aiResponse, 'assistant');
+      await saveMessage(currentSessionId, aiResponse, "assistant");
     } catch (error) {
-      console.error('Error calling OpenAI:', error);
+      console.error("Error calling OpenAI:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'I apologize, but I encountered an error. Please check your internet connection and try again.',
-        role: 'assistant',
+        content:
+          "I apologize, but I encountered an error. Please check your internet connection and try again.",
+        role: "assistant",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -259,7 +276,7 @@ export default function ChatScreen() {
   };
 
   const handleExitSession = () => {
-    setCurrentView('session-select');
+    setCurrentView("session-select");
     setCurrentSessionId(null);
     setMessages([]);
     setIsLoading(false);
@@ -267,7 +284,7 @@ export default function ChatScreen() {
   };
 
   // Session Selection View
-  if (currentView === 'session-select') {
+  if (currentView === "session-select") {
     return (
       <SafeAreaView style={styles.container}>
         <Animated.View
@@ -282,7 +299,7 @@ export default function ChatScreen() {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Image
-                source={require('../../assets/icon.png')}
+                source={require("../../assets/icon.png")}
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
@@ -298,7 +315,11 @@ export default function ChatScreen() {
                 onPress={handleStartTextSession}
                 activeOpacity={0.7}
               >
-                <Ionicons name="chatbubbles" size={48} color={Theme.colors.primary} />
+                <Ionicons
+                  name="chatbubbles"
+                  size={48}
+                  color={Theme.colors.primary}
+                />
                 <Text style={styles.sessionTypeText}>Text</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -314,33 +335,58 @@ export default function ChatScreen() {
             {sessions.length > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Resume Previous Session</Text>
-                <ScrollView style={styles.sessionsList} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.sessionsList}
+                  showsVerticalScrollIndicator={false}
+                >
                   {sessions.map((session) => (
                     <TouchableOpacity
                       key={session.id}
                       style={[
                         styles.sessionCard,
-                        session.session_type === 'voice' && styles.voiceSessionCard,
+                        session.session_type === "voice" &&
+                          styles.voiceSessionCard,
                       ]}
-                      onPress={() => handleResumeSession(session.id, session.session_type)}
+                      onPress={() =>
+                        handleResumeSession(session.id, session.session_type)
+                      }
                       activeOpacity={0.7}
                     >
                       <Ionicons
-                        name={session.session_type === 'voice' ? 'mic' : 'chatbubbles'}
+                        name={
+                          session.session_type === "voice"
+                            ? "mic"
+                            : "chatbubbles"
+                        }
                         size={24}
-                        color={session.session_type === 'voice' ? Theme.colors.primary : Theme.colors.text}
+                        color={
+                          session.session_type === "voice"
+                            ? Theme.colors.primary
+                            : Theme.colors.text
+                        }
                       />
                       <View style={styles.sessionCardContent}>
                         <Text style={styles.sessionCardTitle}>
-                          {session.title || `${session.session_type === 'voice' ? 'Voice' : 'Text'} Chat`}
+                          {session.title ||
+                            `${
+                              session.session_type === "voice"
+                                ? "Voice"
+                                : "Text"
+                            } Chat`}
                         </Text>
                         {session.last_message_preview && (
-                          <Text style={styles.sessionCardPreview} numberOfLines={1}>
+                          <Text
+                            style={styles.sessionCardPreview}
+                            numberOfLines={1}
+                          >
                             {session.last_message_preview}
                           </Text>
                         )}
                         <Text style={styles.sessionCardDate}>
-                          {format(new Date(session.updated_at), 'MMM d, yyyy h:mm a')}
+                          {format(
+                            new Date(session.updated_at),
+                            "MMM d, yyyy h:mm a"
+                          )}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -356,13 +402,13 @@ export default function ChatScreen() {
   }
 
   // Text Chat View
-  if (currentView === 'text-chat') {
+  if (currentView === "text-chat") {
     return (
       <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           <Animated.View
             style={[
@@ -374,19 +420,30 @@ export default function ChatScreen() {
             ]}
           >
             <View style={styles.header}>
-              <TouchableOpacity onPress={handleExitSession} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={Theme.colors.text} />
+              <TouchableOpacity
+                onPress={handleExitSession}
+                style={styles.backButton}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={Theme.colors.text}
+                />
               </TouchableOpacity>
               <View style={styles.headerLeft}>
                 <Image
-                  source={require('../../assets/icon.png')}
+                  source={require("../../assets/icon.png")}
                   style={styles.headerLogo}
                   resizeMode="contain"
                 />
                 <View>
                   <Text style={styles.title}>AI Assistant</Text>
                   <View style={styles.modeIndicator}>
-                    <Ionicons name="chatbubbles" size={14} color={Theme.colors.primary} />
+                    <Ionicons
+                      name="chatbubbles"
+                      size={14}
+                      color={Theme.colors.primary}
+                    />
                     <Text style={styles.modeText}>Text</Text>
                   </View>
                 </View>
@@ -402,7 +459,8 @@ export default function ChatScreen() {
               {messages.length === 0 && (
                 <View style={styles.welcomeContainer}>
                   <Text style={styles.welcomeText}>
-                    Hello! I'm your Medi-Pal AI assistant. How can I help you with your healthcare needs today?
+                    Hello! I'm your Medi-Pal AI assistant. How can I help you
+                    with your healthcare needs today?
                   </Text>
                 </View>
               )}
@@ -411,19 +469,25 @@ export default function ChatScreen() {
                   key={message.id}
                   style={[
                     styles.messageContainer,
-                    message.role === 'user' ? styles.userMessage : styles.aiMessage,
+                    message.role === "user"
+                      ? styles.userMessage
+                      : styles.aiMessage,
                   ]}
                 >
                   <View
                     style={[
                       styles.messageBubble,
-                      message.role === 'user' ? styles.userBubble : styles.aiBubble,
+                      message.role === "user"
+                        ? styles.userBubble
+                        : styles.aiBubble,
                     ]}
                   >
                     <Text
                       style={[
                         styles.messageText,
-                        message.role === 'user' ? styles.userText : styles.aiText,
+                        message.role === "user"
+                          ? styles.userText
+                          : styles.aiText,
                       ]}
                     >
                       {message.content}
@@ -477,7 +541,6 @@ export default function ChatScreen() {
       </SafeAreaView>
     );
   }
-
 }
 
 const styles = StyleSheet.create({
@@ -492,9 +555,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Theme.spacing.md,
     paddingHorizontal: Theme.spacing.md,
   },
@@ -503,8 +566,8 @@ const styles = StyleSheet.create({
     marginRight: Theme.spacing.sm,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
     flex: 1,
   },
@@ -516,11 +579,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   modeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginTop: 2,
   },
@@ -541,7 +604,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   newSessionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
     marginBottom: Theme.spacing.xl,
   },
@@ -550,8 +613,8 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: Theme.spacing.sm,
     ...Theme.shadows.md,
   },
@@ -564,12 +627,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sessionCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.md,
     marginBottom: Theme.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Theme.spacing.md,
     ...Theme.shadows.sm,
   },
@@ -616,20 +679,20 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   messageContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: Theme.spacing.sm,
   },
   userMessage: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   aiMessage: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     padding: Theme.spacing.md,
     borderRadius: Theme.borderRadius.lg,
     ...Theme.shadows.sm,
@@ -655,7 +718,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   typingIndicator: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 4,
   },
   dot: {
@@ -665,12 +728,12 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.textSecondary,
   },
   inputContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingHorizontal: Theme.spacing.md,
     paddingTop: Theme.spacing.sm,
     paddingBottom: Theme.spacing.sm,
@@ -683,7 +746,9 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
+    // paddingVertical: Theme.spacing.sm,
+    paddingTop: (Theme.spacing.sm + Theme.spacing.md) / 2,
+    paddingBottom: (Theme.spacing.sm + Theme.spacing.md) / 2,
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
@@ -695,8 +760,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: Theme.borderRadius.md,
     backgroundColor: Theme.colors.primaryDark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     ...Theme.shadows.sm,
   },
   sendButtonDisabled: {
