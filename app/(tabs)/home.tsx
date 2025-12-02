@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,28 +9,36 @@ import {
   SafeAreaView,
   Image,
   ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Theme } from '../../constants/Theme';
-import { ResourceCard } from '../../components/ResourceCard';
-import { CustomModal } from '../../components/Modal';
-import { dummyChecklistItems, dummyResources } from '../../constants/DummyData';
-import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks } from 'date-fns';
-import { CustomTabBar } from './_layout';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Theme } from "../../constants/Theme";
+import { ResourceCard } from "../../components/ResourceCard";
+import { CustomModal } from "../../components/Modal";
+import { dummyChecklistItems, dummyResources } from "../../constants/DummyData";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../lib/supabase";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameDay,
+  addWeeks,
+  subWeeks,
+} from "date-fns";
+import { CustomTabBar } from "./_layout";
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [checklistItems, setChecklistItems] = useState(dummyChecklistItems);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [userName, setUserName] = useState('User');
+  const [userName, setUserName] = useState("User");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -44,12 +52,14 @@ export default function HomeScreen() {
 
   const loadUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user?.user_metadata?.full_name) {
-        setUserName(user.user_metadata.full_name.split(' ')[0]);
+        setUserName(user.user_metadata.full_name.split(" ")[0]);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error("Error loading user data:", error);
     }
   };
 
@@ -60,7 +70,7 @@ export default function HomeScreen() {
   const handleSearch = () => {
     if (searchQuery.trim()) {
       router.push({
-        pathname: '/(tabs)/chat',
+        pathname: "/(tabs)/chat",
         params: { initialQuery: searchQuery },
       });
     }
@@ -73,7 +83,9 @@ export default function HomeScreen() {
       setModalVisible(true);
     } else if (item && item.completed) {
       setChecklistItems(
-        checklistItems.map((i) => (i.id === id ? { ...i, completed: false } : i))
+        checklistItems.map((i) =>
+          i.id === id ? { ...i, completed: false } : i
+        )
       );
     }
   };
@@ -112,7 +124,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require("../../assets/icon.png")}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -141,8 +153,12 @@ export default function HomeScreen() {
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={20} color={Theme.colors.text} />
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={Theme.colors.text}
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -151,17 +167,15 @@ export default function HomeScreen() {
               onPress={handleSearch}
               disabled={!searchQuery.trim()}
             >
-              <View style={[
-                styles.upArrowContainer, 
-                !searchQuery.trim() 
-                  ? styles.upArrowDisabled 
-                  : styles.upArrowActive
-              ]}>
-                <Ionicons
-                  name="arrow-up"
-                  size={18}
-                  color="#FFFFFF"
-                />
+              <View
+                style={[
+                  styles.upArrowContainer,
+                  !searchQuery.trim()
+                    ? styles.upArrowDisabled
+                    : styles.upArrowActive,
+                ]}
+              >
+                <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
           </View>
@@ -173,15 +187,23 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
             >
-              <Ionicons name="chevron-back" size={24} color={Theme.colors.text} />
+              <Ionicons
+                name="chevron-back"
+                size={24}
+                color={Theme.colors.text}
+              />
             </TouchableOpacity>
             <Text style={styles.calendarMonth}>
-              {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
+              {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
             </Text>
             <TouchableOpacity
               onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))}
             >
-              <Ionicons name="chevron-forward" size={24} color={Theme.colors.text} />
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={Theme.colors.text}
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.calendarGrid}>
@@ -200,7 +222,7 @@ export default function HomeScreen() {
                   onPress={() => setSelectedDate(day)}
                 >
                   <Text style={styles.calendarDayName}>
-                    {format(day, 'EEE')}
+                    {format(day, "EEE")}
                   </Text>
                   <Text
                     style={[
@@ -208,7 +230,7 @@ export default function HomeScreen() {
                       isSelected && styles.calendarDayTextSelected,
                     ]}
                   >
-                    {format(day, 'd')}
+                    {format(day, "d")}
                   </Text>
                   {dayItems.length > 0 && (
                     <View
@@ -237,7 +259,11 @@ export default function HomeScreen() {
                     ]}
                   >
                     {item.completed && (
-                      <Ionicons name="checkmark" size={12} color={Theme.colors.backgroundLight} />
+                      <Ionicons
+                        name="checkmark"
+                        size={12}
+                        color={Theme.colors.backgroundLight}
+                      />
                     )}
                   </View>
                   <Text
@@ -265,16 +291,18 @@ export default function HomeScreen() {
               <ResourceCard
                 key={resource.id}
                 {...resource}
-                onPress={() => router.push({
-                  pathname: '/(tabs)/resources',
-                  params: { resourceId: resource.id },
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/resources",
+                    params: { resourceId: resource.id },
+                  })
+                }
               />
             ))}
           </ScrollView>
           <TouchableOpacity
             style={styles.discoverMoreButton}
-            onPress={() => router.push('/(tabs)/resources')}
+            onPress={() => router.push("/(tabs)/resources")}
           >
             <Text style={styles.discoverMore}>Discover More</Text>
           </TouchableOpacity>
@@ -290,7 +318,9 @@ export default function HomeScreen() {
         title="Mark as Done?"
         message={
           selectedItemId
-            ? `Are you sure you want to mark "${checklistItems.find((i) => i.id === selectedItemId)?.title}" as completed?`
+            ? `Are you sure you want to mark "${
+                checklistItems.find((i) => i.id === selectedItemId)?.title
+              }" as completed?`
             : undefined
         }
       />
@@ -309,14 +339,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Theme.spacing.md,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   headerLogo: {
@@ -327,7 +357,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   headerSubtitle: {
     fontSize: 14,
@@ -338,14 +368,14 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   searchBar: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: 9999,
     paddingHorizontal: Theme.spacing.md,
@@ -368,16 +398,16 @@ const styles = StyleSheet.create({
   upArrowButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   upArrowContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: Theme.colors.primaryDark,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Theme.shadows.sm,
   },
   upArrowDisabled: {
@@ -400,12 +430,12 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.md,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Theme.spacing.md,
   },
   calendarMonth: {
@@ -414,17 +444,17 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   calendarGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: Theme.spacing.md,
     gap: Theme.spacing.xs,
   },
   calendarDay: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: Theme.borderRadius.md,
     paddingVertical: Theme.spacing.sm,
-    position: 'relative',
+    position: "relative",
     minHeight: 70,
   },
   calendarDaySelected: {
@@ -451,7 +481,7 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
   },
   calendarDot: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 4,
     width: 4,
     height: 4,
@@ -465,8 +495,8 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.sm,
   },
   eventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: Theme.spacing.xs,
     gap: Theme.spacing.sm,
   },
@@ -476,8 +506,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 2,
     borderColor: Theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   eventCheckboxCompleted: {
     backgroundColor: Theme.colors.primary,
@@ -490,7 +520,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   eventTextCompleted: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     color: Theme.colors.textSecondary,
   },
   resourcesSection: {
@@ -499,10 +529,10 @@ const styles = StyleSheet.create({
   discoverMore: {
     fontSize: 14,
     fontFamily: Theme.fonts.medium,
-    color: Theme.colors.primary,
+    color: Theme.colors.primaryDark,
   },
   discoverMoreButton: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: Theme.spacing.sm,
     marginRight: Theme.spacing.md,
   },
@@ -510,4 +540,3 @@ const styles = StyleSheet.create({
     paddingRight: Theme.spacing.md,
   },
 });
-

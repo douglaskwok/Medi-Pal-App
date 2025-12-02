@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   takeMeButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
     // flex: 3,
   },
   takeMeButtonText: {
