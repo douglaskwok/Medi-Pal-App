@@ -43,11 +43,11 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState("User");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
-  // remove later
-  const [notificationVisible, setNotificationVisible] = useState(true);
-  const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(true);
-  const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
-  const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
+  // // remove later
+  // const [notificationVisible, setNotificationVisible] = useState(true);
+  // const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(true);
+  // const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
+  // const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     loadUserData();
@@ -334,7 +334,7 @@ export default function HomeScreen() {
       />
       <CustomTabBar />
 
-      <NotificationPopup
+      {/* <NotificationPopup
         visible={notificationVisible}
         onDismiss={() => setNotificationVisible(false)}
         onSaveSuccess={() => {
@@ -369,7 +369,7 @@ export default function HomeScreen() {
             });
           }, 2000);
         }}
-      />
+      /> */}
     </SafeAreaView>
   );
 }

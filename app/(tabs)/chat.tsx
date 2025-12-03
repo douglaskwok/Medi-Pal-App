@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
 import OpenAI from "openai";
@@ -58,6 +59,7 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [speaker, setSpeaker] = useState(false);
 
   // remove later:
   const generateDummyMessages = (): Message[] => {
@@ -109,7 +111,7 @@ export default function ChatScreen() {
         content:
           "Yes! They're accepting new Medi-Cal patients. Their number is (213) 555-0123. Would you like me to guide you there?",
         role: "assistant",
-        timestamp: new Date(now.getTime() - 15000 - 43200000), // 15 seconds ago
+        timestamp: new Date(now.getTime() - 15000), // 15 seconds ago
       },
     ];
   };
@@ -437,9 +439,10 @@ export default function ChatScreen() {
                         }
                         size={24}
                         color={
-                          session.session_type === "voice"
-                            ? Theme.colors.primary
-                            : Theme.colors.text
+                          Theme.colors.primary
+                          // session.session_type === "voice"
+                          //   ? Theme.colors.primary
+                          //   : Theme.colors.primary
                         }
                       />
                       <View style={styles.sessionCardContent}>
@@ -521,7 +524,7 @@ export default function ChatScreen() {
                       size={14}
                       color={Theme.colors.primary}
                     />
-                    <Text style={styles.modeText}>Text</Text>
+                    <Text style={styles.modeText}>Text Chat</Text>
                   </View>
                 </View>
               </View>
@@ -697,6 +700,16 @@ export default function ChatScreen() {
                 <View style={styles.statusDot} />
                 <Text style={styles.statusText}>Connected</Text>
               </View>
+              <TouchableOpacity
+                style={[styles.selectAvatarButton]}
+                onPress={() => {}}
+              >
+                <FontAwesome5
+                  name="user-edit"
+                  size={28}
+                  color={Theme.colors.primaryDark}
+                />
+              </TouchableOpacity>
             </View>
 
             {/* Audio Wave Animation */}
@@ -815,14 +828,18 @@ export default function ChatScreen() {
           <View style={styles.controlBar}>
             <TouchableOpacity
               style={[styles.controlButton, styles.secondaryControlButton]}
-              onPress={() => console.log("Speaker pressed")}
+              onPress={() => {
+                setSpeaker(!speaker);
+              }}
             >
               <Ionicons
-                name="volume-high"
+                name={speaker ? "volume-high" : "volume-off"}
                 size={24}
                 color={Theme.colors.text}
               />
-              <Text style={styles.controlButtonText}>Speaker</Text>
+              <Text style={styles.controlButtonText}>
+                {speaker ? "Speaker On" : "Speaker Off"}
+              </Text>
             </TouchableOpacity>
 
             {/* Main Mic Button */}
@@ -865,6 +882,12 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         </Animated.View>
+        {/* <View>
+          <TouchableOpacity
+            style={[styles.selectAvatarButton]}
+            onPress={() => {}}
+          ></TouchableOpacity>
+        </View> */}
         <CustomTabBar />
       </SafeAreaView>
     );
@@ -967,8 +990,8 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   voiceSessionCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: Theme.colors.primary,
+    // borderLeftWidth: 4,
+    // borderLeftColor: Theme.colors.primary,
   },
   sessionCardContent: {
     flex: 1,
@@ -1453,5 +1476,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+  },
+  selectAvatarButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    backgroundColor: Theme.colors.backgroundLight,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    ...Theme.shadows.md,
+    position: "absolute",
+    top: 16,
+    right: 16,
   },
 });
