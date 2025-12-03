@@ -28,6 +28,8 @@ import {
   subWeeks,
 } from "date-fns";
 import { CustomTabBar } from "./_layout";
+// remove later
+import { NotificationPopup } from "../../components/NotificationPopup";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,6 +42,12 @@ export default function HomeScreen() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [userName, setUserName] = useState("User");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  // remove later
+  const [notificationVisible, setNotificationVisible] = useState(true);
+  const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(true);
+  const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
+  const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     loadUserData();
@@ -325,6 +333,43 @@ export default function HomeScreen() {
         }
       />
       <CustomTabBar />
+
+      <NotificationPopup
+        visible={notificationVisible}
+        onDismiss={() => setNotificationVisible(false)}
+        onSaveSuccess={() => {
+          setSaveSuccessModalVisible(true);
+          Animated.parallel([
+            Animated.timing(saveSuccessAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.spring(saveSuccessScale, {
+              toValue: 1,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 8,
+            }),
+          ]).start();
+          setTimeout(() => {
+            Animated.parallel([
+              Animated.timing(saveSuccessAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(saveSuccessScale, {
+                toValue: 0.9,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setSaveSuccessModalVisible(false);
+            });
+          }, 2000);
+        }}
+      />
     </SafeAreaView>
   );
 }

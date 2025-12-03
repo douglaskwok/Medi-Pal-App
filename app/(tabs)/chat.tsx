@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
+import Fontisto from "@expo/vector-icons/Fontisto";
 import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
 import OpenAI from "openai";
@@ -43,7 +44,7 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 });
 
-type ChatView = "session-select" | "text-chat";
+type ChatView = "session-select" | "text-chat" | "avatar-chat";
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -58,6 +59,61 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // remove later:
+  const generateDummyMessages = (): Message[] => {
+    const now = new Date();
+    return [
+      {
+        id: "1",
+        content:
+          "Hello! I'm Dr. Medi-Pal, your AI healthcare assistant. I can help you find healthcare resources, understand your Medi-Cal benefits, and navigate the healthcare system. What do you need help with today?",
+        role: "assistant",
+        timestamp: new Date(now.getTime() - 300000), // 5 minutes ago
+      },
+      {
+        id: "2",
+        content:
+          "Hi, I need help finding a primary care doctor who accepts Medi-Cal near downtown Los Angeles",
+        role: "user",
+        timestamp: new Date(now.getTime() - 240000), // 4 minutes ago
+      },
+      {
+        id: "3",
+        content:
+          "I can help you find a primary care doctor. Let me search for providers in downtown LA who accept Medi-Cal. Are you looking for a clinic or private practice?",
+        role: "assistant",
+        timestamp: new Date(now.getTime() - 180000), // 3 minutes ago
+      },
+      {
+        id: "4",
+        content:
+          "Either is fine, but I prefer somewhere with evening or weekend hours since I work during the day",
+        role: "user",
+        timestamp: new Date(now.getTime() - 120000), // 2 minutes ago
+      },
+      {
+        id: "5",
+        content:
+          "Perfect. I found 3 clinics in downtown LA that accept Medi-Cal and have extended hours. The closest is Hope Family Health Center - they're open until 8 PM on weekdays and 5 PM on Saturdays. Would you like their contact information?",
+        role: "assistant",
+        timestamp: new Date(now.getTime() - 60000), // 1 minute ago
+      },
+      {
+        id: "6",
+        content: "Yes please! And do you know if they accept new patients?",
+        role: "user",
+        timestamp: new Date(now.getTime() - 30000), // 30 seconds ago
+      },
+      {
+        id: "7",
+        content:
+          "Yes! They're accepting new Medi-Cal patients. Their number is (213) 555-0123. Would you like me to guide you there?",
+        role: "assistant",
+        timestamp: new Date(now.getTime() - 15000 - 43200000), // 15 seconds ago
+      },
+    ];
+  };
+
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -67,11 +123,11 @@ export default function ChatScreen() {
     loadSessions();
   }, []);
 
-  useEffect(() => {
-    if (currentSessionId && currentView !== "session-select") {
-      loadMessages(currentSessionId);
-    }
-  }, [currentSessionId, currentView]);
+  // useEffect(() => {
+  //   if (currentSessionId && currentView !== "session-select") {
+  //     loadMessages(currentSessionId);
+  //   }
+  // }, [currentSessionId, currentView]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -194,7 +250,15 @@ export default function ChatScreen() {
   };
 
   const handleStartVoiceSession = async () => {
-    // Voice mode not implemented
+    const sessionId = await createSession("voice");
+    if (sessionId) {
+      setCurrentSessionId(sessionId);
+      setCurrentView("avatar-chat");
+      // set dummy message for now
+      const dummyMessages = generateDummyMessages();
+      setMessages(dummyMessages);
+      await loadSessions();
+    }
   };
 
   const handleResumeSession = async (
@@ -202,8 +266,14 @@ export default function ChatScreen() {
     type: "text" | "voice"
   ) => {
     setCurrentSessionId(sessionId);
-    setCurrentView("text-chat");
+    setCurrentView(type === "voice" ? "avatar-chat" : "text-chat");
     await loadMessages(sessionId);
+
+    // remove later - dummy messages
+    if (type === "voice" && messages.length === 0) {
+      const dummyMessages = generateDummyMessages();
+      setMessages(dummyMessages);
+    }
   };
 
   const handleSend = async (text?: string) => {
@@ -282,6 +352,9 @@ export default function ChatScreen() {
     setIsLoading(false);
     loadSessions();
   };
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
 
   // Session Selection View
   if (currentView === "session-select") {
@@ -327,8 +400,12 @@ export default function ChatScreen() {
                 onPress={handleStartVoiceSession}
                 activeOpacity={0.7}
               >
-                <Ionicons name="mic" size={48} color={Theme.colors.primary} />
-                <Text style={styles.sessionTypeText}>Voice</Text>
+                <Fontisto
+                  name="doctor"
+                  size={48}
+                  color={Theme.colors.primary}
+                />
+                <Text style={styles.sessionTypeText}>Avatar</Text>
               </TouchableOpacity>
             </View>
 
@@ -541,6 +618,257 @@ export default function ChatScreen() {
       </SafeAreaView>
     );
   }
+  // Avatar Chat View
+  // Avatar Chat View
+  if (currentView === "avatar-chat") {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={handleExitSession}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color={Theme.colors.text} />
+            </TouchableOpacity>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require("../../assets/icon.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+              <View>
+                <Text style={styles.title}>AI Assistant</Text>
+                <View style={styles.modeIndicator}>
+                  <Fontisto
+                    name="doctor"
+                    size={14}
+                    color={Theme.colors.primary}
+                  />
+                  <Text style={styles.modeText}>Avatar Call</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Main Content */}
+          <View style={styles.avatarMainContainer}>
+            {/* Video/Avatar Container - Space for square video */}
+            <View style={styles.videoContainer}>
+              {/* Uncomment below later*/}
+              {/* <View style={styles.videoPlaceholder}>
+                <Fontisto
+                  name="doctor"
+                  size={80}
+                  color={Theme.colors.primary}
+                />
+                <Text style={styles.videoPlaceholderText}>
+                  Avatar Video Feed
+                </Text>
+                <Text style={styles.videoPlaceholderSubtext}>
+                  Live avatar will appear here
+                </Text>
+              </View> */}
+              {/* video background */}
+              <Image
+                source={require("../../assets/avatar-background-2.jpeg")}
+                style={styles.videoBackground}
+                blurRadius={20}
+                resizeMode="cover"
+              />
+
+              {/* Avatar Placeholder*/}
+              <Image
+                source={require("../../assets/avatar-placeholder-2.jpeg")}
+                style={styles.videoPlaceholder}
+                // resizeMode="cover"
+              ></Image>
+
+              {/* Call Status */}
+              <View style={styles.callStatus}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Connected</Text>
+              </View>
+            </View>
+
+            {/* Audio Wave Animation */}
+            {/* <View style={styles.audioWaveSection}>
+              <Text style={styles.audioWaveLabel}>Listening</Text>
+              <View style={styles.audioWaveContainer}>
+                {[...Array(15)].map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.audioWaveBar,
+                      {
+                        height: Math.random() * 30 + 10,
+                        backgroundColor: Theme.colors.primary,
+                        opacity: 0.6 + Math.random() * 0.4,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View> */}
+
+            {/* Live Captions Container*/}
+            <View style={styles.captionsOuterContainer}>
+              <View style={styles.captionsHeader}>
+                <Ionicons name="text" size={20} color={Theme.colors.primary} />
+                <Text style={styles.captionsTitle}>Live Conversation</Text>
+                <View style={styles.captionsStatus}>
+                  <View style={styles.captionsStatusDot} />
+                  <Text style={styles.captionsStatusText}>Live</Text>
+                </View>
+              </View>
+
+              <ScrollView
+                style={styles.captionsScrollView}
+                showsVerticalScrollIndicator={false}
+                ref={scrollViewRef}
+                contentContainerStyle={styles.captionsContent}
+                onContentSizeChange={() =>
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }
+              >
+                {/* Show all messages for demo */}
+                {messages.length === 0 ? (
+                  <View style={styles.emptyCaptions}>
+                    <Ionicons
+                      name="chatbubbles-outline"
+                      size={48}
+                      color={Theme.colors.textLight}
+                    />
+                    <Text style={styles.emptyCaptionsText}>
+                      Start speaking to begin conversation
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <View
+                        key={message.id}
+                        style={[
+                          styles.captionItem,
+                          message.role === "user"
+                            ? styles.userCaptionItem
+                            : styles.aiCaptionItem,
+                        ]}
+                      >
+                        <View style={styles.captionHeader}>
+                          <View
+                            style={[
+                              styles.captionAvatar,
+                              message.role === "user"
+                                ? styles.userCaptionAvatar
+                                : styles.aiCaptionAvatar,
+                            ]}
+                          >
+                            {message.role === "user" ? (
+                              <Ionicons
+                                name="person"
+                                size={16}
+                                color={Theme.colors.backgroundLight}
+                              />
+                            ) : (
+                              <Image
+                                source={require("../../assets/avatars/dr-al/profile.jpeg")}
+                                style={styles.avatarIcon}
+                                resizeMode="cover"
+                              />
+                            )}
+                          </View>
+                          <Text style={styles.captionName}>
+                            {message.role === "user" ? "You" : "Dr. Al"}
+                          </Text>
+                          <Text style={styles.captionTime}>
+                            {format(message.timestamp, "h:mm a")}
+                          </Text>
+                        </View>
+                        <Text style={styles.captionMessage}>
+                          {message.content}
+                        </Text>
+                      </View>
+                    ))}
+
+                    {/* Show "Now speaking..." indicator for demo */}
+                    <View style={styles.currentMessageIndicator}>
+                      <Text style={styles.currentMessageText}>
+                        Dr. Al is listening...
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+
+          {/* Control Bar */}
+          <View style={styles.controlBar}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.secondaryControlButton]}
+              onPress={() => console.log("Speaker pressed")}
+            >
+              <Ionicons
+                name="volume-high"
+                size={24}
+                color={Theme.colors.text}
+              />
+              <Text style={styles.controlButtonText}>Speaker</Text>
+            </TouchableOpacity>
+
+            {/* Main Mic Button */}
+            <TouchableOpacity
+              style={[styles.controlButton, styles.primaryControlButton]}
+              onPress={() => console.log("Mic pressed")}
+            >
+              <Ionicons
+                name="mic"
+                size={30}
+                color={Theme.colors.backgroundLight}
+              />
+              <Text
+                style={[
+                  styles.controlButtonText,
+                  styles.primaryControlButtonText,
+                ]}
+              >
+                Hold to Talk
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.controlButton, styles.dangerControlButton]}
+              onPress={() => console.log("End call pressed")}
+            >
+              <Ionicons
+                name="call"
+                size={24}
+                color={Theme.colors.backgroundLight}
+              />
+              <Text
+                style={[
+                  styles.controlButtonText,
+                  styles.dangerControlButtonText,
+                ]}
+              >
+                End Call
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+        <CustomTabBar />
+      </SafeAreaView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
@@ -553,6 +881,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    // borderColor: "red",
+    // borderWidth: 3,
   },
   header: {
     flexDirection: "row",
@@ -767,5 +1097,361 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: Theme.colors.primary,
     opacity: 0.8,
+  },
+  // avatar
+  avatarMainContainer: {
+    flex: 1,
+    paddingHorizontal: Theme.spacing.md,
+    // borderWidth: 2,
+    // borderColor: "red",
+  },
+
+  videoContainer: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.lg,
+    // padding: Theme.spacing.md,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%", // Fixed height for video
+    aspectRatio: 1.3,
+    marginTop: Theme.spacing.sm,
+    marginBottom: Theme.spacing.md,
+    ...Theme.shadows.md,
+    // borderColor: "red",
+    // borderWidth: 2,
+    overflow: "hidden", // Important for image clipping
+    position: "relative",
+  },
+
+  videoPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    // borderColor: "red",
+    // borderWidth: 2,
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+    alignSelf: "flex-start",
+    // verticalAlign: "top",
+    // width: "100%",
+  },
+
+  videoPlaceholderText: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginTop: Theme.spacing.md,
+  },
+
+  videoPlaceholderSubtext: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+    marginTop: Theme.spacing.xs,
+  },
+
+  callStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Theme.colors.livebuttonBG,
+    borderColor: "green",
+    borderWidth: 1,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.xs,
+    borderRadius: Theme.borderRadius.md,
+    marginTop: Theme.spacing.sm,
+    position: "absolute",
+    // zIndex: 50,
+    bottom: Theme.spacing.sm, // Position at bottom of video container
+    zIndex: 50,
+    alignSelf: "center", // Center horizontally
+  },
+
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Theme.colors.livebuttonText,
+    marginRight: Theme.spacing.xs,
+    zIndex: 100,
+  },
+
+  statusText: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.livebuttonText,
+    zIndex: 100,
+  },
+
+  audioWaveSection: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.lg,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
+    alignItems: "center",
+    ...Theme.shadows.sm,
+  },
+
+  audioWaveLabel: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginBottom: Theme.spacing.sm,
+  },
+
+  audioWaveContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    width: "100%",
+    gap: 3,
+  },
+
+  audioWaveBar: {
+    width: 6,
+    borderRadius: 3,
+    minHeight: 10,
+  },
+
+  captionsOuterContainer: {
+    flex: 1, // This will take remaining space
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.lg,
+    overflow: "hidden",
+    marginBottom: Theme.spacing.md,
+    ...Theme.shadows.sm,
+  },
+
+  captionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: (Theme.spacing.md + Theme.spacing.sm) / 2,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+    backgroundColor: Theme.colors.backgroundLight,
+  },
+
+  captionsTitle: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginLeft: Theme.spacing.sm,
+    marginRight: "auto",
+  },
+
+  captionsStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Theme.colors.livebuttonBG,
+    paddingHorizontal: Theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Theme.borderRadius.sm,
+  },
+
+  captionsStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Theme.colors.livebuttonText, //Theme.colors.primaryDark,
+    marginRight: 4,
+  },
+
+  captionsStatusText: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.livebuttonText, //Theme.colors.primaryDark,
+  },
+
+  captionsScrollView: {
+    flex: 1,
+    // paddingBottom: 0,
+  },
+
+  captionsContent: {
+    padding: Theme.spacing.md,
+    paddingBottom: Theme.spacing.xs, // Extra padding at bottom
+  },
+
+  emptyCaptions: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Theme.spacing.xl,
+  },
+
+  emptyCaptionsText: {
+    fontSize: 16,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+    marginTop: Theme.spacing.md,
+    textAlign: "center",
+  },
+
+  captionItem: {
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.sm,
+    ...Theme.shadows.sm,
+  },
+
+  userCaptionItem: {
+    borderLeftWidth: 3,
+    borderLeftColor: Theme.colors.primary,
+  },
+
+  aiCaptionItem: {
+    borderLeftWidth: 3,
+    borderLeftColor: Theme.colors.secondary,
+  },
+
+  captionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Theme.spacing.sm,
+  },
+
+  captionAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Theme.spacing.sm,
+  },
+
+  userCaptionAvatar: {
+    backgroundColor: Theme.colors.primary,
+  },
+
+  aiCaptionAvatar: {
+    backgroundColor: Theme.colors.secondary,
+  },
+
+  captionInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  captionName: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginRight: "auto",
+  },
+
+  captionTime: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textLight,
+  },
+
+  captionMessage: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.text,
+    lineHeight: 20,
+  },
+
+  typingIndicatorCaption: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Theme.spacing.xs,
+  },
+
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Theme.colors.textSecondary,
+    marginRight: 4,
+  },
+
+  // Control Bar Styles
+  controlBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.md,
+    backgroundColor: Theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.border,
+    paddingBottom: 50,
+    height: 130,
+  },
+
+  controlButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.md,
+    minWidth: 100,
+  },
+
+  secondaryControlButton: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+
+  primaryControlButton: {
+    backgroundColor: Theme.colors.primaryDark,
+    paddingHorizontal: Theme.spacing.lg,
+    paddingVertical: Theme.spacing.md,
+    ...Theme.shadows.md,
+  },
+
+  dangerControlButton: {
+    backgroundColor: "#FF3B30",
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+  },
+
+  controlButtonText: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.text,
+    marginTop: 4,
+    fontWeight: "500",
+  },
+
+  primaryControlButtonText: {
+    color: Theme.colors.backgroundLight,
+  },
+
+  dangerControlButtonText: {
+    color: Theme.colors.backgroundLight,
+  },
+  currentMessageIndicator: {
+    backgroundColor: "rgba(33, 150, 243, 0.1)",
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.sm,
+    marginBottom: Theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: Theme.colors.primary,
+  },
+
+  currentMessageText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.primaryDark,
+    textAlign: "center",
+  },
+  videoBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.7, // Adjust opacity as needed
+    //blurRadius: 10, // This works on iOS, for Android use the prop
+  },
+  avatarIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
 });

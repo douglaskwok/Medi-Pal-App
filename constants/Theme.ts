@@ -25,6 +25,8 @@ export const Theme = {
         end: "#E1F2FF", // Background (lightest blue)
       },
     },
+    livebuttonBG: "rgba(201, 245, 202, 1)",
+    livebuttonText: "#255e27ff",
   },
   fonts: {
     regular: "System",
