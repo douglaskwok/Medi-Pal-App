@@ -131,6 +131,9 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
   /** SAVE HANDLER **/
   const handleSaveResource = async () => {
+    if (isSaved) {
+      return;
+    }
     try {
       const {
         data: { user },
