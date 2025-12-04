@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,15 +9,17 @@ import {
   Animated,
   SafeAreaView,
   Image,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Theme } from '../../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { CustomModal } from '../../components/Modal';
-import { CustomTabBar } from './_layout';
-import { NotificationPopup } from '../../components/NotificationPopup';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Theme } from "../../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../lib/supabase";
+import { CustomModal } from "../../components/Modal";
+import { CustomTabBar } from "./_layout";
+import { NotificationPopup } from "../../components/NotificationPopup";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import SelectionModal from "../../components/selectionModal";
 
 interface UserProfile {
   firstName: string;
@@ -30,16 +32,16 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
-  const [userName, setUserName] = useState('User');
-  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    firstName: '',
-    lastName: '',
+    firstName: "",
+    lastName: "",
   });
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValues, setTempValues] = useState<UserProfile>({
-    firstName: '',
-    lastName: '',
+    firstName: "",
+    lastName: "",
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false);
@@ -47,6 +49,8 @@ export default function ProfileScreen() {
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [showLanguageSettings, setShowLanguageSettings] = useState(false);
 
   React.useEffect(() => {
     loadUserData();
@@ -59,48 +63,53 @@ export default function ProfileScreen() {
 
   const loadUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        setUserEmail(user.email || '');
-        
+        setUserEmail(user.email || "");
+
         const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", user.id)
           .single();
 
         if (profileData) {
           const profile = {
-            firstName: profileData.first_name || '',
-            lastName: profileData.last_name || '',
-            age: profileData.age?.toString() || '',
-            phoneNumber: profileData.phone_number || '',
+            firstName: profileData.first_name || "",
+            lastName: profileData.last_name || "",
+            age: profileData.age?.toString() || "",
+            phoneNumber: profileData.phone_number || "",
           };
           setUserProfile(profile);
           setTempValues(profile);
-          setUserName(`${profile.firstName} ${profile.lastName}`.trim() || userEmail.split('@')[0]);
+          setUserName(
+            `${profile.firstName} ${profile.lastName}`.trim() ||
+              userEmail.split("@")[0]
+          );
         } else {
           if (user.user_metadata?.full_name) {
-            const nameParts = user.user_metadata.full_name.split(' ');
+            const nameParts = user.user_metadata.full_name.split(" ");
             const profile = {
-              firstName: nameParts[0] || '',
-              lastName: nameParts.slice(1).join(' ') || '',
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
             };
             setUserProfile(profile);
             setTempValues(profile);
             setUserName(user.user_metadata.full_name);
           } else if (user.email) {
-            setUserName(user.email.split('@')[0]);
+            setUserName(user.email.split("@")[0]);
           }
         }
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error("Error loading user data:", error);
     }
   };
 
   const handleFieldPress = (field: string) => {
-    if (field === 'email') return; // Email is not editable
+    if (field === "email") return; // Email is not editable
     setEditingField(field);
   };
 
@@ -117,7 +126,9 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const profileData = {
@@ -129,9 +140,9 @@ export default function ProfileScreen() {
       };
 
       const { error } = await supabase
-        .from('user_profiles')
+        .from("user_profiles")
         .upsert(profileData, {
-          onConflict: 'user_id',
+          onConflict: "user_id",
         });
 
       if (error) throw error;
@@ -141,7 +152,7 @@ export default function ProfileScreen() {
       setEditingField(null);
       setHasChanges(false);
     } catch (error) {
-      console.error('Error saving personal info:', error);
+      console.error("Error saving personal info:", error);
     }
   };
 
@@ -149,18 +160,23 @@ export default function ProfileScreen() {
     setSignOutModalVisible(false);
     try {
       await supabase.auth.signOut().catch((error) => {
-        console.error('Error signing out:', error);
+        console.error("Error signing out:", error);
       });
-      router.replace('/(auth)/signin');
+      router.replace("/(auth)/signin");
     } catch (error) {
-      console.error('Error in handleSignOut:', error);
-      router.replace('/(auth)/signin');
+      console.error("Error in handleSignOut:", error);
+      router.replace("/(auth)/signin");
     }
   };
 
-  const renderField = (label: string, field: string, value: string, editable: boolean = true) => {
+  const renderField = (
+    label: string,
+    field: string,
+    value: string,
+    editable: boolean = true
+  ) => {
     const isEditing = editingField === field;
-    const displayValue = value || 'Not set';
+    const displayValue = value || "Not set";
 
     return (
       <View style={styles.fieldContainer}>
@@ -168,15 +184,18 @@ export default function ProfileScreen() {
         {isEditing && editable ? (
           <TextInput
             style={styles.fieldInput}
-            value={tempValues[field as keyof UserProfile] || ''}
+            value={tempValues[field as keyof UserProfile] || ""}
             onChangeText={(text) => {
-              if (field === 'age') {
-                const numericValue = text.replace(/[^0-9]/g, '');
-                if (numericValue === '' || (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 150)) {
+              if (field === "age") {
+                const numericValue = text.replace(/[^0-9]/g, "");
+                if (
+                  numericValue === "" ||
+                  (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 150)
+                ) {
                   handleFieldChange(field, numericValue);
                 }
-              } else if (field === 'phoneNumber') {
-                const cleaned = text.replace(/[^0-9-() ]/g, '');
+              } else if (field === "phoneNumber") {
+                const cleaned = text.replace(/[^0-9-() ]/g, "");
                 handleFieldChange(field, cleaned);
               } else {
                 handleFieldChange(field, text);
@@ -185,22 +204,42 @@ export default function ProfileScreen() {
             placeholder={`Enter ${label.toLowerCase()}`}
             placeholderTextColor={Theme.colors.textLight}
             autoFocus
-            keyboardType={field === 'age' ? 'numeric' : field === 'phoneNumber' ? 'phone-pad' : 'default'}
-            maxLength={field === 'age' ? 3 : field === 'phoneNumber' ? 20 : 50}
-            autoCapitalize={field === 'firstName' || field === 'lastName' ? 'words' : 'none'}
+            keyboardType={
+              field === "age"
+                ? "numeric"
+                : field === "phoneNumber"
+                ? "phone-pad"
+                : "default"
+            }
+            maxLength={field === "age" ? 3 : field === "phoneNumber" ? 20 : 50}
+            autoCapitalize={
+              field === "firstName" || field === "lastName" ? "words" : "none"
+            }
           />
         ) : (
           <TouchableOpacity
-            style={[styles.fieldDisplay, !editable && styles.fieldDisplayDisabled]}
+            style={[
+              styles.fieldDisplay,
+              !editable && styles.fieldDisplayDisabled,
+            ]}
             onPress={() => editable && handleFieldPress(field)}
             disabled={!editable}
             activeOpacity={editable ? 0.7 : 1}
           >
-            <Text style={[styles.fieldDisplayText, !editable && styles.fieldDisplayTextDisabled]}>
+            <Text
+              style={[
+                styles.fieldDisplayText,
+                !editable && styles.fieldDisplayTextDisabled,
+              ]}
+            >
               {displayValue}
             </Text>
             {editable && (
-              <Ionicons name="pencil" size={14} color={Theme.colors.textSecondary} />
+              <Ionicons
+                name="pencil"
+                size={14}
+                color={Theme.colors.textSecondary}
+              />
             )}
           </TouchableOpacity>
         )}
@@ -229,17 +268,20 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require("../../assets/icon.png")}
               style={styles.headerLogo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Profile</Text>
+            <Text style={styles.title}>Settings</Text>
           </View>
         </View>
 
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 80 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.profileSection}>
@@ -254,17 +296,21 @@ export default function ProfileScreen() {
             {/* Personal Information Fields */}
             <View style={styles.personalInfoCard}>
               <View style={styles.nameRow}>
-                {renderField('First Name', 'firstName', userProfile.firstName)}
-                {renderField('Last Name', 'lastName', userProfile.lastName)}
+                {renderField("First Name", "firstName", userProfile.firstName)}
+                {renderField("Last Name", "lastName", userProfile.lastName)}
               </View>
-              
+
               <View style={styles.contactRow}>
-                {renderField('Age', 'age', userProfile.age || '')}
-                {renderField('Phone', 'phoneNumber', userProfile.phoneNumber || '')}
+                {renderField("Age", "age", userProfile.age || "")}
+                {renderField(
+                  "Phone",
+                  "phoneNumber",
+                  userProfile.phoneNumber || ""
+                )}
               </View>
-              
-              {renderField('Email', 'email', userEmail, false)}
-              
+
+              {renderField("Email", "email", userEmail, false)}
+
               {hasChanges && (
                 <View style={styles.saveCancelRow}>
                   <TouchableOpacity
@@ -304,19 +350,19 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
 
-            {/* Privacy & Security */}
+            {/* Language */}
             <TouchableOpacity
               style={styles.smallMenuItem}
               activeOpacity={0.6}
-              onPress={() => router.push('/(tabs)/privacy')}
+              onPress={() => setShowLanguageSettings(true)}
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons
-                  name="shield-checkmark-outline"
+                <MaterialIcons
+                  name="language"
                   size={18}
                   color={Theme.colors.text}
                 />
-                <Text style={styles.smallMenuItemTitle}>Privacy & Security</Text>
+                <Text style={styles.smallMenuItemTitle}>Language</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -325,11 +371,34 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
 
-            {/* Terms & Privacy */}
+            {/* Privacy & Security */}
             <TouchableOpacity
               style={styles.smallMenuItem}
               activeOpacity={0.6}
-              onPress={() => router.push('/(tabs)/terms')}
+              onPress={() => router.push("/(tabs)/privacy")}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={18}
+                  color={Theme.colors.text}
+                />
+                <Text style={styles.smallMenuItemTitle}>
+                  Privacy & Security
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={Theme.colors.text}
+              />
+            </TouchableOpacity>
+
+            {/* Terms & Conditions */}
+            <TouchableOpacity
+              style={styles.smallMenuItem}
+              activeOpacity={0.6}
+              onPress={() => router.push("/(tabs)/terms")}
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons
@@ -337,7 +406,7 @@ export default function ProfileScreen() {
                   size={18}
                   color={Theme.colors.text}
                 />
-                <Text style={styles.smallMenuItemTitle}>Terms & Privacy</Text>
+                <Text style={styles.smallMenuItemTitle}>Terms of Service</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -413,13 +482,13 @@ export default function ProfileScreen() {
         <Animated.View
           style={[
             {
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
+              justifyContent: "center",
+              alignItems: "center",
               zIndex: 2000,
               opacity: saveSuccessAnim,
             },
@@ -432,18 +501,38 @@ export default function ProfileScreen() {
                 backgroundColor: Theme.colors.backgroundLight,
                 borderRadius: Theme.borderRadius.lg,
                 padding: Theme.spacing.xl,
-                alignItems: 'center',
+                alignItems: "center",
                 ...Theme.shadows.lg,
                 transform: [{ scale: saveSuccessScale }],
               },
             ]}
           >
-            <Ionicons name="checkmark-circle" size={48} color={Theme.colors.success} />
-            <Text style={{ fontSize: 18, fontFamily: Theme.fonts.semibold, color: Theme.colors.text, marginTop: Theme.spacing.md }}>
+            <Ionicons
+              name="checkmark-circle"
+              size={48}
+              color={Theme.colors.success}
+            />
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: Theme.fonts.semibold,
+                color: Theme.colors.text,
+                marginTop: Theme.spacing.md,
+              }}
+            >
               Saved Successfully
             </Text>
           </Animated.View>
         </Animated.View>
+      )}
+      {showLanguageSettings && (
+        <SelectionModal
+          mode={"select_language"}
+          setShowPopUp={setShowLanguageSettings}
+          selectedLanguage={selectedLanguage}
+          setSelectedLanguage={setSelectedLanguage}
+          // proceed={handleStartRouteAfterTips}
+        ></SelectionModal>
       )}
       <CustomTabBar />
     </SafeAreaView>
@@ -464,8 +553,8 @@ const styles = StyleSheet.create({
     paddingBottom: Theme.spacing.sm,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   headerLogo: {
@@ -476,7 +565,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scrollView: {
     flex: 1,
@@ -485,7 +574,7 @@ const styles = StyleSheet.create({
     paddingBottom: Theme.spacing.xl,
   },
   profileSection: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: Theme.spacing.md,
     marginBottom: Theme.spacing.sm,
   },
@@ -494,8 +583,8 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: Theme.colors.backgroundLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Theme.spacing.xs,
     borderWidth: 2,
     borderColor: Theme.colors.borderLight,
@@ -523,12 +612,12 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   nameRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
   },
   contactRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
   },
@@ -542,9 +631,9 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xs,
   },
   fieldDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Theme.colors.background,
     padding: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.md,
@@ -576,7 +665,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   saveCancelRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
     marginTop: Theme.spacing.md,
   },
@@ -587,16 +676,16 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
     paddingVertical: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   saveButton: {
     flex: 1,
     backgroundColor: Theme.colors.primary,
     paddingVertical: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cancelButtonText: {
     fontSize: 14,
@@ -609,9 +698,9 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
   smallMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Theme.spacing.lg,
     paddingVertical: Theme.spacing.sm,
     backgroundColor: Theme.colors.backgroundLight,
@@ -621,8 +710,8 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   smallMenuItemTitle: {
@@ -634,19 +723,19 @@ const styles = StyleSheet.create({
     marginHorizontal: Theme.spacing.lg,
     marginTop: Theme.spacing.md,
     marginBottom: Theme.spacing.xl,
-    backgroundColor: Theme.colors.error + '15',
+    backgroundColor: Theme.colors.error + "15",
     borderRadius: Theme.borderRadius.md,
     paddingVertical: Theme.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: Theme.colors.error,
     ...Theme.shadows.sm,
   },
   signOutContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: Theme.spacing.sm,
   },
   signOutText: {

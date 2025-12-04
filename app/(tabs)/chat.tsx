@@ -12,6 +12,7 @@ import {
   Animated,
   Image,
 } from "react-native";
+import { Video, AVPlaybackStatus } from "expo-av";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
@@ -24,6 +25,7 @@ import OpenAI from "openai";
 import { format } from "date-fns";
 import { Dimensions } from "react-native";
 import SelectionModal from "../../components/selectionModal";
+import AreYouSurePopup from "../../components/AreYouSurePopup";
 import { Avatar, avatars } from "../../constants/Avatars";
 
 interface Message {
@@ -67,6 +69,7 @@ export default function ChatScreen() {
   const [avatar, setAvatar] = useState<"dr-al" | "dr-lora" | "lexi" | "bert">(
     "dr-al"
   );
+  const [showEndCallModal, setShowEndCallModal] = useState(false);
   const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
     const avatar = avatars.find((avatar) => avatar.id === id);
     if (!avatar) {
@@ -74,7 +77,7 @@ export default function ChatScreen() {
     }
     return avatar;
   };
-
+  const videoRef = useRef<Video>(null);
   // remove later:
   const generateDummyMessages = (): Message[] => {
     const now = new Date();
@@ -372,6 +375,19 @@ export default function ChatScreen() {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
+  const handleEndCall = () => {
+    // Stop the video playback
+    if (videoRef.current) {
+      videoRef.current.stopAsync();
+    }
+
+    // Reset state and go back to session selection
+    handleExitSession();
+
+    // Optional: Show a confirmation message
+    // You could add a toast or alert here
+  };
+
   // Session Selection View
   if (currentView === "session-select") {
     return (
@@ -636,8 +652,8 @@ export default function ChatScreen() {
     );
   }
   // Avatar Chat View
-  // Avatar Chat View
   if (currentView === "avatar-chat") {
+    // const videoRef = useRef<VideoRef>(null);
     return (
       <SafeAreaView style={styles.container}>
         <Animated.View
@@ -703,11 +719,19 @@ export default function ChatScreen() {
               />
 
               {/* Avatar Placeholder*/}
-              <Image
+              {/* <Image
                 source={getAvatarById(avatar).listening}
                 style={styles.videoPlaceholder}
+              /> */}
+              {/* Avatar Video */}
+              <Video
+                ref={videoRef}
+                source={getAvatarById(avatar).video_default.loop[0]}
+                style={styles.videoPlaceholder}
                 // resizeMode="cover"
-              ></Image>
+                shouldPlay={true}
+                isLooping={true}
+              />
 
               {/* Call Status */}
               <View style={styles.callStatus}>
@@ -845,7 +869,11 @@ export default function ChatScreen() {
           {/* Control Bar */}
           <View style={styles.controlBar}>
             <TouchableOpacity
-              style={[styles.controlButton, styles.secondaryControlButton]}
+              style={[
+                styles.controlButton,
+                styles.secondaryControlButton,
+                speaker && Theme.shadows.md,
+              ]}
               onPress={() => {
                 setSpeaker(!speaker);
               }}
@@ -853,9 +881,18 @@ export default function ChatScreen() {
               <Ionicons
                 name={speaker ? "volume-high" : "volume-off"}
                 size={24}
-                color={Theme.colors.text}
+                color={speaker ? Theme.colors.text : Theme.colors.text + "99"}
               />
-              <Text style={styles.controlButtonText}>
+              <Text
+                style={[
+                  styles.controlButtonText,
+                  {
+                    color: speaker
+                      ? Theme.colors.text
+                      : Theme.colors.text + "99",
+                  },
+                ]}
+              >
                 {speaker ? "Speaker On" : "Speaker Off"}
               </Text>
             </TouchableOpacity>
@@ -867,7 +904,7 @@ export default function ChatScreen() {
             >
               <Ionicons
                 name="mic"
-                size={30}
+                size={24}
                 color={Theme.colors.backgroundLight}
               />
               <Text
@@ -882,7 +919,9 @@ export default function ChatScreen() {
 
             <TouchableOpacity
               style={[styles.controlButton, styles.dangerControlButton]}
-              onPress={() => console.log("End call pressed")}
+              onPress={() => {
+                setShowEndCallModal(true);
+              }}
             >
               <Ionicons
                 name="call"
@@ -916,6 +955,13 @@ export default function ChatScreen() {
             setAvatar={setAvatar}
             // proceed={() => {}}
           ></SelectionModal>
+        )}
+        {showEndCallModal && (
+          <AreYouSurePopup
+            mode={"end_call"}
+            setShowPopUp={setShowEndCallModal}
+            proceed={handleEndCall}
+          />
         )}
       </SafeAreaView>
     );
@@ -1450,16 +1496,18 @@ const styles = StyleSheet.create({
   },
 
   primaryControlButton: {
-    backgroundColor: Theme.colors.primaryDark,
-    paddingHorizontal: Theme.spacing.lg,
-    paddingVertical: Theme.spacing.md,
-    ...Theme.shadows.md,
+    backgroundColor: Theme.colors.navy,
+    // paddingHorizontal: Theme.spacing.lg,
+    // paddingVertical: Theme.spacing.md,
+    ...Theme.shadows.xl,
+    transform: [{ scale: 1 }],
   },
 
   dangerControlButton: {
     backgroundColor: "#FF3B30",
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: "#FF3B30",
+    ...Theme.shadows.md,
   },
 
   controlButtonText: {

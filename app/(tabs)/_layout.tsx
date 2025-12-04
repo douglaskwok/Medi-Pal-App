@@ -1,9 +1,9 @@
-import { Tabs } from 'expo-router';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { usePathname, useRouter } from 'expo-router';
-import { Theme } from '../../constants/Theme';
-import React from 'react';
+import { Tabs } from "expo-router";
+import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { usePathname, useRouter } from "expo-router";
+import { Theme } from "../../constants/Theme";
+import React from "react";
 
 export function CustomTabBar() {
   const router = useRouter();
@@ -11,34 +11,34 @@ export function CustomTabBar() {
 
   const tabs = [
     {
-      name: 'home',
-      label: 'Home',
-      icon: 'home',
-      route: '/(tabs)/home',
+      name: "home",
+      label: "Home",
+      icon: "home",
+      route: "/(tabs)/home",
     },
     {
-      name: 'resources',
-      label: 'Resources',
-      icon: 'location',
-      route: '/(tabs)/resources',
+      name: "resources",
+      label: "Resources",
+      icon: "location",
+      route: "/(tabs)/resources",
     },
     {
-      name: 'chat',
-      label: 'Chat',
-      icon: 'chatbubble-ellipses',
-      route: '/(tabs)/chat',
+      name: "chat",
+      label: "Chat",
+      icon: "chatbubble-ellipses",
+      route: "/(tabs)/chat",
     },
     {
-      name: 'checklist',
-      label: 'Checklist',
-      icon: 'checkmark-circle',
-      route: '/(tabs)/checklist',
+      name: "checklist",
+      label: "Checklist",
+      icon: "checkmark-circle",
+      route: "/(tabs)/checklist",
     },
     {
-      name: 'profile',
-      label: 'Profile',
-      icon: 'person',
-      route: '/(tabs)/profile',
+      name: "profile",
+      label: "Settings",
+      icon: "settings",
+      route: "/(tabs)/profile",
     },
   ];
 
@@ -46,7 +46,10 @@ export function CustomTabBar() {
     <View style={styles.container}>
       <View style={styles.tabBar}>
         {tabs.map((tab) => {
-          const isActive = pathname === tab.route || pathname === `/${tab.name}` || pathname.includes(`/${tab.name}`);
+          const isActive =
+            pathname === tab.route ||
+            pathname === `/${tab.name}` ||
+            pathname.includes(`/${tab.name}`);
           return (
             <TouchableOpacity
               key={tab.name}
@@ -57,9 +60,15 @@ export function CustomTabBar() {
               <Ionicons
                 name={tab.icon as any}
                 size={24}
-                color={isActive ? Theme.colors.primaryDark : Theme.colors.textSecondary}
+                color={
+                  isActive
+                    ? Theme.colors.primaryDark
+                    : Theme.colors.textSecondary
+                }
               />
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+              <Text
+                style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+              >
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -75,7 +84,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: 'none' },
+        tabBarStyle: { display: "none" },
       }}
     >
       <Tabs.Screen name="home" />
@@ -89,27 +98,27 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
   },
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.backgroundLight,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.borderLight,
     paddingVertical: Theme.spacing.md,
     paddingHorizontal: 3,
     ...Theme.shadows.lg,
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    justifyContent: "space-around",
+    alignItems: "center",
   },
   tab: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: Theme.spacing.xs,
   },
   tabLabel: {

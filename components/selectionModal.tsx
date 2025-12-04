@@ -26,73 +26,120 @@ import { avatars } from "../constants/Avatars";
 
 const { width, height } = Dimensions.get("window");
 
+// Define language options
+const languageOptions = [
+  { id: "en", name: "English", flag: "🇺🇸" },
+  { id: "es", name: "Español", flag: "🇪🇸" },
+];
+
 export default function SelectionModal({
   mode,
   setShowPopUp,
   avatar,
   setAvatar,
   proceed,
+  selectedLanguage,
+  setSelectedLanguage,
 }: {
-  mode: "tips_checklist" | "choose_avatar";
+  mode: "tips_checklist" | "choose_avatar" | "select_language";
   setShowPopUp: React.Dispatch<React.SetStateAction<boolean>>;
   avatar?: "dr-al" | "dr-lora" | "bert" | "lexi";
   setAvatar?: React.Dispatch<
     React.SetStateAction<"dr-al" | "dr-lora" | "bert" | "lexi">
   >;
   proceed?: () => void;
+  selectedLanguage?: string;
+  setSelectedLanguage?: React.Dispatch<React.SetStateAction<string>>;
 }) {
-  //   const [showTipsModal, setShowTipsModal] = useState(false);
   const prepTipsChecklist = [
     { id: "1", title: "Arrive 10 minutes early.", completed: false },
     { id: "2", title: "Bring your Medi-Cal card.", completed: false },
     { id: "3", title: "Bring a photo ID", completed: false },
-    // { id: '4', title: 'Have water and snacks available', completed: false },
-    // { id: '5', title: 'Take breaks every 2 hours if driving long distance', completed: false },
-    // { id: '6', title: 'Keep emergency contacts accessible', completed: false },
   ];
+
   const [tipsChecklist, setTipsChecklist] = useState(prepTipsChecklist);
   const [selectedAvatar, setSelectedAvatar] = useState<
     "dr-al" | "dr-lora" | "bert" | "lexi"
   >(avatar ?? "dr-al");
-  //   const avatars = [
-  //     {
-  //       id: "dr-al",
-  //       name: "Dr. Al",
-  //       source: require("../assets/avatars/dr-al/profile.jpeg"),
-  //     },
-  //     {
-  //       id: "dr-lora",
-  //       name: "Dr. Lora",
-  //       source: require("../assets/avatars/dr-lora/profile.jpeg"),
-  //     },
-  //     {
-  //       id: "lexi",
-  //       name: "Lexi",
-  //       source: require("../assets/avatars/lexi/profile.jpeg"),
-  //     },
-  //     {
-  //       id: "bert",
-  //       name: "Bert",
-  //       source: require("../assets/avatars/bert/profile.jpeg"),
-  //     },
-  //   ];
+
+  // State for language selection
+  const [tempSelectedLanguage, setTempSelectedLanguage] = useState(
+    selectedLanguage ?? "en"
+  );
+
   const resetTipsChecklist = () => {
     setTipsChecklist(
       prepTipsChecklist.map((item) => ({ ...item, completed: false }))
     );
   };
 
+  // Get modal titles based on mode
+  const getModalTitle = () => {
+    switch (mode) {
+      case "tips_checklist":
+        return "Before You Start";
+      case "choose_avatar":
+        return "Choose Avatar";
+      case "select_language":
+        return "Select Language";
+      default:
+        return "";
+    }
+  };
+
+  const getModalSubtitle = () => {
+    switch (mode) {
+      case "tips_checklist":
+        return "Remember to do these things before embarking on your journey";
+      case "choose_avatar":
+        return "Select your Medi-Pal companion:";
+      case "select_language":
+        return "Choose your preferred language for the app interface:";
+      default:
+        return "";
+    }
+  };
+
+  const getConfirmButtonText = () => {
+    switch (mode) {
+      case "tips_checklist":
+        return "Start Route";
+      case "choose_avatar":
+        return "Confirm";
+      case "select_language":
+        return "Confirm";
+      default:
+        return "Confirm";
+    }
+  };
+
+  const handleConfirmPress = () => {
+    switch (mode) {
+      case "tips_checklist":
+        if (proceed) proceed();
+        break;
+      case "choose_avatar":
+        if (setAvatar) {
+          setAvatar(selectedAvatar);
+          setShowPopUp(false);
+        }
+        break;
+      case "select_language":
+        if (setSelectedLanguage) {
+          setSelectedLanguage(tempSelectedLanguage);
+          setShowPopUp(false);
+        }
+        break;
+    }
+  };
+
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContainer}>
-        <Text style={styles.tipsModalTitle}>
-          {mode === "tips_checklist" ? "Before You Start" : "Choose Avatar"}
-        </Text>
-        <Text style={styles.tipsModalSubtitle}>
-          {mode === "tips_checklist"
-            ? "Remember to do these things before embarking on your journey"
-            : "Select your Medi-Pal companion:"}
-        </Text>
+        <Text style={styles.tipsModalTitle}>{getModalTitle()}</Text>
+        <Text style={styles.tipsModalSubtitle}>{getModalSubtitle()}</Text>
+
+        {/* Tips Checklist Mode */}
         {mode === "tips_checklist" && (
           <ScrollView style={styles.checklistScroll}>
             {tipsChecklist.map((item) => (
@@ -133,99 +180,143 @@ export default function SelectionModal({
             ))}
           </ScrollView>
         )}
-        <View style={styles.avatarsContainer}>
-          <View style={styles.avatarRow}>
-            <TouchableOpacity
-              style={[
-                styles.avatarButton,
-                selectedAvatar === "dr-al" && styles.avatarButtonSelected,
-              ]}
-              onPress={() => setSelectedAvatar("dr-al")}
-              activeOpacity={0.7}
-            >
-              <Image style={styles.avatarImage} source={avatars[0].source} />
-              {selectedAvatar === "dr-al" && (
-                <View style={styles.selectedIndicator}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={24}
-                    color={Theme.colors.primary}
-                  />
-                </View>
-              )}
 
-              <Text style={styles.avatarName}>{avatars[0].name}</Text>
-            </TouchableOpacity>
+        {/* Choose Avatar Mode */}
+        {mode === "choose_avatar" && (
+          <View style={styles.avatarsContainer}>
+            <View style={styles.avatarRow}>
+              <TouchableOpacity
+                style={[
+                  styles.avatarButton,
+                  selectedAvatar === "dr-al" && styles.avatarButtonSelected,
+                ]}
+                onPress={() => setSelectedAvatar("dr-al")}
+                activeOpacity={0.7}
+              >
+                <Image style={styles.avatarImage} source={avatars[0].source} />
+                {selectedAvatar === "dr-al" && (
+                  <View style={styles.selectedIndicator}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={Theme.colors.primary}
+                    />
+                  </View>
+                )}
+                <Text style={styles.avatarName}>{avatars[0].name}</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.avatarButton,
-                selectedAvatar === "dr-lora" && styles.avatarButtonSelected,
-              ]}
-              onPress={() => setSelectedAvatar("dr-lora")}
-              activeOpacity={0.7}
-            >
-              <Image style={styles.avatarImage} source={avatars[1].source} />
-              {selectedAvatar === "dr-lora" && (
-                <View style={styles.selectedIndicator}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={24}
-                    color={Theme.colors.primary}
-                  />
-                </View>
-              )}
+              <TouchableOpacity
+                style={[
+                  styles.avatarButton,
+                  selectedAvatar === "dr-lora" && styles.avatarButtonSelected,
+                ]}
+                onPress={() => setSelectedAvatar("dr-lora")}
+                activeOpacity={0.7}
+              >
+                <Image style={styles.avatarImage} source={avatars[1].source} />
+                {selectedAvatar === "dr-lora" && (
+                  <View style={styles.selectedIndicator}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={Theme.colors.primary}
+                    />
+                  </View>
+                )}
+                <Text style={styles.avatarName}>{avatars[1].name}</Text>
+              </TouchableOpacity>
+            </View>
 
-              <Text style={styles.avatarName}>{avatars[1].name}</Text>
-            </TouchableOpacity>
+            <View style={styles.avatarRow}>
+              <TouchableOpacity
+                style={[
+                  styles.avatarButton,
+                  selectedAvatar === "lexi" && styles.avatarButtonSelected,
+                ]}
+                onPress={() => setSelectedAvatar("lexi")}
+                activeOpacity={0.7}
+              >
+                <Image style={styles.avatarImage} source={avatars[2].source} />
+                {selectedAvatar === "lexi" && (
+                  <View style={styles.selectedIndicator}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={Theme.colors.primary}
+                    />
+                  </View>
+                )}
+                <Text style={styles.avatarName}>{avatars[2].name}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.avatarButton,
+                  selectedAvatar === "bert" && styles.avatarButtonSelected,
+                ]}
+                onPress={() => setSelectedAvatar("bert")}
+                activeOpacity={0.7}
+              >
+                <Image style={styles.avatarImage} source={avatars[3].source} />
+                {selectedAvatar === "bert" && (
+                  <View style={styles.selectedIndicator}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={Theme.colors.primary}
+                    />
+                  </View>
+                )}
+                <Text style={styles.avatarName}>{avatars[3].name}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+        )}
 
-          <View style={styles.avatarRow}>
-            <TouchableOpacity
-              style={[
-                styles.avatarButton,
-                selectedAvatar === "lexi" && styles.avatarButtonSelected,
-              ]}
-              onPress={() => setSelectedAvatar("lexi")}
-              activeOpacity={0.7}
-            >
-              <Image style={styles.avatarImage} source={avatars[2].source} />
-              {selectedAvatar === "lexi" && (
-                <View style={styles.selectedIndicator}>
+        {/* Select Language Mode */}
+        {mode === "select_language" && (
+          <ScrollView
+            style={styles.languageScroll}
+            showsVerticalScrollIndicator={true}
+          >
+            {languageOptions.map((language) => (
+              <TouchableOpacity
+                key={language.id}
+                style={[
+                  styles.languageOption,
+                  tempSelectedLanguage === language.id &&
+                    styles.languageOptionSelected,
+                ]}
+                onPress={() => setTempSelectedLanguage(language.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.languageFlagContainer}>
+                  <Text style={styles.languageFlag}>{language.flag}</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.languageName,
+                    tempSelectedLanguage === language.id &&
+                      styles.languageNameSelected,
+                  ]}
+                >
+                  {language.name}
+                </Text>
+                {tempSelectedLanguage === language.id && (
                   <Ionicons
                     name="checkmark-circle"
                     size={24}
-                    color={Theme.colors.primary}
+                    color={Theme.colors.primaryDark}
+                    style={styles.languageCheckmark}
                   />
-                </View>
-              )}
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
-              <Text style={styles.avatarName}>{avatars[2].name}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.avatarButton,
-                selectedAvatar === "bert" && styles.avatarButtonSelected,
-              ]}
-              onPress={() => setSelectedAvatar("bert")}
-              activeOpacity={0.7}
-            >
-              <Image style={styles.avatarImage} source={avatars[3].source} />
-              {selectedAvatar === "bert" && (
-                <View style={styles.selectedIndicator}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={24}
-                    color={Theme.colors.primary}
-                  />
-                </View>
-              )}
-
-              <Text style={styles.avatarName}>{avatars[3].name}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Modal Buttons */}
         <View style={styles.modalButtons}>
           <TouchableOpacity
             style={[styles.modalButton, styles.modalCancelButton]}
@@ -242,19 +333,10 @@ export default function SelectionModal({
               styles.modalConfirmButton,
               { backgroundColor: Theme.colors.primaryDark },
             ]}
-            onPress={
-              mode === "tips_checklist"
-                ? proceed
-                : () => {
-                    if (setAvatar) {
-                      setAvatar(selectedAvatar);
-                      setShowPopUp(false);
-                    }
-                  }
-            }
+            onPress={handleConfirmPress}
           >
             <Text style={styles.modalConfirmText}>
-              {mode === "tips_checklist" ? "Start Route" : "Confirm"}
+              {getConfirmButtonText()}
             </Text>
           </TouchableOpacity>
         </View>
@@ -265,6 +347,10 @@ export default function SelectionModal({
 
 const styles = StyleSheet.create({
   checklistScroll: {
+    maxHeight: 300,
+    marginBottom: Theme.spacing.sm,
+  },
+  languageScroll: {
     maxHeight: 300,
     marginBottom: Theme.spacing.sm,
   },
@@ -281,7 +367,6 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.sm,
-    // textAlign: "center",
     lineHeight: 20,
   },
   checklistItem: {
@@ -292,6 +377,44 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     marginBottom: Theme.spacing.xs,
+  },
+  languageOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.md,
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.borderRadius.md,
+    marginBottom: Theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderLight,
+  },
+  languageOptionSelected: {
+    backgroundColor: Theme.colors.primary + "10", // 10% opacity
+    borderColor: Theme.colors.primaryDark,
+    borderWidth: 2,
+  },
+  languageFlagContainer: {
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  languageFlag: {
+    fontSize: 24,
+  },
+  languageName: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: Theme.fonts.medium,
+    color: Theme.colors.text,
+    marginLeft: Theme.spacing.md,
+  },
+  languageNameSelected: {
+    color: Theme.colors.primaryDark,
+    fontFamily: Theme.fonts.semibold,
+  },
+  languageCheckmark: {
+    marginLeft: Theme.spacing.sm,
   },
   checklistCheckbox: {
     width: 24,
@@ -337,25 +460,9 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     ...Theme.shadows.lg,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.text,
-    marginBottom: Theme.spacing.md,
-    textAlign: "center",
-  },
-  modalMessage: {
-    fontSize: 16,
-    fontFamily: Theme.fonts.regular,
-    color: Theme.colors.textSecondary,
-    marginBottom: Theme.spacing.xl,
-    textAlign: "center",
-  },
   modalButtons: {
     flexDirection: "row",
     gap: Theme.spacing.md,
-    // borderColor: "red",
-    // borderWidth: 2,
   },
   modalButton: {
     flex: 1,
@@ -382,33 +489,15 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
   avatarsContainer: {
-    // width: "90%",
-    // aspectRatio: 1,
     flexDirection: "column",
-    // borderColor: "red",
-    // borderWidth: 2,
     paddingBottom: Theme.spacing.xl,
     maxHeight: height * 0.4,
   },
-  //   avatarRow: {
-  //     flexDirection: "row",
-  //     gap: Theme.spacing.md,
-  //   },
-  //   avatarBox: {
-  //     flex: 1,
-  //     flexDirection: "column",
-  //   },
-
-  //   avatarName: {
-  //     fontSize: 12,
-  //   },
   avatarRow: {
     flexDirection: "row",
     gap: Theme.spacing.md,
     marginBottom: Theme.spacing.md,
     height: "50%",
-    // borderColor: "red",
-    // borderWidth: 2,
   },
   avatarButton: {
     flex: 1,
@@ -417,8 +506,6 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.xs,
     alignItems: "center",
     justifyContent: "center",
-    // aspectRatio: 0.7,
-    // gap: Theme.spacing.sm,
     ...Theme.shadows.md,
     borderColor: Theme.colors.borderLight,
     borderWidth: 1,
@@ -432,26 +519,13 @@ const styles = StyleSheet.create({
     width: "100%",
     textAlign: "center",
     fontWeight: "500",
-    // borderTopColor: Theme.colors.borderLight,
-    // borderTopWidth: 1,
-    // paddingTop: Theme.spacing.xs,
   },
-  //   avatarImageContainer: {
-  //     height: "85%",
-  //     width: "100%",
-  //     borderBottomColor: Theme.colors.borderLight,
-  //     borderBottomWidth: 1,
-  //   },
   avatarImage: {
     resizeMode: "cover",
     height: "85%",
     width: "108%",
     top: -4,
     paddingBottom: 0,
-    // borderBottomColor: Theme.colors.borderLight,
-
-    // borderColor: "red",
-    // borderWidth: 2,
   },
   avatarButtonSelected: {
     borderColor: Theme.colors.primary,
@@ -465,17 +539,5 @@ const styles = StyleSheet.create({
     right: 8,
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: 12,
-  },
-  selectedAvatarDisplay: {
-    marginTop: Theme.spacing.md,
-    padding: Theme.spacing.sm,
-    backgroundColor: Theme.colors.background,
-    borderRadius: Theme.borderRadius.md,
-    alignItems: "center",
-  },
-  selectedAvatarText: {
-    fontSize: 16,
-    fontFamily: Theme.fonts.medium,
-    color: Theme.colors.text,
   },
 });

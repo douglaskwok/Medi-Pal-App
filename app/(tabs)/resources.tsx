@@ -12,6 +12,7 @@ import {
   Image,
   Alert,
   Platform,
+  ActivityIndicator,
   TouchableWithoutFeedback,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,8 +25,10 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
 import { useLocalSearchParams } from "expo-router";
+import { AdvancedFilterPopup } from "../../components/AdvancedFilterPopup";
 
 import SelectionModal from "../../components/selectionModal";
+import AreYouSurePopup from "../../components/AreYouSurePopup";
 
 const { width, height } = Dimensions.get("window");
 const MAP_HEIGHT = height * 0.35;
@@ -103,6 +106,7 @@ export default function ResourcesScreen() {
     // { id: '6', title: 'Keep emergency contacts accessible', completed: false },
   ];
   const [tipsChecklist, setTipsChecklist] = useState(prepTipsChecklist);
+  const [showFilterPopup, setShowFilterPopup] = useState(false);
   const [routeStarted, setRouteStarted] = useState(false);
   const [selectedResourceForDirections, setSelectedResourceForDirections] =
     useState<(typeof dummyResources)[0] | null>(null);
@@ -125,6 +129,8 @@ export default function ResourcesScreen() {
   const successModalScale = useRef(new Animated.Value(0.9)).current;
   const mapRef = useRef<MapView>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLoadingDirections, setIsLoadingDirections] = useState(false);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -419,6 +425,7 @@ export default function ResourcesScreen() {
     setShowAutocomplete(false);
     setAutocompleteResults([]);
     setSearchQuery(""); // Clear search query to prevent autocomplete from reopening
+    setIsLoadingSearch(true);
 
     try {
       const response = await fetch(
@@ -445,6 +452,8 @@ export default function ResourcesScreen() {
       }
     } catch (error) {
       console.error("Error fetching place details:", error);
+    } finally {
+      setIsLoadingSearch(false);
     }
   };
 
@@ -497,7 +506,7 @@ export default function ResourcesScreen() {
       Alert.alert("Error", "Google Maps API key not configured.");
       return;
     }
-
+    setIsLoadingDirections(true);
     setRouteCoordinates([]);
     setDirectionSteps([]);
 
@@ -569,8 +578,22 @@ export default function ResourcesScreen() {
     } catch (error) {
       console.error("Error getting directions:", error);
       Alert.alert("Error", "Could not get directions. Please try again.");
+    } finally {
+      setIsLoadingDirections(false);
     }
   };
+  const LoadingOverlay = () => (
+    <View style={styles.loadingOverlay}>
+      <View style={styles.loadingContainer}>
+        <Animated.View style={styles.spinnerContainer}>
+          <ActivityIndicator size={"large"} color={Theme.colors.primary} />
+          {/* <Ionicons name="navigate" size={48} color={Theme.colors.primary} /> */}
+        </Animated.View>
+        <Text style={styles.loadingText}>Loading directions...</Text>
+        <Text style={styles.loadingSubtext}>Calculating the best route</Text>
+      </View>
+    </View>
+  );
 
   const handleResourceSelect = async (resource: (typeof dummyResources)[0]) => {
     setSelectedResource(resource.id);
@@ -669,7 +692,7 @@ export default function ResourcesScreen() {
   };
 
   const handleImHere = () => {
-    Alert.alert("Arrived!", "You have reached your destination.");
+    //Alert.alert("Arrived!", "You have reached your destination.");
     handleCancelDirections();
   };
 
@@ -946,9 +969,7 @@ export default function ResourcesScreen() {
           {searchQuery.length === 0 && (
             <TouchableOpacity
               onPress={() => {
-                setSearchQuery("");
-                handleCancelDirections();
-                setShowAutocomplete(false);
+                setShowFilterPopup(true);
               }}
             >
               <FontAwesome name="filter" size={20} color={Theme.colors.text} />
@@ -1083,7 +1104,11 @@ export default function ResourcesScreen() {
         {showDetails && !routeStarted ? (
           renderResourceDetails()
         ) : routeStarted ? (
-          renderDirections()
+          isLoadingDirections ? (
+            <LoadingOverlay />
+          ) : (
+            renderDirections()
+          )
         ) : selectedDestination && directionSteps.length > 0 && !showDetails ? (
           <View style={styles.directionsSection}>
             <View style={styles.directionsHeader}>
@@ -1285,6 +1310,7 @@ export default function ResourcesScreen() {
           </View>
         )}
       </Animated.View>
+      {isLoadingSearch && <LoadingOverlay />}
       {(showSaveSuccessModal || showDeleteSuccessModal) && (
         <Animated.View
           style={[styles.successModalOverlay, { opacity: successModalAnim }]}
@@ -1309,28 +1335,33 @@ export default function ResourcesScreen() {
         </Animated.View>
       )}
       {showEndRouteModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>End Route?</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to end the current route?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={() => setShowEndRouteModal(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalConfirmButton]}
-                onPress={handleConfirmEndRoute}
-              >
-                <Text style={styles.modalConfirmText}>End Route</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        // <View style={styles.modalOverlay}>
+        //   <View style={styles.modalContainer}>
+        //     <Text style={styles.modalTitle}>End Route?</Text>
+        //     <Text style={styles.modalMessage}>
+        //       Are you sure you want to end the current route?
+        //     </Text>
+        //     <View style={styles.modalButtons}>
+        //       <TouchableOpacity
+        //         style={[styles.modalButton, styles.modalCancelButton]}
+        //         onPress={() => setShowEndRouteModal(false)}
+        //       >
+        //         <Text style={styles.modalCancelText}>Cancel</Text>
+        //       </TouchableOpacity>
+        //       <TouchableOpacity
+        //         style={[styles.modalButton, styles.modalConfirmButton]}
+        //         onPress={handleConfirmEndRoute}
+        //       >
+        //         <Text style={styles.modalConfirmText}>End Route</Text>
+        //       </TouchableOpacity>
+        //     </View>
+        //   </View>
+        // </View>
+        <AreYouSurePopup
+          mode={"end_route"}
+          setShowPopUp={setShowEndRouteModal}
+          proceed={handleConfirmEndRoute}
+        ></AreYouSurePopup>
       )}
       {showTipsModal && (
         <SelectionModal
@@ -1340,6 +1371,15 @@ export default function ResourcesScreen() {
         ></SelectionModal>
       )}
       <CustomTabBar />
+      <AdvancedFilterPopup
+        visible={showFilterPopup}
+        onDismiss={() => setShowFilterPopup(false)}
+        onApplyFilters={(filters) => {
+          console.log("Applied filters:", filters);
+          // Here you can implement actual filtering logic
+          // For now, just log the filters
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1648,6 +1688,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
   directionsSection: {
+    // bug: if the directions are short (e.g., Palm Drive, the box is very small)
     backgroundColor: Theme.colors.backgroundLight,
     borderTopLeftRadius: Theme.borderRadius.xl,
     borderTopRightRadius: Theme.borderRadius.xl,
@@ -1950,5 +1991,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.backgroundLight,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Theme.colors.backgroundLight + "EE",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+
+  loadingContainer: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderRadius: Theme.borderRadius.xl,
+    padding: Theme.spacing.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Theme.shadows.lg,
+    width: "80%",
+    maxWidth: 300,
+  },
+
+  spinnerContainer: {
+    marginBottom: Theme.spacing.lg,
+    transform: [{ rotate: "0deg" }],
+  },
+
+  loadingText: {
+    fontSize: 18,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+    marginBottom: Theme.spacing.sm,
+    textAlign: "center",
+  },
+
+  loadingSubtext: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.textSecondary,
+    textAlign: "center",
+  },
+
+  // Optional: Add animation to the spinner
+  spinner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 4,
+    borderColor: Theme.colors.primary + "20",
+    borderTopColor: Theme.colors.primary,
   },
 });

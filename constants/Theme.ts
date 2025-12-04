@@ -71,5 +71,12 @@ export const Theme = {
       shadowRadius: 8,
       elevation: 4,
     },
+    xl: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      elevation: 8,
+    },
   },
 };
