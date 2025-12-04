@@ -70,6 +70,32 @@ const STANFORD_COORDS = {
   latitude: 37.4275,
   longitude: -122.1695,
 };
+export function deterministicPhoneNumber(inputString: string): string {
+  // Create a consistent hash
+  let hash = 0;
+  for (let i = 0; i < inputString.length; i++) {
+    const char = inputString.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = Math.abs(hash & 0xffffffff); // Ensure positive 32-bit
+  }
+
+  // Format as phone number (ensuring 10 digits)
+  const baseNumber = hash % 10000000000;
+  const phoneStr = baseNumber.toString().padStart(10, "0");
+  const formattedPhoneStr = phoneStr.replace(
+    /(\d{3})(\d{3})(\d{4})/,
+    "$1-$2-$3"
+  );
+
+  return formattedPhoneStr;
+}
+export function getFirstWord(text: string): string {
+  if (!text || typeof text !== "string") return "";
+
+  // Split by whitespace and get first element
+  const words = text.trim().split(/\s+/);
+  return words[0].toLowerCase() || "";
+}
 
 export default function ResourcesScreen() {
   const insets = useSafeAreaInsets();
@@ -1231,7 +1257,7 @@ export default function ResourcesScreen() {
                   color={Theme.colors.primary}
                 />
                 <Text style={styles.detailText}>
-                  {dummyResources[1].address}
+                  {selectedDestination.address}
                 </Text>
               </View>
               {dummyResources[1].phone && (
@@ -1242,7 +1268,7 @@ export default function ResourcesScreen() {
                     color={Theme.colors.primary}
                   />
                   <Text style={styles.detailText}>
-                    {dummyResources[1].phone}
+                    {deterministicPhoneNumber(selectedDestination.name)}
                   </Text>
                 </View>
               )}
@@ -1254,7 +1280,9 @@ export default function ResourcesScreen() {
                     color={Theme.colors.primary}
                   />
                   <Text style={styles.detailText}>
-                    {dummyResources[1].email}
+                    {`medicalrecords@${getFirstWord(
+                      selectedDestination.name
+                    )}.org`}
                   </Text>
                 </View>
               )}
