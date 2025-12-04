@@ -77,6 +77,7 @@ export default function ChatScreen() {
     }
     return avatar;
   };
+  const [showTipsModal, setShowTipsModal] = useState(false);
   const videoRef = useRef<Video>(null);
   // remove later:
   const generateDummyMessages = (): Message[] => {
@@ -128,6 +129,16 @@ export default function ChatScreen() {
     }).start();
     loadSessions();
   }, []);
+  useEffect(() => {
+    if (currentView === "avatar-chat") {
+      const timer = setTimeout(() => {
+        setShowTipsModal(true);
+      }, 5000); // 5000 milliseconds = 5 seconds
+
+      // Clean up the timer when component unmounts or when currentView changes
+      return () => clearTimeout(timer);
+    }
+  }, [currentView]); // This effect depends on currentView
 
   // useEffect(() => {
   //   if (currentSessionId && currentView !== "session-select") {
@@ -199,7 +210,7 @@ export default function ChatScreen() {
         .insert({
           user_id: user.id,
           session_type: type,
-          title: type === "text" ? "Text Chat" : "Voice Chat",
+          title: type === "text" ? "Text Chat" : "Avatar Chat",
         })
         .select()
         .single();
@@ -842,11 +853,11 @@ export default function ChatScreen() {
                     ))}
 
                     {/* Show "Now speaking..." indicator for demo */}
-                    <View style={styles.currentMessageIndicator}>
+                    {/* <View style={styles.currentMessageIndicator}>
                       <Text style={styles.currentMessageText}>
                         {getAvatarById(avatar).name} is listening...
                       </Text>
-                    </View>
+                    </View> */}
                   </>
                 )}
               </ScrollView>
@@ -948,6 +959,14 @@ export default function ChatScreen() {
             mode={"end_call"}
             setShowPopUp={setShowEndCallModal}
             proceed={handleEndCall}
+          />
+        )}
+        {showTipsModal && (
+          <SelectionModal
+            mode={"tips_checklist"}
+            from_video={true}
+            setShowPopUp={setShowTipsModal}
+            proceed={() => {}}
           />
         )}
       </SafeAreaView>

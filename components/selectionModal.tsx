@@ -34,6 +34,7 @@ const languageOptions = [
 
 export default function SelectionModal({
   mode,
+  from_video,
   setShowPopUp,
   avatar,
   setAvatar,
@@ -42,6 +43,7 @@ export default function SelectionModal({
   setSelectedLanguage,
 }: {
   mode: "tips_checklist" | "choose_avatar" | "select_language";
+  from_video?: true;
   setShowPopUp: React.Dispatch<React.SetStateAction<boolean>>;
   avatar?: "dr-al" | "dr-lora" | "bert" | "lexi";
   setAvatar?: React.Dispatch<
@@ -51,13 +53,28 @@ export default function SelectionModal({
   selectedLanguage?: string;
   setSelectedLanguage?: React.Dispatch<React.SetStateAction<string>>;
 }) {
+  const video_origin = from_video || false;
   const prepTipsChecklist = [
     { id: "1", title: "Arrive 10 minutes early.", completed: false },
     { id: "2", title: "Bring your Medi-Cal card.", completed: false },
     { id: "3", title: "Bring a photo ID", completed: false },
   ];
-
-  const [tipsChecklist, setTipsChecklist] = useState(prepTipsChecklist);
+  const adviceChecklist = [
+    {
+      id: "1",
+      title:
+        "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
+      completed: false,
+    },
+    {
+      id: "2",
+      title: "Walk on treadmills at Palo Alto YMCA Gym every week.",
+      completed: false,
+    },
+  ];
+  const chosenChecklist = video_origin ? adviceChecklist : prepTipsChecklist;
+  const [addedToChecklist, setAddedToChecklist] = useState(false);
+  const [tipsChecklist, setTipsChecklist] = useState(chosenChecklist);
   const [selectedAvatar, setSelectedAvatar] = useState<
     "dr-al" | "dr-lora" | "bert" | "lexi"
   >(avatar ?? "dr-al");
@@ -69,7 +86,7 @@ export default function SelectionModal({
 
   const resetTipsChecklist = () => {
     setTipsChecklist(
-      prepTipsChecklist.map((item) => ({ ...item, completed: false }))
+      chosenChecklist.map((item) => ({ ...item, completed: false }))
     );
   };
 
@@ -77,7 +94,7 @@ export default function SelectionModal({
   const getModalTitle = () => {
     switch (mode) {
       case "tips_checklist":
-        return "Before You Start";
+        return video_origin ? `To-do list` : "Before You Start";
       case "choose_avatar":
         return "Choose Avatar";
       case "select_language":
@@ -90,7 +107,9 @@ export default function SelectionModal({
   const getModalSubtitle = () => {
     switch (mode) {
       case "tips_checklist":
-        return "Remember to do these things before embarking on your journey";
+        return video_origin
+          ? "Here are some of the suggested tips. You can add them to your checklist!"
+          : "Remember to do these things before embarking on your journey";
       case "choose_avatar":
         return "Select your Medi-Pal companion:";
       case "select_language":
@@ -103,7 +122,11 @@ export default function SelectionModal({
   const getConfirmButtonText = () => {
     switch (mode) {
       case "tips_checklist":
-        return "Start Route";
+        return video_origin
+          ? addedToChecklist
+            ? "Added in Checklist"
+            : "Add to Checklist"
+          : "Start Route";
       case "choose_avatar":
         return "Confirm";
       case "select_language":
@@ -116,6 +139,9 @@ export default function SelectionModal({
   const handleConfirmPress = () => {
     switch (mode) {
       case "tips_checklist":
+        if (video_origin === true && addedToChecklist === false) {
+          setAddedToChecklist(!addedToChecklist);
+        }
         if (proceed) proceed();
         break;
       case "choose_avatar":
@@ -325,13 +351,20 @@ export default function SelectionModal({
               setShowPopUp(false);
             }}
           >
-            <Text style={styles.modalCancelText}>Cancel</Text>
+            <Text style={styles.modalCancelText}>
+              {video_origin ? "Exit" : "Cancel"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.modalButton,
               styles.modalConfirmButton,
               { backgroundColor: Theme.colors.primaryDark },
+              video_origin && { flex: 2 },
+              video_origin &&
+                addedToChecklist && {
+                  backgroundColor: Theme.colors.primaryAlt,
+                },
             ]}
             onPress={handleConfirmPress}
           >
@@ -376,7 +409,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.sm,
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
-    marginBottom: Theme.spacing.xs,
+    marginBottom: Theme.spacing.sm,
   },
   languageOption: {
     flexDirection: "row",
@@ -471,11 +504,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalCancelButton: {
+    // flex: 3,
     backgroundColor: Theme.colors.backgroundLight,
     borderWidth: 1,
     borderColor: Theme.colors.border,
   },
   modalConfirmButton: {
+    // flex: 4,
     backgroundColor: Theme.colors.error,
   },
   modalCancelText: {
