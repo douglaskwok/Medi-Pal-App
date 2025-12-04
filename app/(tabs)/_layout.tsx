@@ -62,7 +62,7 @@ export function CustomTabBar() {
                 size={24}
                 color={
                   isActive
-                    ? Theme.colors.primaryDark
+                    ? Theme.colors.primaryAlt
                     : Theme.colors.textSecondary
                 }
               />
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   tabLabelActive: {
-    color: Theme.colors.primaryDark,
+    color: Theme.colors.primaryAlt,
     fontFamily: Theme.fonts.semibold,
   },
 });

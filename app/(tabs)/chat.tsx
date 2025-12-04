@@ -84,51 +84,38 @@ export default function ChatScreen() {
     return [
       {
         id: "1",
-        content:
-          "Hello! I'm Dr. Medi-Pal, your AI healthcare assistant. I can help you find healthcare resources, understand your Medi-Cal benefits, and navigate the healthcare system. What do you need help with today?",
+        content: `Hello! I'm ${
+          getAvatarById(avatar).name
+        }, your AI healthcare assistant. How may I help you today?`,
         role: "assistant",
         timestamp: new Date(now.getTime() - 300000), // 5 minutes ago
       },
       {
         id: "2",
         content:
-          "Hi, I need help finding a primary care doctor who accepts Medi-Cal near downtown Los Angeles",
+          "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
         role: "user",
         timestamp: new Date(now.getTime() - 240000), // 4 minutes ago
       },
       {
         id: "3",
         content:
-          "I can help you find a primary care doctor. Let me search for providers in downtown LA who accept Medi-Cal. Are you looking for a clinic or private practice?",
+          "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
         role: "assistant",
         timestamp: new Date(now.getTime() - 180000), // 3 minutes ago
       },
       {
         id: "4",
-        content:
-          "Either is fine, but I prefer somewhere with evening or weekend hours since I work during the day",
+        content: "Sure",
         role: "user",
         timestamp: new Date(now.getTime() - 120000), // 2 minutes ago
       },
       {
         id: "5",
         content:
-          "Perfect. I found 3 clinics in downtown LA that accept Medi-Cal and have extended hours. The closest is Hope Family Health Center - they're open until 8 PM on weekdays and 5 PM on Saturdays. Would you like their contact information?",
+          "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
         role: "assistant",
         timestamp: new Date(now.getTime() - 60000), // 1 minute ago
-      },
-      {
-        id: "6",
-        content: "Yes please! And do you know if they accept new patients?",
-        role: "user",
-        timestamp: new Date(now.getTime() - 30000), // 30 seconds ago
-      },
-      {
-        id: "7",
-        content:
-          "Yes! They're accepting new Medi-Cal patients. Their number is (213) 555-0123. Would you like me to guide you there?",
-        role: "assistant",
-        timestamp: new Date(now.getTime() - 15000), // 15 seconds ago
       },
     ];
   };
@@ -1496,7 +1483,7 @@ const styles = StyleSheet.create({
   },
 
   primaryControlButton: {
-    backgroundColor: Theme.colors.navy,
+    backgroundColor: Theme.colors.primaryDark,
     // paddingHorizontal: Theme.spacing.lg,
     // paddingVertical: Theme.spacing.md,
     ...Theme.shadows.xl,

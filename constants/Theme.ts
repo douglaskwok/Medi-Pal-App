@@ -1,7 +1,9 @@
 export const Theme = {
   colors: {
     primary: "#78C7FF", // Main blue for accents 78C7FF
-    primaryDark: "#408fc7ff",
+    // primaryDark: "#408fc7ff",
+    primaryAlt: "#408fc7ff",
+    primaryDark: "#053f6aff",
     primaryLight: "#9DD5FF",
     secondary: "#B8E0FF", // Medium blue for subtle elements
     background: "#E1F2FF", // Light sky blue background

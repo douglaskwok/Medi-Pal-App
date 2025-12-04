@@ -229,7 +229,12 @@ export default function HomeScreen() {
                   ]}
                   onPress={() => setSelectedDate(day)}
                 >
-                  <Text style={styles.calendarDayName}>
+                  <Text
+                    style={[
+                      styles.calendarDayName,
+                      isSelected && { color: Theme.colors.backgroundLight },
+                    ]}
+                  >
                     {format(day, "EEE")}
                   </Text>
                   <Text
@@ -460,7 +465,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   upArrowActive: {
-    backgroundColor: Theme.colors.navy,
+    backgroundColor: Theme.colors.primaryDark,
     opacity: 1,
   },
   calendarSection: {
@@ -503,7 +508,7 @@ const styles = StyleSheet.create({
     minHeight: 70,
   },
   calendarDaySelected: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
   },
   calendarDayToday: {
     backgroundColor: Theme.colors.background,

@@ -582,15 +582,23 @@ export default function ResourcesScreen() {
       setIsLoadingDirections(false);
     }
   };
-  const LoadingOverlay = () => (
+  const LoadingOverlay = ({ mode }: { mode: "search" | "start_route" }) => (
     <View style={styles.loadingOverlay}>
       <View style={styles.loadingContainer}>
         <Animated.View style={styles.spinnerContainer}>
           <ActivityIndicator size={"large"} color={Theme.colors.primary} />
           {/* <Ionicons name="navigate" size={48} color={Theme.colors.primary} /> */}
         </Animated.View>
-        <Text style={styles.loadingText}>Loading directions...</Text>
-        <Text style={styles.loadingSubtext}>Calculating the best route</Text>
+        <Text style={styles.loadingText}>
+          {mode === "start_route"
+            ? "Loading directions..."
+            : "Loading resource..."}
+        </Text>
+        <Text style={styles.loadingSubtext}>
+          {mode === "start_route"
+            ? "Calculating the best route"
+            : "Fun Fact: Medi-Pal has a database of thousands of free Medi-Cal resources in California."}
+        </Text>
       </View>
     </View>
   );
@@ -1105,7 +1113,7 @@ export default function ResourcesScreen() {
           renderResourceDetails()
         ) : routeStarted ? (
           isLoadingDirections ? (
-            <LoadingOverlay />
+            <LoadingOverlay mode={"start_route"} />
           ) : (
             renderDirections()
           )
@@ -1171,7 +1179,7 @@ export default function ResourcesScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <ScrollView
+            {/* <ScrollView
               style={styles.stepsList}
               showsVerticalScrollIndicator={false}
             >
@@ -1195,6 +1203,79 @@ export default function ResourcesScreen() {
                   </View>
                 </View>
               ))}
+            </ScrollView> */}
+            {/* hardcode dummy resource for now */}
+            <ScrollView
+              style={styles.detailsContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View
+                style={[
+                  styles.eligibilityRow,
+                  { marginBottom: Theme.spacing.md },
+                ]}
+              >
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color={Theme.colors.success}
+                />
+                <Text style={styles.eligibilityText}>
+                  You are eligible for this service
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={Theme.colors.primary}
+                />
+                <Text style={styles.detailText}>
+                  {dummyResources[1].address}
+                </Text>
+              </View>
+              {dummyResources[1].phone && (
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name="call-outline"
+                    size={18}
+                    color={Theme.colors.primary}
+                  />
+                  <Text style={styles.detailText}>
+                    {dummyResources[1].phone}
+                  </Text>
+                </View>
+              )}
+              {dummyResources[1].email && (
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={Theme.colors.primary}
+                  />
+                  <Text style={styles.detailText}>
+                    {dummyResources[1].email}
+                  </Text>
+                </View>
+              )}
+              {dummyResources[1].hours && (
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={Theme.colors.primary}
+                  />
+                  <View style={{ flex: 1 }}>
+                    {dummyResources[1].hours
+                      .split("\n")
+                      .map((dayHours, index) => (
+                        <Text key={index} style={styles.detailText}>
+                          {dayHours.trim()}
+                        </Text>
+                      ))}
+                  </View>
+                </View>
+              )}
             </ScrollView>
           </View>
         ) : (
@@ -1310,7 +1391,7 @@ export default function ResourcesScreen() {
           </View>
         )}
       </Animated.View>
-      {isLoadingSearch && <LoadingOverlay />}
+      {isLoadingSearch && <LoadingOverlay mode={"search"} />}
       {(showSaveSuccessModal || showDeleteSuccessModal) && (
         <Animated.View
           style={[styles.successModalOverlay, { opacity: successModalAnim }]}
@@ -1807,7 +1888,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   startRouteButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
     paddingVertical: Theme.spacing.sm,
     paddingHorizontal: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
