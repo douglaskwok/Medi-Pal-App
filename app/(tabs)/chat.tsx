@@ -23,6 +23,8 @@ import { supabase } from "../../lib/supabase";
 import OpenAI from "openai";
 import { format } from "date-fns";
 import { Dimensions } from "react-native";
+import SelectionModal from "../../components/selectionModal";
+import { Avatar, avatars } from "../../constants/Avatars";
 
 interface Message {
   id: string;
@@ -60,6 +62,18 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [speaker, setSpeaker] = useState(false);
+
+  const [chooseAvatarModal, setChooseAvatarModal] = useState(false);
+  const [avatar, setAvatar] = useState<"dr-al" | "dr-lora" | "lexi" | "bert">(
+    "dr-al"
+  );
+  const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
+    const avatar = avatars.find((avatar) => avatar.id === id);
+    if (!avatar) {
+      throw new Error(`Avatar with id "${id}" not found`);
+    }
+    return avatar;
+  };
 
   // remove later:
   const generateDummyMessages = (): Message[] => {
@@ -690,7 +704,7 @@ export default function ChatScreen() {
 
               {/* Avatar Placeholder*/}
               <Image
-                source={require("../../assets/avatar-placeholder-2.jpeg")}
+                source={getAvatarById(avatar).listening}
                 style={styles.videoPlaceholder}
                 // resizeMode="cover"
               ></Image>
@@ -702,7 +716,9 @@ export default function ChatScreen() {
               </View>
               <TouchableOpacity
                 style={[styles.selectAvatarButton]}
-                onPress={() => {}}
+                onPress={() => {
+                  setChooseAvatarModal(true);
+                }}
               >
                 <FontAwesome5
                   name="user-edit"
@@ -793,14 +809,16 @@ export default function ChatScreen() {
                               />
                             ) : (
                               <Image
-                                source={require("../../assets/avatars/dr-al/profile.jpeg")}
+                                source={getAvatarById(avatar).source}
                                 style={styles.avatarIcon}
                                 resizeMode="cover"
                               />
                             )}
                           </View>
                           <Text style={styles.captionName}>
-                            {message.role === "user" ? "You" : "Dr. Al"}
+                            {message.role === "user"
+                              ? "You"
+                              : getAvatarById(avatar).name}
                           </Text>
                           <Text style={styles.captionTime}>
                             {format(message.timestamp, "h:mm a")}
@@ -815,7 +833,7 @@ export default function ChatScreen() {
                     {/* Show "Now speaking..." indicator for demo */}
                     <View style={styles.currentMessageIndicator}>
                       <Text style={styles.currentMessageText}>
-                        Dr. Al is listening...
+                        {getAvatarById(avatar).name} is listening...
                       </Text>
                     </View>
                   </>
@@ -889,6 +907,16 @@ export default function ChatScreen() {
           ></TouchableOpacity>
         </View> */}
         <CustomTabBar />
+
+        {chooseAvatarModal && (
+          <SelectionModal
+            mode={"choose_avatar"}
+            setShowPopUp={setChooseAvatarModal}
+            avatar={avatar}
+            setAvatar={setAvatar}
+            // proceed={() => {}}
+          ></SelectionModal>
+        )}
       </SafeAreaView>
     );
   }

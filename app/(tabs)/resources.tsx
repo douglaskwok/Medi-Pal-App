@@ -20,9 +20,12 @@ import { Theme } from "../../constants/Theme";
 import { dummyResources } from "../../constants/DummyData";
 import { ResourceCard } from "../../components/ResourceCard";
 import { Ionicons } from "@expo/vector-icons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
 import { useLocalSearchParams } from "expo-router";
+
+import SelectionModal from "../../components/selectionModal";
 
 const { width, height } = Dimensions.get("window");
 const MAP_HEIGHT = height * 0.35;
@@ -940,6 +943,17 @@ export default function ResourcesScreen() {
               />
             </TouchableOpacity>
           )}
+          {searchQuery.length === 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery("");
+                handleCancelDirections();
+                setShowAutocomplete(false);
+              }}
+            >
+              <FontAwesome name="filter" size={20} color={Theme.colors.text} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {showAutocomplete && autocompleteResults.length > 0 && (
@@ -1319,75 +1333,11 @@ export default function ResourcesScreen() {
         </View>
       )}
       {showTipsModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.tipsModalTitle}>Before You Start</Text>
-            <Text style={styles.tipsModalSubtitle}>
-              Remember to do these things before embarking on your journey:
-            </Text>
-
-            <ScrollView style={styles.checklistScroll}>
-              {tipsChecklist.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.checklistItem}
-                  onPress={() => {
-                    setTipsChecklist(
-                      tipsChecklist.map((i) =>
-                        i.id === item.id ? { ...i, completed: !i.completed } : i
-                      )
-                    );
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.checklistCheckbox,
-                      item.completed && styles.checklistCheckboxCompleted,
-                    ]}
-                  >
-                    {item.completed && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color={Theme.colors.backgroundLight}
-                      />
-                    )}
-                  </View>
-                  <Text
-                    style={[
-                      styles.checklistText,
-                      item.completed && styles.checklistTextCompleted,
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={() => {
-                  resetTipsChecklist();
-                  setShowTipsModal(false);
-                }}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalConfirmButton,
-                  { backgroundColor: Theme.colors.primary },
-                ]}
-                onPress={handleStartRouteAfterTips}
-              >
-                <Text style={styles.modalConfirmText}>Start Route</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        <SelectionModal
+          mode={"tips_checklist"}
+          setShowPopUp={setShowTipsModal}
+          proceed={handleStartRouteAfterTips}
+        ></SelectionModal>
       )}
       <CustomTabBar />
     </SafeAreaView>
