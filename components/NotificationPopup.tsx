@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -36,6 +36,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [isSaved, setIsSaved] = useState(false);
 
   /** ANIMATION VALUES **/
   const translateY = useRef(new Animated.Value(200)).current; // start below
@@ -153,7 +154,8 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
       onSaveResource?.();
       onSaveSuccess?.();
-      dismissNotification();
+      setIsSaved(true);
+      // dismissNotification();
     } catch (err) {
       console.error("Error saving resource:", err);
     }
@@ -271,7 +273,9 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             onPress={handleSaveResource}
           >
             {/* <FontAwesome name="bookmark-o" size={24} color="black" /> */}
-            <Text style={styles.saveButtonText}>Save Resource</Text>
+            <Text style={styles.saveButtonText}>
+              {isSaved ? "Resource is saved!" : "Save Resource"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
