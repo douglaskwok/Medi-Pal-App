@@ -839,7 +839,7 @@ export default function ChatScreen() {
       }));
 
       let systemPrompt =
-        "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.";
+        "You are a helpful healthcare assistant for Medi-Cal beneficiaries, and your job is to suggest Medi-Cal resources to the user. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system. Ask clarifying questions if the user input is insufficient for you to discern which resources the user needs (e.g., resource type, location).";
 
       if (newUserMessageCount === 2) {
         systemPrompt = `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
@@ -878,6 +878,7 @@ export default function ChatScreen() {
         setAIResources(aiResponse);
         const parsedResources = parseResources(aiResponse);
         setShownResources(parsedResources);
+        console.log(aiResponse);
         aiResponse =
           "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
         setShowAIResources(true);
@@ -1178,8 +1179,9 @@ export default function ChatScreen() {
               {messages.length === 0 && (
                 <View style={styles.welcomeContainer}>
                   <Text style={styles.welcomeText}>
-                    Hello! I'm your Medi-Pal AI assistant. How can I help you
-                    with your healthcare needs today?
+                    Hello! I'm your Medi-Pal AI assistant, Dr. Al. I specialize
+                    in helping residents find Medi-Cal resources. How can I help
+                    you with your healthcare needs today?
                   </Text>
                 </View>
               )}
@@ -1231,7 +1233,7 @@ export default function ChatScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Ask me anything about healthcare..."
+              placeholder="Ask me anything about resources..."
               placeholderTextColor={Theme.colors.textLight}
               value={inputText}
               onChangeText={setInputText}
@@ -1269,7 +1271,15 @@ export default function ChatScreen() {
                 name: resource.name,
                 address: resource.address || "",
                 description: resource.description || "",
-                imageSource: require("../../assets/generic.jpg"),
+                imageSource:
+                  resource.type === "Gym"
+                    ? require("../../assets/gym.png")
+                    : resource.type.includes("Dental") ||
+                      resource.type.includes("Dentist")
+                    ? require("../../assets/dental.png")
+                    : resource.type.includes("Clinic")
+                    ? require("../../assets/clinic.png")
+                    : require("../../assets/generic.jpg"),
                 eligibility: "You are eligible for this service",
                 category: resource.type || "General",
                 latitude: resource.latitude || 0,
