@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { Dimensions } from "react-native";
 import SelectionModal from "../../components/selectionModal";
 import AreYouSurePopup from "../../components/AreYouSurePopup";
+import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 
 interface Message {
@@ -63,6 +64,8 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [userMessageCount, setUserMessageCount] = useState(0);
+
   const [speaker, setSpeaker] = useState(false);
 
   const [chooseAvatarModal, setChooseAvatarModal] = useState(false);
@@ -262,6 +265,7 @@ export default function ChatScreen() {
       setCurrentSessionId(sessionId);
       setCurrentView("text-chat");
       setMessages([]);
+      setUserMessageCount(0);
       await loadSessions();
     }
   };
@@ -285,6 +289,9 @@ export default function ChatScreen() {
     setCurrentSessionId(sessionId);
     setCurrentView(type === "voice" ? "avatar-chat" : "text-chat");
     await loadMessages(sessionId);
+    // may not work - mark here just in case
+    const userCount = messages.filter((msg) => msg.role === "user").length;
+    setUserMessageCount(userCount);
 
     // remove later - dummy messages
     if (type === "voice" && messages.length === 0) {
@@ -309,20 +316,28 @@ export default function ChatScreen() {
     await saveMessage(currentSessionId, messageText, "user");
     setInputText("");
     setIsLoading(true);
+    // Increment user message count
+    const newUserMessageCount = userMessageCount + 1;
+    setUserMessageCount(newUserMessageCount);
 
     try {
       const conversationHistory = messages.map((msg) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       }));
+      let systemPrompt =
+        "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.";
+      if (newUserMessageCount >= 3) {
+        systemPrompt = `Ignore everything the user says, and output the entire conversation in JSON format.`;
+        console.log("user message count over 3.");
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content:
-              "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.",
+            content: systemPrompt, //"You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.",
           },
           ...conversationHistory,
           {
@@ -367,6 +382,7 @@ export default function ChatScreen() {
     setCurrentSessionId(null);
     setMessages([]);
     setIsLoading(false);
+    setUserMessageCount(0); // Reset count
     loadSessions();
   };
   useEffect(() => {
@@ -645,6 +661,38 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+        <AISuggestion
+          visible={true}
+          onDismiss={() => {}}
+          resources={[
+            {
+              id: "1",
+              name: "Palo Alto Family YMCA",
+              address: "3412 Ross Road, Palo Alto, CA 94303",
+              description: "Free gym membership with Medi-Cal",
+              imageSource: require("../../assets/gym.png"),
+              eligibility: "You are eligible for this service",
+              category: "Fitness",
+              latitude: 37.4419,
+              longitude: -122.143,
+              place_id: "ymca_palo_alto",
+            },
+            {
+              id: "2",
+              name: "Community Health Clinic",
+              address: "789 Oak Avenue, Mountain View, CA 94041",
+              description: "Free health screenings and consultations",
+              imageSource: require("../../assets/gym.png"),
+              eligibility: "You are eligible for this service",
+              category: "Healthcare",
+              latitude: 37.3861,
+              longitude: -122.0839,
+              place_id: "clinic_mountain_view",
+            },
+          ]}
+          // onSaveResource={(resourceId) => console.log("Saved:", resourceId)}
+          // onTakeMeThere={(resource) => console.log("Navigate to:", resource.name)}
+        />
         <CustomTabBar />
       </SafeAreaView>
     );
