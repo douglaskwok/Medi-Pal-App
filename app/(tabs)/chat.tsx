@@ -273,6 +273,12 @@ export default function ChatScreen() {
     }
   }, [avatar, currentView]);
 
+  useEffect(() => {
+    if (currentView === "avatar-chat" && isVideoReady) {
+      updateVideoBasedOnConversation();
+    }
+  }, [dummyMessagesIndex, avatar, currentView, isVideoReady]);
+
   // // Tips modal effect
   // useEffect(() => {
   //   if (currentView === "avatar-chat") {
@@ -297,10 +303,13 @@ export default function ChatScreen() {
         const avatarData = getAvatarById(avatar);
         setIsVideoReady(false);
 
-        // Load default video
+        const initialVideoSource = shouldShowTalkingVideo()
+          ? avatarData.video_talking?.[0] || avatarData.video_default.loop[0]
+          : avatarData.video_default.loop[0];
+
         if (videoRef.current) {
           await videoRef.current.loadAsync(
-            avatarData.video_default.loop[0],
+            initialVideoSource,
             { shouldPlay: false, isLooping: true },
             false
           );
@@ -361,6 +370,18 @@ export default function ChatScreen() {
 
     handleRecordingChange();
   }, [isRecording]);
+  // Add this function to get the appropriate video source based on state
+  const getCurrentVideoSource = () => {
+    const avatarData = getAvatarById(avatar);
+
+    // If we should show talking video, return talking video
+    if (shouldShowTalkingVideo()) {
+      return avatarData.video_talking?.[0] || avatarData.video_default.loop[0];
+    }
+
+    // Otherwise return default video
+    return avatarData.video_default.loop[0];
+  };
 
   // Video transition function
   const playTransition = async (type: "start" | "end") => {
@@ -403,7 +424,7 @@ export default function ChatScreen() {
         console.log(`Transition will take ${duration}ms`);
 
         // Add a small buffer to ensure smooth transition
-        const bufferDuration = 100; // 100ms buffer
+        const bufferDuration = 50; // 100ms buffer
 
         setTimeout(async () => {
           console.log(
@@ -465,14 +486,53 @@ export default function ChatScreen() {
         await listeningVideoRef.current.setPositionAsync(0);
       }
 
-      // Start default video
+      // Always use the appropriate video based on conversation state
+      const videoSource = getCurrentVideoSource();
+
       if (videoRef.current) {
-        await videoRef.current.setPositionAsync(0);
+        await videoRef.current.unloadAsync();
+        await videoRef.current.loadAsync(
+          videoSource,
+          { shouldPlay: true, isLooping: true },
+          false
+        );
         await videoRef.current.playAsync();
         setVideoMode("default");
+        console.log(
+          `Switched to ${
+            shouldShowTalkingVideo() ? "talking" : "default"
+          } video after transition`
+        );
       }
     } catch (error) {
       console.error("Error switching to default:", error);
+    }
+  };
+  // Add this function to update the video based on conversation state
+  // Add this function to update the video
+  const updateVideoBasedOnConversation = async () => {
+    if (videoRef.current && videoMode === "default" && !currentTransition) {
+      try {
+        const newVideoSource = getCurrentVideoSource();
+        const avatarData = getAvatarById(avatar);
+
+        // Get the current source to avoid unnecessary reloads
+        // We'll just reload whenever state changes
+        await videoRef.current.unloadAsync();
+        await videoRef.current.loadAsync(
+          newVideoSource,
+          { shouldPlay: true, isLooping: true },
+          false
+        );
+        await videoRef.current.playAsync();
+        console.log(
+          `Switched to ${
+            shouldShowTalkingVideo() ? "talking" : "default"
+          } video`
+        );
+      } catch (error) {
+        console.error("Error updating video:", error);
+      }
     }
   };
   const SoundWaveIcon = ({ isActive, size = 24, color = "#fff" }) => {
@@ -482,6 +542,16 @@ export default function ChatScreen() {
       new Animated.Value(1),
       new Animated.Value(1),
     ]).current;
+    // Add this effect near your other useEffects
+    useEffect(() => {
+      if (
+        currentView === "avatar-chat" &&
+        isVideoReady &&
+        videoMode === "default"
+      ) {
+        updateVideoBasedOnConversation();
+      }
+    }, [dummyMessagesIndex]);
 
     useEffect(() => {
       if (isActive) {
@@ -715,7 +785,14 @@ export default function ChatScreen() {
       setCurrentView("avatar-chat");
       // Start with just the first assistant message
       setMessages([generateDummyMessages()[0]]);
-      setDummyMessagesIndex(1); // Set index to 1 (next message is user message)
+      setDummyMessagesIndex(1); // This should trigger talking video
+
+      // Force video update after a short delay
+      setTimeout(() => {
+        if (currentView === "avatar-chat") {
+          updateVideoBasedOnConversation();
+        }
+      }, 100);
       await loadSessions();
     }
   };
@@ -839,7 +916,13 @@ export default function ChatScreen() {
     setAIResources(null);
     setShownResources(null);
     setShowAIResources(false);
+    setShowEndCallModal(false);
     loadSessions();
+  };
+  const shouldShowTalkingVideo = () => {
+    const totalDummyMessages = generateDummyMessages().length;
+    // Show talking video until all dummy messages are loaded
+    return dummyMessagesIndex < totalDummyMessages;
   };
 
   const handleMicPressIn = () => {
@@ -856,30 +939,33 @@ export default function ChatScreen() {
       // Get all dummy messages
       const allDummyMessages = generateDummyMessages();
 
-      // Only add messages if we haven't shown all yet
+      // Check if we have more messages to show
       if (dummyMessagesIndex < allDummyMessages.length) {
-        // Add the next message to the conversation
+        // Get the next message to show
         const nextMessage = allDummyMessages[dummyMessagesIndex];
+        const isUserMessage = nextMessage.role === "user";
 
-        // Simulate a small delay for "processing"
+        // Add a small processing delay
         setTimeout(() => {
+          // Add the current message
           const newIndex = dummyMessagesIndex + 1;
           setMessages((prev) => [...prev, nextMessage]);
           setDummyMessagesIndex(newIndex);
 
-          // Check if this was the LAST message
-          if (newIndex >= allDummyMessages.length) {
-            // Show tips modal after a short delay when conversation ends
+          // Update video immediately after adding message
+          updateVideoBasedOnConversation();
+
+          // Check if this was the last message
+          const isLastMessage = newIndex >= allDummyMessages.length;
+
+          if (isLastMessage) {
+            // Show tips modal when all messages are shown
             setTimeout(() => {
               setShowTipsModal(true);
-            }, 1000);
-          }
-
-          // If we just added a user message, automatically add the next AI message after a delay
-          if (
-            nextMessage.role === "user" &&
-            newIndex < allDummyMessages.length
-          ) {
+            }, 2000);
+            setIsProcessingMessage(false);
+          } else if (isUserMessage) {
+            // If it was a user message, automatically add the AI response after delay
             setTimeout(() => {
               const aiMessage = allDummyMessages[newIndex];
               const nextIndex = newIndex + 1;
@@ -887,22 +973,28 @@ export default function ChatScreen() {
               setMessages((prev) => [...prev, aiMessage]);
               setDummyMessagesIndex(nextIndex);
 
-              // Check if this AI message was the LAST message
-              if (nextIndex >= allDummyMessages.length) {
-                // Show tips modal after a short delay when conversation ends
+              // Update video again after AI message
+              updateVideoBasedOnConversation();
+
+              // Check if AI message was the last one
+              const isAILastMessage = nextIndex >= allDummyMessages.length;
+
+              if (isAILastMessage) {
+                // Show tips modal when all messages are shown
                 setTimeout(() => {
                   setShowTipsModal(true);
-                }, 3000);
+                }, 2000);
               }
 
               setIsProcessingMessage(false);
-            }, 1500);
+            }, 3000);
           } else {
+            // If it was an AI message, we're done processing
             setIsProcessingMessage(false);
           }
         }, 800);
       } else {
-        // All messages shown, just finish processing without adding anything
+        // No more messages to show
         setIsProcessingMessage(false);
       }
     }
@@ -1242,7 +1334,6 @@ export default function ChatScreen() {
                 {/* Default Video */}
                 <Video
                   ref={videoRef}
-                  source={getAvatarById(avatar).video_default.loop[0]}
                   style={[
                     styles.video,
                     videoMode !== "default" && styles.hiddenVideo,
@@ -1250,6 +1341,7 @@ export default function ChatScreen() {
                   shouldPlay={videoMode === "default"}
                   isLooping={true}
                   resizeMode={ResizeMode.CONTAIN}
+                  onError={(error) => console.error("Video error:", error)}
                 />
 
                 {/* Listening Video */}
