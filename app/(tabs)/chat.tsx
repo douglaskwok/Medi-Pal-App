@@ -352,10 +352,10 @@ export default function ChatScreen() {
       setCurrentTransition(type);
       setVideoMode("transition");
 
-      // Pause current videos
-      if (videoRef.current) await videoRef.current.pauseAsync();
+      // IMPORTANT: Stop both videos first to prevent flashes
+      if (videoRef.current) await videoRef.current.stopAsync();
       if (listeningVideoRef.current)
-        await listeningVideoRef.current.pauseAsync();
+        await listeningVideoRef.current.stopAsync();
 
       // Load and play transition
       if (transitionVideoRef.current) {
@@ -369,7 +369,10 @@ export default function ChatScreen() {
         const duration = TRANSITION_DURATIONS[avatar][type];
         console.log(`Transition will take ${duration}ms`);
 
-        setTimeout(() => {
+        // Add a small buffer to ensure smooth transition
+        const bufferDuration = 100; // 100ms buffer
+
+        setTimeout(async () => {
           console.log(
             `Transition complete, switching to ${
               type === "start" ? "listening" : "default"
@@ -378,11 +381,16 @@ export default function ChatScreen() {
           setCurrentTransition(null);
 
           if (type === "start") {
-            switchToListening();
+            // Make sure default video is stopped before showing listening
+            if (videoRef.current) await videoRef.current.stopAsync();
+            await switchToListening();
           } else {
-            switchToDefault();
+            // Make sure listening video is stopped before showing default
+            if (listeningVideoRef.current)
+              await listeningVideoRef.current.stopAsync();
+            await switchToDefault();
           }
-        }, duration);
+        }, duration - bufferDuration); // Subtract buffer to prevent gap
       }
     } catch (error) {
       console.error("Error in playTransition:", error);
@@ -398,8 +406,15 @@ export default function ChatScreen() {
   const switchToListening = async () => {
     try {
       console.log("Switching to listening mode");
-      if (videoRef.current) await videoRef.current.stopAsync();
+      // Ensure default video is completely stopped
+      if (videoRef.current) {
+        await videoRef.current.stopAsync();
+        await videoRef.current.setPositionAsync(0);
+      }
+
+      // Start listening video
       if (listeningVideoRef.current) {
+        await listeningVideoRef.current.setPositionAsync(0);
         await listeningVideoRef.current.playAsync();
         setVideoMode("listening");
       }
@@ -411,9 +426,15 @@ export default function ChatScreen() {
   const switchToDefault = async () => {
     try {
       console.log("Switching to default mode");
-      if (listeningVideoRef.current)
+      // Ensure listening video is completely stopped
+      if (listeningVideoRef.current) {
         await listeningVideoRef.current.stopAsync();
+        await listeningVideoRef.current.setPositionAsync(0);
+      }
+
+      // Start default video
       if (videoRef.current) {
+        await videoRef.current.setPositionAsync(0);
         await videoRef.current.playAsync();
         setVideoMode("default");
       }
@@ -421,7 +442,6 @@ export default function ChatScreen() {
       console.error("Error switching to default:", error);
     }
   };
-
   const loadSessions = async () => {
     try {
       const {
@@ -1000,7 +1020,7 @@ export default function ChatScreen() {
             {/* Video Container */}
             <View style={styles.videoContainer}>
               <Image
-                source={require("../../assets/avatar-background-2.jpeg")}
+                source={getAvatarById(avatar).background}
                 style={styles.videoBackground}
                 blurRadius={20}
                 resizeMode="cover"
@@ -1529,7 +1549,7 @@ const styles = StyleSheet.create({
   hiddenVideo: {
     opacity: 0,
     position: "absolute",
-    zIndex: -1,
+    zIndex: -99999,
   },
   callStatus: {
     flexDirection: "row",

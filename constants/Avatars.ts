@@ -22,6 +22,7 @@ export type Avatar = {
   name: AvatarName;
   source: ImageSourcePropType; // React Native type
   listening: ImageSourcePropType; // React Native type
+  background: ImageSourcePropType;
   video_default: AvatarVideoSet;
   video_listening: AvatarVideoSet;
   video_thinking: AvatarVideoSet;
@@ -34,6 +35,7 @@ export const avatars: Avatar[] = [
     name: "Dr. Al",
     source: require("../assets/avatars/dr-al/profile.jpeg"),
     listening: require("../assets/avatars/dr-al/photos/listening.jpeg"),
+    background: require("../assets/avatars/dr-al/background.jpeg"),
     video_default: {
       start: [require("../assets/avatars/dr-al/default-start.m4v")],
       loop: [require("../assets/avatars/dr-al/default-loop.m4v")],
@@ -65,6 +67,7 @@ export const avatars: Avatar[] = [
     name: "Dr. Lora",
     source: require("../assets/avatars/dr-lora/profile.jpeg"),
     listening: require("../assets/avatars/dr-lora/photos/listening.jpeg"),
+    background: require("../assets/avatars/dr-lora/background.jpeg"),
     video_default: {
       start: [require("../assets/avatars/dr-lora/default-start.m4v")],
       loop: [require("../assets/avatars/dr-lora/default-loop.m4v")],
@@ -100,6 +103,7 @@ export const avatars: Avatar[] = [
     name: "Lexi",
     source: require("../assets/avatars/lexi/profile.jpeg"),
     listening: require("../assets/avatars/lexi/photos/listening.jpeg"),
+    background: require("../assets/avatars/lexi/background.jpeg"),
     video_default: {
       start: [require("../assets/avatars/lexi/default-start.m4v")],
       loop: [require("../assets/avatars/lexi/default-loop.m4v")],
@@ -134,6 +138,7 @@ export const avatars: Avatar[] = [
     name: "Bert",
     source: require("../assets/avatars/bert/profile.jpeg"),
     listening: require("../assets/avatars/bert/photos/listening.jpeg"),
+    background: require("../assets/avatars/bert/background.jpeg"),
     video_default: {
       start: [], // Empty list as requested
       loop: [require("../assets/avatars/bert/default-loop.m4v")],
