@@ -782,6 +782,8 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+
+        <CustomTabBar />
         {showAIResources && (
           <AISuggestion
             visible={showAIResources}
@@ -810,7 +812,6 @@ export default function ChatScreen() {
             // onTakeMeThere={(resource) => console.log("Navigate to:", resource.name)}
           />
         )}
-        <CustomTabBar />
       </SafeAreaView>
     );
   }

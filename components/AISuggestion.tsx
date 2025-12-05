@@ -62,6 +62,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   // const [isSaved, setIsSaved] = useState(false);
   const [savedMap, setSavedMap] = useState<{ [key: string]: boolean }>({});
   const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
+  //const backdropOpacity = useRef(new Animated.Value(0)).current; // Add for overlay
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   // Convert resources to ResourceCard format
@@ -129,6 +130,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
     } else {
       translateY.setValue(200);
       opacity.setValue(0);
+      //backdropOpacity.setValue(0); // Reset backdrop opacity
       pan.setValue({ x: 0, y: 0 });
     }
 
@@ -151,6 +153,11 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         duration: 250,
         useNativeDriver: true,
       }),
+      // Animated.timing(backdropOpacity, {
+      //   toValue: 1, // Fade in the overlay
+      //   duration: 250,
+      //   useNativeDriver: true,
+      // }),
     ]).start();
   };
 
@@ -172,6 +179,11 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         duration: 250,
         useNativeDriver: true,
       }),
+      // Animated.timing(backdropOpacity, {
+      //   toValue: 0, // Fade out the overlay
+      //   duration: 250,
+      //   useNativeDriver: true,
+      // }),
     ]).start(() => {
       pan.setValue({ x: 0, y: 0 });
       onDismiss();
@@ -280,9 +292,35 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   if (!visible || mappedResources.length === 0) return null;
 
   const activeResource = mappedResources[activeIndex];
+  // <View style={styles.overlay}>
+  // <>
+  {
+    /* Dark Overlay */
+  }
+  {
+    /* {visible && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={dismissNotification}
+          style={[
+            styles.overlayTouchable,
+            { pointerEvents: visible ? "auto" : "none" },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.overlay,
+              {
+                opacity: backdropOpacity,
+                pointerEvents: visible ? "auto" : "none",
+              },
+            ]}
+          />
+        </TouchableOpacity>
+      )} */
+  }
 
   return (
-    // <View style={styles.overlay}>
     <Animated.View
       style={[
         styles.container,
@@ -462,6 +500,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         </Animated.View>
       )}
     </Animated.View>
+    // </>
     // </View>
   );
 };
@@ -480,12 +519,22 @@ const styles = StyleSheet.create({
   //   // justifyContent: "center",
   //   // alignItems: "center",
   // },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)", // Dark semi-transparent
+    zIndex: 999,
+    // bottom: -4,
+  },
+  overlayTouchable: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
   container: {
     position: "absolute",
     left: 0,
     right: 0,
     paddingHorizontal: Theme.spacing.md,
-    zIndex: 999,
+    zIndex: 1000,
   },
   content: {
     backgroundColor: Theme.colors.backgroundLight,

@@ -43,11 +43,11 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState("User");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
-  // // remove later
-  // const [notificationVisible, setNotificationVisible] = useState(true);
-  // const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(true);
-  // const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
-  // const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
+  // remove later
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
+  const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
+  const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     loadUserData();
@@ -56,6 +56,15 @@ export default function HomeScreen() {
       duration: 400,
       useNativeDriver: true,
     }).start();
+    // Add 10-second delay for notification
+    const notificationTimer = setTimeout(() => {
+      setNotificationVisible(true);
+    }, 10000); // 10 seconds = 10000 milliseconds
+
+    // Cleanup timer on unmount
+    return () => {
+      clearTimeout(notificationTimer);
+    };
   }, []);
 
   const loadUserData = async () => {
@@ -337,9 +346,9 @@ export default function HomeScreen() {
             : undefined
         }
       />
-      <CustomTabBar />
+      <CustomTabBar opacity={notificationVisible ? 0.4 : 1} />
 
-      {/* <NotificationPopup
+      <NotificationPopup
         visible={notificationVisible}
         onDismiss={() => setNotificationVisible(false)}
         onSaveSuccess={() => {
@@ -374,7 +383,54 @@ export default function HomeScreen() {
             });
           }, 2000);
         }}
-      /> */}
+      />
+      {saveSuccessModalVisible && (
+        <Animated.View
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 2000,
+              opacity: saveSuccessAnim,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              {
+                backgroundColor: Theme.colors.backgroundLight,
+                borderRadius: Theme.borderRadius.lg,
+                padding: Theme.spacing.xl,
+                alignItems: "center",
+                ...Theme.shadows.lg,
+                transform: [{ scale: saveSuccessScale }],
+              },
+            ]}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={48}
+              color={Theme.colors.success}
+            />
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: Theme.fonts.semibold,
+                color: Theme.colors.text,
+                marginTop: Theme.spacing.md,
+              }}
+            >
+              {"Saved Successfully"}
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }

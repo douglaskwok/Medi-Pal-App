@@ -612,7 +612,10 @@ export default function ProfileScreen() {
           setSelectedLanguage={setSelectedLanguage}
         />
       )}
-      <CustomTabBar language={selectedLanguage} />
+      <CustomTabBar
+        language={selectedLanguage}
+        opacity={notificationVisible ? 0.4 : 1}
+      />
     </SafeAreaView>
   );
 }
