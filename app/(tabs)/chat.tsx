@@ -86,6 +86,7 @@ export default function ChatScreen() {
   const [aiResources, setAIResources] = useState<string | null>(null);
   const [shownResources, setShownResources] = useState<Resource[] | null>(null);
   const [showAIResources, setShowAIResources] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const DEFAULT_RESOURCES: Resource[] = [
     {
       id: "ymca_palo_alto",
@@ -509,6 +510,17 @@ export default function ChatScreen() {
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+  const handleMicPressIn = () => {
+    console.log("Started recording");
+    setIsRecording(true);
+    // You can add actual voice recording logic here later
+  };
+
+  const handleMicPressOut = () => {
+    console.log("Stopped recording");
+    setIsRecording(false);
+    // You can add logic to send recorded audio here later
+  };
 
   const handleEndCall = () => {
     // Stop the video playback
@@ -890,11 +902,17 @@ export default function ChatScreen() {
               {/* Avatar Video */}
               <Video
                 ref={videoRef}
-                source={getAvatarById(avatar).video_default.loop[0]}
+                source={
+                  isRecording
+                    ? getAvatarById(avatar).video_listening.loop[0]
+                    : getAvatarById(avatar).video_default.loop[0]
+                }
                 style={styles.videoPlaceholder}
                 // resizeMode="cover"
                 shouldPlay={true}
                 isLooping={true}
+                // Reset video when source changes
+                key={isRecording ? "listening" : "idle"}
               />
 
               {/* Call Status */}
@@ -1063,11 +1081,17 @@ export default function ChatScreen() {
 
             {/* Main Mic Button */}
             <TouchableOpacity
-              style={[styles.controlButton, styles.primaryControlButton]}
-              onPress={() => console.log("Mic pressed")}
+              style={[
+                styles.controlButton,
+                styles.primaryControlButton,
+                isRecording && styles.recordingControlButton, // Optional: add a recording style
+              ]}
+              onPressIn={handleMicPressIn}
+              onPressOut={handleMicPressOut}
+              activeOpacity={0.7}
             >
               <Ionicons
-                name="mic"
+                name={isRecording ? "mic-off" : "mic"} // Change icon when recording
                 size={24}
                 color={Theme.colors.backgroundLight}
               />
@@ -1077,7 +1101,7 @@ export default function ChatScreen() {
                   styles.primaryControlButtonText,
                 ]}
               >
-                Hold to Talk
+                {isRecording ? "Listening..." : "Hold to Talk"}
               </Text>
             </TouchableOpacity>
 
@@ -1120,6 +1144,7 @@ export default function ChatScreen() {
             // proceed={() => {}}
           ></SelectionModal>
         )}
+
         {showEndCallModal && (
           <AreYouSurePopup
             mode={"end_call"}
