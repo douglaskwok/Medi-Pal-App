@@ -41,6 +41,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   /** ANIMATION VALUES **/
   const translateY = useRef(new Animated.Value(200)).current; // start below
   const opacity = useRef(new Animated.Value(0)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current; // Add for overlay
   const pan = useRef(new Animated.ValueXY()).current;
 
   const autoDismissTimer = useRef<NodeJS.Timeout | null>(null);
@@ -76,10 +77,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       showNotification();
       autoDismissTimer.current = setTimeout(() => {
         dismissNotification();
-      }, 30000); // changed to longer
+      }, 30000);
     } else {
       translateY.setValue(200);
       opacity.setValue(0);
+      backdropOpacity.setValue(0); // Reset backdrop opacity
       pan.setValue({ x: 0, y: 0 });
     }
 
@@ -102,6 +104,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
         duration: 250,
         useNativeDriver: true,
       }),
+      Animated.timing(backdropOpacity, {
+        toValue: 1, // Fade in the overlay
+        duration: 250,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -120,6 +127,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       }),
       Animated.timing(opacity, {
         toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0, // Fade out the overlay
         duration: 250,
         useNativeDriver: true,
       }),
@@ -184,123 +196,153 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   if (!visible) return null;
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          bottom: height * 0.25, // ★ popup in bottom half
-          opacity,
-          transform: [
-            { translateY: Animated.add(translateY, pan.y) },
-            { translateX: pan.x },
-          ],
-        },
-      ]}
-      {...panResponder.panHandlers}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View
-            style={[
-              {
-                flexDirection: "row",
-                justifyContent: "space-evenly",
-                alignContent: "center",
-              },
-            ]}
-          >
-            <View style={[{ paddingRight: Theme.spacing.sm }]}>
-              <MaterialIcons name="verified" size={18} color="blue" />
+    <>
+      {/* Dark Overlay */}
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={dismissNotification}
+        style={StyleSheet.absoluteFill}
+      >
+        <Animated.View
+          style={[
+            styles.overlay,
+            {
+              opacity: backdropOpacity,
+            },
+          ]}
+        />
+      </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            bottom: height * 0.25, // ★ popup in bottom half
+            opacity,
+            transform: [
+              { translateY: Animated.add(translateY, pan.y) },
+              { translateX: pan.x },
+            ],
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View
+              style={[
+                {
+                  flexDirection: "row",
+                  justifyContent: "space-evenly",
+                  alignContent: "center",
+                },
+              ]}
+            >
+              <View style={[{ paddingRight: Theme.spacing.sm }]}>
+                <MaterialIcons name="verified" size={18} color="blue" />
+              </View>
+              <Text style={styles.category}>
+                Medi-Pal Verified: Nearby Resource
+              </Text>
             </View>
-            <Text style={styles.category}>
-              Medi-Pal Verified: Nearby Resource
+
+            <TouchableOpacity
+              onPress={dismissNotification}
+              style={styles.closeButton}
+            >
+              <Ionicons
+                name="close"
+                size={20}
+                color={Theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.title}>
+            Free Gym Membership at Palo Alto Family YMCA
+          </Text>
+          <View style={[styles.eligibilityRow]}>
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={Theme.colors.success}
+            />
+            <Text style={styles.eligibilityText}>
+              You are eligible for this service
             </Text>
           </View>
 
-          <TouchableOpacity
-            onPress={dismissNotification}
-            style={styles.closeButton}
-          >
+          <View style={styles.detailRow}>
             <Ionicons
-              name="close"
+              name="location"
               size={20}
               color={Theme.colors.textSecondary}
             />
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.detailText}>
+              3412 Ross Road, Palo Alto, CA 94303
+            </Text>
+          </View>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require("../assets/gym.png")}
+              style={styles.image}
+              // height={"100%"}
+              // width={100}
+              resizeMode="contain"
+            />
+          </View>
 
-        <Text style={styles.title}>
-          Free Gym Membership at Palo Alto Family YMCA
-        </Text>
-        <View style={[styles.eligibilityRow]}>
-          <Ionicons
-            name="checkmark-circle"
-            size={20}
-            color={Theme.colors.success}
-          />
-          <Text style={styles.eligibilityText}>
-            You are eligible for this service
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Ionicons
-            name="location"
-            size={20}
-            color={Theme.colors.textSecondary}
-          />
-          <Text style={styles.detailText}>
-            3412 Ross Road, Palo Alto, CA 94303
-          </Text>
-        </View>
-        <View style={styles.imageContainer}>
-          <Image
-            source={require("../assets/gym.png")}
-            style={styles.image}
-            // height={"100%"}
-            // width={100}
-            resizeMode="contain"
-          />
-        </View>
-
-        <View style={styles.buttons}>
-          {/* <TouchableOpacity
+          <View style={styles.buttons}>
+            {/* <TouchableOpacity
             style={[styles.button, styles.iconButton]}
             onPress={handleSaveResource}
           >
             <Ionicons name="information-circle" size={24} color="black" /> */}
-          {/* <Text style={styles.saveButtonText}>Learn More</Text> */}
-          {/* </TouchableOpacity> */}
-          <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
-            onPress={handleSaveResource}
-          >
-            {/* <FontAwesome name="bookmark-o" size={24} color="black" /> */}
-            <Text style={styles.saveButtonText}>
-              {isSaved ? "Resource is saved!" : "Save Resource"}
-            </Text>
-          </TouchableOpacity>
+            {/* <Text style={styles.saveButtonText}>Learn More</Text> */}
+            {/* </TouchableOpacity> */}
+            <TouchableOpacity
+              style={[styles.button, styles.saveButton]}
+              onPress={handleSaveResource}
+            >
+              {/* <FontAwesome name="bookmark-o" size={24} color="black" /> */}
+              <Text style={styles.saveButtonText}>
+                {isSaved ? "Resource is saved!" : "Save Resource"}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, styles.takeMeButton]}
-            onPress={handleTakeMeThere}
-          >
-            <Text style={styles.takeMeButtonText}>Take Me There!</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.takeMeButton]}
+              onPress={handleTakeMeThere}
+            >
+              <Text style={styles.takeMeButtonText}>Take Me There!</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </>
   );
 };
 
 /** STYLES **/
 const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)", // Dark semi-transparent
+    zIndex: 999,
+    // bottom: -4,
+  },
+  // container: {
+  //   position: "absolute",
+  //   left: 0,
+  //   right: 0,
+  //   paddingHorizontal: Theme.spacing.md,
+  //   zIndex: 1000, // Higher than overlay
+  // },
   container: {
     position: "absolute",
     left: 0,
     right: 0,
     paddingHorizontal: Theme.spacing.md,
-    zIndex: 999,
+    zIndex: 1000,
   },
   content: {
     backgroundColor: Theme.colors.backgroundLight,

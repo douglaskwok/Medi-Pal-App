@@ -23,7 +23,15 @@ const tabTranslations = {
   },
 };
 
-export function CustomTabBar({ language = "en" }: { language?: string }) {
+interface CustomTabBarProps {
+  language?: string;
+  opacity?: number; // 0 (invisible) to 1 (fully visible)
+}
+
+export function CustomTabBar({
+  language = "en",
+  opacity = 1,
+}: CustomTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -65,6 +73,9 @@ export function CustomTabBar({ language = "en" }: { language?: string }) {
     },
   ];
 
+  // If opacity is not 1, we'll add an overlay on top of the tab bar
+  const showDarkOverlay = opacity < 1;
+
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
@@ -88,9 +99,14 @@ export function CustomTabBar({ language = "en" }: { language?: string }) {
                     ? Theme.colors.primaryAlt
                     : Theme.colors.textSecondary
                 }
+                style={showDarkOverlay ? { opacity } : {}}
               />
               <Text
-                style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                style={[
+                  styles.tabLabel,
+                  isActive && styles.tabLabelActive,
+                  showDarkOverlay && { opacity },
+                ]}
               >
                 {tab.label}
               </Text>
@@ -98,6 +114,17 @@ export function CustomTabBar({ language = "en" }: { language?: string }) {
           );
         })}
       </View>
+
+      {/* Dark overlay on top of tab bar when opacity < 1 */}
+      {showDarkOverlay && (
+        <View
+          style={[
+            styles.darkOverlay,
+            { opacity: 1 - opacity }, // Invert: 0 opacity = full dark, 1 opacity = no dark
+          ]}
+          pointerEvents="none" // Allow taps to pass through to tab bar
+        />
+      )}
     </View>
   );
 }
@@ -152,5 +179,9 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: Theme.colors.primaryAlt,
     fontFamily: Theme.fonts.semibold,
+  },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "black",
   },
 });
