@@ -12,7 +12,12 @@ import {
   Animated,
   Image,
 } from "react-native";
-import { Video, AVPlaybackStatus } from "expo-av";
+import {
+  Video,
+  AVPlaybackStatus,
+  VideoFullscreenUpdate,
+  ResizeMode,
+} from "expo-av";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
@@ -56,7 +61,6 @@ interface Resource {
   longitude: number;
   rating: number;
   distance: string;
-  // image: any;
   phone: string;
   email: string;
   hours: string;
@@ -70,97 +74,100 @@ const openai = new OpenAI({
 
 type ChatView = "session-select" | "text-chat" | "avatar-chat";
 
+// Hardcoded transition durations (seconds:frames converted to milliseconds)
+const TRANSITION_DURATIONS = {
+  "dr-al": {
+    start: 2000, // 2:00 = 2 seconds
+    end: 1600, // 1:18 = ~1.6 seconds
+  },
+  "dr-lora": {
+    start: 4567, // 4:17 = ~4.567 seconds
+    end: 2000, // 2:00 = 2 seconds
+  },
+  lexi: {
+    start: 3633, // 3:19 = ~3.633 seconds
+    end: 1400, // 1:12 = ~1.4 seconds
+  },
+  bert: {
+    start: 3333, // 3:10 = ~3.333 seconds
+    end: 2500, // 2:15 = ~2.5 seconds
+  },
+};
+
+const DEFAULT_RESOURCES: Resource[] = [
+  {
+    id: "ymca_palo_alto",
+    name: "Palo Alto Family YMCA",
+    type: "Gym",
+    address: "3412 Ross Road, Palo Alto, CA 94303",
+    latitude: 37.4419,
+    longitude: -122.143,
+    rating: 4.5,
+    distance: "2.3 mi",
+    phone: "650-856-9622",
+    email: "info@ymcasv.org",
+    hours: "Mon–Fri: 6am–9pm\nSat: 8am–4pm\nSun: 9am–4pm",
+    description:
+      "A community gym offering classes, pool access, and fitness equipment.",
+  },
+  {
+    id: "clinic_mountain_view",
+    name: "Community Health Clinic",
+    type: "Healthcare",
+    address: "789 Oak Avenue, Mountain View, CA 94041",
+    latitude: 37.3861,
+    longitude: -122.0839,
+    rating: 4.2,
+    distance: "4.0 mi",
+    phone: "650-555-1032",
+    email: "support@chclinic.org",
+    hours: "Mon–Fri: 8am–6pm\nSat: 9am–1pm\nSun: Closed",
+    description:
+      "Clinic offering free health screenings, vaccinations, and wellness checkups.",
+  },
+];
+
 export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+
+  // State
   const [currentView, setCurrentView] = useState<ChatView>("session-select");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [userMessageCount, setUserMessageCount] = useState(0);
   const [aiResources, setAIResources] = useState<string | null>(null);
   const [shownResources, setShownResources] = useState<Resource[] | null>(null);
   const [showAIResources, setShowAIResources] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const DEFAULT_RESOURCES: Resource[] = [
-    {
-      id: "ymca_palo_alto",
-      name: "Palo Alto Family YMCA",
-      type: "Gym",
-      address: "3412 Ross Road, Palo Alto, CA 94303",
-      latitude: 37.4419,
-      longitude: -122.143,
-      rating: 4.5,
-      distance: "2.3 mi",
-      phone: "650-856-9622",
-      email: "info@ymcasv.org",
-      hours: "Mon–Fri: 6am–9pm\nSat: 8am–4pm\nSun: 9am–4pm",
-      description:
-        "A community gym offering classes, pool access, and fitness equipment.",
-    },
-    {
-      id: "clinic_mountain_view",
-      name: "Community Health Clinic",
-      type: "Healthcare",
-      address: "789 Oak Avenue, Mountain View, CA 94041",
-      latitude: 37.3861,
-      longitude: -122.0839,
-      rating: 4.2,
-      distance: "4.0 mi",
-      phone: "650-555-1032",
-      email: "support@chclinic.org",
-      hours: "Mon–Fri: 8am–6pm\nSat: 9am–1pm\nSun: Closed",
-      description:
-        "Clinic offering free health screenings, vaccinations, and wellness checkups.",
-    },
-  ];
-
-  const parseResources = (resources: string): Resource[] => {
-    try {
-      const parsed = JSON.parse(resources);
-
-      // Extra safety: ensure it's actually an array
-      if (!Array.isArray(parsed)) {
-        console.warn("Parsed JSON is not an array. Using fallback defaults.");
-        return DEFAULT_RESOURCES;
-      }
-
-      return parsed;
-    } catch (error) {
-      console.warn("Failed to parse resources JSON:", error);
-      return DEFAULT_RESOURCES;
-    }
-  };
-  //   const testJSON = `[
-  //   {
-  //     "id": "ymca_palo_alto",
-  //     "name": "Palo Alto Family YMCA",
-  //     "type": "Gym",
-  //     "address": "3412 Ross Road, Palo Alto, CA 94303",
-  //     "latitude": 37.4419,
-  //     "longitude": -122.143,
-  //     "rating": 4.5,
-  //     "distance": "2.3 mi",
-  //     "image": "../../assets/generic.jpg",
-  //     "phone": "650-856-9622",
-  //     "email": "membersupport@ymcasv.org",
-  //     "hours": "Mon: 6:15am-9pm\\nTue: 6:15am-9pm\\nWed: 6:15am-9pm\\nThu: CLOSED\\nFri: 6:15am-1pm\\nSat: 8am-4pm\\nSun: 9am-4pm"
-  //   }
-  // ]`;
-  //   console.log("hi", parseResources(testJSON));
-
   const [speaker, setSpeaker] = useState(false);
-
   const [chooseAvatarModal, setChooseAvatarModal] = useState(false);
   const [avatar, setAvatar] = useState<"dr-al" | "dr-lora" | "lexi" | "bert">(
     "dr-al"
   );
   const [showEndCallModal, setShowEndCallModal] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
+
+  // Video State
+  const [videoMode, setVideoMode] = useState<
+    "default" | "listening" | "transition"
+  >("default");
+  const [currentTransition, setCurrentTransition] = useState<
+    "start" | "end" | null
+  >(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+
+  // Refs
+  const scrollViewRef = useRef<ScrollView>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const videoRef = useRef<Video>(null);
+  const listeningVideoRef = useRef<Video>(null);
+  const transitionVideoRef = useRef<Video>(null);
+
   const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
     const avatar = avatars.find((avatar) => avatar.id === id);
     if (!avatar) {
@@ -168,9 +175,21 @@ export default function ChatScreen() {
     }
     return avatar;
   };
-  const [showTipsModal, setShowTipsModal] = useState(false);
-  const videoRef = useRef<Video>(null);
-  // remove later:
+
+  const parseResources = (resources: string): Resource[] => {
+    try {
+      const parsed = JSON.parse(resources);
+      if (!Array.isArray(parsed)) {
+        console.warn("Parsed JSON is not an array. Using fallback defaults.");
+        return DEFAULT_RESOURCES;
+      }
+      return parsed;
+    } catch (error) {
+      console.warn("Failed to parse resources JSON:", error);
+      return DEFAULT_RESOURCES;
+    }
+  };
+
   const generateDummyMessages = (): Message[] => {
     const now = new Date();
     return [
@@ -180,38 +199,39 @@ export default function ChatScreen() {
           getAvatarById(avatar).name
         }, your AI healthcare assistant. How may I help you today?`,
         role: "assistant",
-        timestamp: new Date(now.getTime() - 300000), // 5 minutes ago
+        timestamp: new Date(now.getTime() - 300000),
       },
       {
         id: "2",
         content:
           "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
         role: "user",
-        timestamp: new Date(now.getTime() - 240000), // 4 minutes ago
+        timestamp: new Date(now.getTime() - 240000),
       },
       {
         id: "3",
         content:
           "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
         role: "assistant",
-        timestamp: new Date(now.getTime() - 180000), // 3 minutes ago
+        timestamp: new Date(now.getTime() - 180000),
       },
       {
         id: "4",
         content: "Sure",
         role: "user",
-        timestamp: new Date(now.getTime() - 120000), // 2 minutes ago
+        timestamp: new Date(now.getTime() - 120000),
       },
       {
         id: "5",
         content:
           "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
         role: "assistant",
-        timestamp: new Date(now.getTime() - 60000), // 1 minute ago
+        timestamp: new Date(now.getTime() - 60000),
       },
     ];
   };
 
+  // Initial effect
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -220,26 +240,187 @@ export default function ChatScreen() {
     }).start();
     loadSessions();
   }, []);
+
+  // Tips modal effect
   useEffect(() => {
     if (currentView === "avatar-chat") {
       const timer = setTimeout(() => {
         setShowTipsModal(true);
-      }, 5000); // 5000 milliseconds = 5 seconds
-
-      // Clean up the timer when component unmounts or when currentView changes
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [currentView]); // This effect depends on currentView
+  }, [currentView]);
 
-  // useEffect(() => {
-  //   if (currentSessionId && currentView !== "session-select") {
-  //     loadMessages(currentSessionId);
-  //   }
-  // }, [currentSessionId, currentView]);
-
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+
+  // Video preloading and management
+  useEffect(() => {
+    const preloadVideos = async () => {
+      if (currentView !== "avatar-chat") return;
+
+      try {
+        const avatarData = getAvatarById(avatar);
+        setIsVideoReady(false);
+
+        // Load default video
+        if (videoRef.current) {
+          await videoRef.current.loadAsync(
+            avatarData.video_default.loop[0],
+            { shouldPlay: false, isLooping: true },
+            false
+          );
+        }
+
+        // Load listening video
+        if (listeningVideoRef.current) {
+          await listeningVideoRef.current.loadAsync(
+            avatarData.video_listening.loop[0],
+            { shouldPlay: false, isLooping: true },
+            false
+          );
+        }
+
+        // Start with default video
+        if (videoRef.current) {
+          await videoRef.current.playAsync();
+          setVideoMode("default");
+          setIsVideoReady(true);
+          console.log("Videos loaded and ready");
+        }
+      } catch (error) {
+        console.error("Error preloading videos:", error);
+      }
+    };
+
+    preloadVideos();
+
+    return () => {
+      const cleanup = async () => {
+        if (videoRef.current) await videoRef.current.unloadAsync();
+        if (listeningVideoRef.current)
+          await listeningVideoRef.current.unloadAsync();
+        if (transitionVideoRef.current)
+          await transitionVideoRef.current.unloadAsync();
+      };
+      cleanup();
+    };
+  }, [avatar, currentView]);
+
+  // Handle recording state changes
+  useEffect(() => {
+    const handleRecordingChange = async () => {
+      if (!isVideoReady) {
+        console.log("Video not ready yet");
+        return;
+      }
+
+      console.log("Recording changed:", isRecording);
+
+      if (isRecording) {
+        await playTransition("start");
+      } else {
+        await playTransition("end");
+      }
+    };
+
+    handleRecordingChange();
+  }, [isRecording]);
+
+  // Video transition function
+  const playTransition = async (type: "start" | "end") => {
+    try {
+      const avatarData = getAvatarById(avatar);
+      const transitionSource =
+        type === "start"
+          ? avatarData.video_listening?.start?.[0]
+          : avatarData.video_listening?.end?.[0];
+
+      if (!transitionSource) {
+        console.log(`No ${type} transition, switching directly`);
+        if (type === "start") {
+          await switchToListening();
+        } else {
+          await switchToDefault();
+        }
+        return;
+      }
+
+      console.log(`Starting ${type} transition`);
+      setCurrentTransition(type);
+      setVideoMode("transition");
+
+      // Pause current videos
+      if (videoRef.current) await videoRef.current.pauseAsync();
+      if (listeningVideoRef.current)
+        await listeningVideoRef.current.pauseAsync();
+
+      // Load and play transition
+      if (transitionVideoRef.current) {
+        await transitionVideoRef.current.unloadAsync();
+        await transitionVideoRef.current.loadAsync(
+          transitionSource,
+          { shouldPlay: true, isLooping: false },
+          false
+        );
+
+        const duration = TRANSITION_DURATIONS[avatar][type];
+        console.log(`Transition will take ${duration}ms`);
+
+        setTimeout(() => {
+          console.log(
+            `Transition complete, switching to ${
+              type === "start" ? "listening" : "default"
+            }`
+          );
+          setCurrentTransition(null);
+
+          if (type === "start") {
+            switchToListening();
+          } else {
+            switchToDefault();
+          }
+        }, duration);
+      }
+    } catch (error) {
+      console.error("Error in playTransition:", error);
+      // Fallback
+      if (type === "start") {
+        await switchToListening();
+      } else {
+        await switchToDefault();
+      }
+    }
+  };
+
+  const switchToListening = async () => {
+    try {
+      console.log("Switching to listening mode");
+      if (videoRef.current) await videoRef.current.stopAsync();
+      if (listeningVideoRef.current) {
+        await listeningVideoRef.current.playAsync();
+        setVideoMode("listening");
+      }
+    } catch (error) {
+      console.error("Error switching to listening:", error);
+    }
+  };
+
+  const switchToDefault = async () => {
+    try {
+      console.log("Switching to default mode");
+      if (listeningVideoRef.current)
+        await listeningVideoRef.current.stopAsync();
+      if (videoRef.current) {
+        await videoRef.current.playAsync();
+        setVideoMode("default");
+      }
+    } catch (error) {
+      console.error("Error switching to default:", error);
+    }
+  };
 
   const loadSessions = async () => {
     try {
@@ -255,9 +436,7 @@ export default function ChatScreen() {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      if (data) {
-        setSessions(data);
-      }
+      if (data) setSessions(data);
     } catch (error) {
       console.error("Error loading sessions:", error);
     }
@@ -334,7 +513,6 @@ export default function ChatScreen() {
 
       if (error) throw error;
 
-      // Update session with last message preview
       await supabase
         .from("chat_sessions")
         .update({
@@ -366,7 +544,6 @@ export default function ChatScreen() {
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setCurrentView("avatar-chat");
-      // set dummy message for now
       const dummyMessages = generateDummyMessages();
       setMessages(dummyMessages);
       await loadSessions();
@@ -380,20 +557,13 @@ export default function ChatScreen() {
     setCurrentSessionId(sessionId);
     setCurrentView(type === "voice" ? "avatar-chat" : "text-chat");
     await loadMessages(sessionId);
-    // may not work - mark here just in case
     const userCount = messages.filter((msg) => msg.role === "user").length;
     setUserMessageCount(userCount);
 
-    // remove later - dummy messages
     if (type === "voice" && messages.length === 0) {
       const dummyMessages = generateDummyMessages();
       setMessages(dummyMessages);
     }
-    // if (type === "text" && userCount >= 3){
-    //   setAIResources(null);
-    //   setShownResources(null);
-    //   setShowAIResources(false);
-    // }
   };
 
   const handleSend = async (text?: string) => {
@@ -412,7 +582,6 @@ export default function ChatScreen() {
     await saveMessage(currentSessionId, messageText, "user");
     setInputText("");
     setIsLoading(true);
-    // Increment user message count
     const newUserMessageCount = userMessageCount + 1;
     setUserMessageCount(newUserMessageCount);
 
@@ -421,8 +590,10 @@ export default function ChatScreen() {
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
       }));
+
       let systemPrompt =
         "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.";
+
       if (newUserMessageCount === 2) {
         systemPrompt = `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
   {
@@ -439,21 +610,14 @@ export default function ChatScreen() {
     "email": "membersupport@ymcasv.org",
     "hours": "Mon: 6:15am-9pm\\nTue: 6:15am-9pm\\nWed: 6:15am-9pm\\nThu: CLOSED\\nFri: 6:15am-1pm\\nSat: 8am-4pm\\nSun: 9am-4pm"
     "description": "Put your reasoning here, and keep it short (i.e., under 20 words)."]`;
-        console.log("user message count over 3.");
       }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
-          {
-            role: "system",
-            content: systemPrompt, //"You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.",
-          },
+          { role: "system", content: systemPrompt },
           ...conversationHistory,
-          {
-            role: "user",
-            content: messageText,
-          },
+          { role: "user", content: messageText },
         ],
         max_tokens: 500,
         temperature: 0.7,
@@ -464,14 +628,14 @@ export default function ChatScreen() {
         "I apologize, but I could not generate a response. Please try again.";
 
       if (newUserMessageCount === 2) {
-        console.log(aiResponse);
         setAIResources(aiResponse);
         const parsedResources = parseResources(aiResponse);
         setShownResources(parsedResources);
         aiResponse =
-          "I’ve gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there’s anything else you’d like support with, I’m here for you.";
+          "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
         setShowAIResources(true);
       }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: aiResponse,
@@ -501,38 +665,26 @@ export default function ChatScreen() {
     setCurrentSessionId(null);
     setMessages([]);
     setIsLoading(false);
-    setUserMessageCount(0); // Reset count
+    setUserMessageCount(0);
     setAIResources(null);
     setShownResources(null);
     setShowAIResources(false);
     loadSessions();
   };
-  useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
+
   const handleMicPressIn = () => {
-    console.log("Started recording");
+    console.log("Mic pressed IN");
     setIsRecording(true);
-    // You can add actual voice recording logic here later
   };
 
   const handleMicPressOut = () => {
-    console.log("Stopped recording");
+    console.log("Mic pressed OUT");
     setIsRecording(false);
-    // You can add logic to send recorded audio here later
   };
 
   const handleEndCall = () => {
-    // Stop the video playback
-    if (videoRef.current) {
-      videoRef.current.stopAsync();
-    }
-
-    // Reset state and go back to session selection
+    if (videoRef.current) videoRef.current.stopAsync();
     handleExitSession();
-
-    // Optional: Show a confirmation message
-    // You could add a toast or alert here
   };
 
   // Session Selection View
@@ -542,10 +694,7 @@ export default function ChatScreen() {
         <Animated.View
           style={[
             styles.content,
-            {
-              opacity: fadeAnim,
-              paddingBottom: insets.bottom + 80,
-            },
+            { opacity: fadeAnim, paddingBottom: insets.bottom + 80 },
           ]}
         >
           <View style={styles.header}>
@@ -615,12 +764,7 @@ export default function ChatScreen() {
                             : "chatbubbles"
                         }
                         size={24}
-                        color={
-                          Theme.colors.primary
-                          // session.session_type === "voice"
-                          //   ? Theme.colors.primary
-                          //   : Theme.colors.primary
-                        }
+                        color={Theme.colors.primary}
                       />
                       <View style={styles.sessionCardContent}>
                         <Text style={styles.sessionCardTitle}>
@@ -668,13 +812,7 @@ export default function ChatScreen() {
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           <Animated.View
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                paddingBottom: 100,
-              },
-            ]}
+            style={[styles.content, { opacity: fadeAnim, paddingBottom: 100 }]}
           >
             <View style={styles.header}>
               <TouchableOpacity
@@ -801,45 +939,34 @@ export default function ChatScreen() {
             visible={showAIResources}
             onDismiss={() => setShowAIResources(false)}
             resources={(shownResources || DEFAULT_RESOURCES).map(
-              (resource, index) => {
-                return {
-                  id: index.toString(), // make sure it's a string
-                  place_id: resource.id, //.toString(), // same as id
-                  name: resource.name,
-                  address: resource.address || "",
-                  description: resource.description || "",
-                  imageSource: require("../../assets/generic.jpg"),
-                  eligibility: "You are eligible for this service",
-                  category: resource.type || "General",
-                  latitude: resource.latitude || 0,
-                  longitude: resource.longitude || 0,
-                  distance: resource.distance,
-                  phone: resource.phone,
-                  email: resource.email,
-                  hours: resource.hours,
-                };
-              }
+              (resource, index) => ({
+                id: index.toString(),
+                place_id: resource.id,
+                name: resource.name,
+                address: resource.address || "",
+                description: resource.description || "",
+                imageSource: require("../../assets/generic.jpg"),
+                eligibility: "You are eligible for this service",
+                category: resource.type || "General",
+                latitude: resource.latitude || 0,
+                longitude: resource.longitude || 0,
+                distance: resource.distance,
+                phone: resource.phone,
+                email: resource.email,
+                hours: resource.hours,
+              })
             )}
-            // onSaveResource={(resourceId) => console.log("Saved:", resourceId)}
-            // onTakeMeThere={(resource) => console.log("Navigate to:", resource.name)}
           />
         )}
       </SafeAreaView>
     );
   }
+
   // Avatar Chat View
   if (currentView === "avatar-chat") {
-    // const videoRef = useRef<VideoRef>(null);
     return (
       <SafeAreaView style={styles.container}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-            },
-          ]}
-        >
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -870,23 +997,8 @@ export default function ChatScreen() {
 
           {/* Main Content */}
           <View style={styles.avatarMainContainer}>
-            {/* Video/Avatar Container - Space for square video */}
+            {/* Video Container */}
             <View style={styles.videoContainer}>
-              {/* Uncomment below later*/}
-              {/* <View style={styles.videoPlaceholder}>
-                <Fontisto
-                  name="doctor"
-                  size={80}
-                  color={Theme.colors.primary}
-                />
-                <Text style={styles.videoPlaceholderText}>
-                  Avatar Video Feed
-                </Text>
-                <Text style={styles.videoPlaceholderSubtext}>
-                  Live avatar will appear here
-                </Text>
-              </View> */}
-              {/* video background */}
               <Image
                 source={require("../../assets/avatar-background-2.jpeg")}
                 style={styles.videoBackground}
@@ -894,37 +1006,58 @@ export default function ChatScreen() {
                 resizeMode="cover"
               />
 
-              {/* Avatar Placeholder*/}
-              {/* <Image
-                source={getAvatarById(avatar).listening}
-                style={styles.videoPlaceholder}
-              /> */}
-              {/* Avatar Video */}
-              <Video
-                ref={videoRef}
-                source={
-                  isRecording
-                    ? getAvatarById(avatar).video_listening.loop[0]
-                    : getAvatarById(avatar).video_default.loop[0]
-                }
-                style={styles.videoPlaceholder}
-                // resizeMode="cover"
-                shouldPlay={true}
-                isLooping={true}
-                // Reset video when source changes
-                key={isRecording ? "listening" : "idle"}
-              />
+              <View style={styles.videoPlaceholder}>
+                {/* Default Video */}
+                <Video
+                  ref={videoRef}
+                  source={getAvatarById(avatar).video_default.loop[0]}
+                  style={[
+                    styles.video,
+                    videoMode !== "default" && styles.hiddenVideo,
+                  ]}
+                  shouldPlay={videoMode === "default"}
+                  isLooping={true}
+                  resizeMode={ResizeMode.CONTAIN}
+                />
+
+                {/* Listening Video */}
+                <Video
+                  ref={listeningVideoRef}
+                  source={getAvatarById(avatar).video_listening.loop[0]}
+                  style={[
+                    styles.video,
+                    videoMode !== "listening" && styles.hiddenVideo,
+                  ]}
+                  shouldPlay={videoMode === "listening"}
+                  isLooping={true}
+                  resizeMode={ResizeMode.CONTAIN}
+                />
+
+                {/* Transition Video */}
+                <Video
+                  ref={transitionVideoRef}
+                  style={[
+                    styles.video,
+                    videoMode !== "transition" && styles.hiddenVideo,
+                  ]}
+                  shouldPlay={videoMode === "transition"}
+                  isLooping={false}
+                  resizeMode={ResizeMode.CONTAIN}
+                  onError={(error) =>
+                    console.error("Transition video error:", error)
+                  }
+                />
+              </View>
 
               {/* Call Status */}
               <View style={styles.callStatus}>
                 <View style={styles.statusDot} />
                 <Text style={styles.statusText}>Connected</Text>
               </View>
+
               <TouchableOpacity
-                style={[styles.selectAvatarButton]}
-                onPress={() => {
-                  setChooseAvatarModal(true);
-                }}
+                style={styles.selectAvatarButton}
+                onPress={() => setChooseAvatarModal(true)}
               >
                 <FontAwesome5
                   name="user-edit"
@@ -934,27 +1067,7 @@ export default function ChatScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Audio Wave Animation */}
-            {/* <View style={styles.audioWaveSection}>
-              <Text style={styles.audioWaveLabel}>Listening</Text>
-              <View style={styles.audioWaveContainer}>
-                {[...Array(15)].map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.audioWaveBar,
-                      {
-                        height: Math.random() * 30 + 10,
-                        backgroundColor: Theme.colors.primary,
-                        opacity: 0.6 + Math.random() * 0.4,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-            </View> */}
-
-            {/* Live Captions Container*/}
+            {/* Live Captions */}
             <View style={styles.captionsOuterContainer}>
               <View style={styles.captionsHeader}>
                 <Ionicons name="text" size={20} color={Theme.colors.primary} />
@@ -974,7 +1087,6 @@ export default function ChatScreen() {
                   scrollViewRef.current?.scrollToEnd({ animated: true })
                 }
               >
-                {/* Show all messages for demo */}
                 {messages.length === 0 ? (
                   <View style={styles.emptyCaptions}>
                     <Ionicons
@@ -1035,13 +1147,6 @@ export default function ChatScreen() {
                         </Text>
                       </View>
                     ))}
-
-                    {/* Show "Now speaking..." indicator for demo */}
-                    {/* <View style={styles.currentMessageIndicator}>
-                      <Text style={styles.currentMessageText}>
-                        {getAvatarById(avatar).name} is listening...
-                      </Text>
-                    </View> */}
                   </>
                 )}
               </ScrollView>
@@ -1056,9 +1161,7 @@ export default function ChatScreen() {
                 styles.secondaryControlButton,
                 speaker && Theme.shadows.md,
               ]}
-              onPress={() => {
-                setSpeaker(!speaker);
-              }}
+              onPress={() => setSpeaker(!speaker)}
             >
               <Ionicons
                 name={speaker ? "volume-high" : "volume-off"}
@@ -1084,14 +1187,14 @@ export default function ChatScreen() {
               style={[
                 styles.controlButton,
                 styles.primaryControlButton,
-                isRecording && styles.recordingControlButton, // Optional: add a recording style
+                isRecording && styles.recordingControlButton,
               ]}
               onPressIn={handleMicPressIn}
               onPressOut={handleMicPressOut}
               activeOpacity={0.7}
             >
               <Ionicons
-                name={isRecording ? "mic-off" : "mic"} // Change icon when recording
+                name={isRecording ? "mic-off" : "mic"}
                 size={24}
                 color={Theme.colors.backgroundLight}
               />
@@ -1107,9 +1210,7 @@ export default function ChatScreen() {
 
             <TouchableOpacity
               style={[styles.controlButton, styles.dangerControlButton]}
-              onPress={() => {
-                setShowEndCallModal(true);
-              }}
+              onPress={() => setShowEndCallModal(true)}
             >
               <Ionicons
                 name="call"
@@ -1127,22 +1228,17 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         </Animated.View>
-        {/* <View>
-          <TouchableOpacity
-            style={[styles.selectAvatarButton]}
-            onPress={() => {}}
-          ></TouchableOpacity>
-        </View> */}
+
         <CustomTabBar />
 
+        {/* Modals */}
         {chooseAvatarModal && (
           <SelectionModal
             mode={"choose_avatar"}
             setShowPopUp={setChooseAvatarModal}
             avatar={avatar}
             setAvatar={setAvatar}
-            // proceed={() => {}}
-          ></SelectionModal>
+          />
         )}
 
         {showEndCallModal && (
@@ -1152,6 +1248,7 @@ export default function ChatScreen() {
             proceed={handleEndCall}
           />
         )}
+
         {showTipsModal && (
           <SelectionModal
             mode={"tips_checklist"}
@@ -1175,8 +1272,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    // borderColor: "red",
-    // borderWidth: 3,
   },
   header: {
     flexDirection: "row",
@@ -1260,10 +1355,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.md,
     ...Theme.shadows.sm,
   },
-  voiceSessionCard: {
-    // borderLeftWidth: 4,
-    // borderLeftColor: Theme.colors.primary,
-  },
+  voiceSessionCard: {},
   sessionCardContent: {
     flex: 1,
   },
@@ -1370,7 +1462,6 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     paddingHorizontal: Theme.spacing.md,
-    // paddingVertical: Theme.spacing.sm,
     paddingTop: (Theme.spacing.sm + Theme.spacing.md) / 2,
     paddingBottom: (Theme.spacing.sm + Theme.spacing.md) / 2,
     fontSize: 16,
@@ -1392,60 +1483,54 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primary,
     opacity: 0.8,
   },
-  // avatar
   avatarMainContainer: {
     flex: 1,
     paddingHorizontal: Theme.spacing.md,
-    // borderWidth: 2,
-    // borderColor: "red",
   },
-
   videoContainer: {
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
-    // padding: Theme.spacing.md,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    width: "100%", // Fixed height for video
+    width: "100%",
     aspectRatio: 1.3,
     marginTop: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
     ...Theme.shadows.md,
-    // borderColor: "red",
-    // borderWidth: 2,
-    overflow: "hidden", // Important for image clipping
+    overflow: "hidden",
     position: "relative",
   },
-
+  videoBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.7,
+  },
   videoPlaceholder: {
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
-    // borderColor: "red",
-    // borderWidth: 2,
     width: "100%",
     height: "100%",
-    resizeMode: "contain",
-    alignSelf: "flex-start",
-    // verticalAlign: "top",
-    // width: "100%",
+    overflow: "hidden",
+    position: "relative",
   },
-
-  videoPlaceholderText: {
-    fontSize: 16,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.text,
-    marginTop: Theme.spacing.md,
+  video: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
   },
-
-  videoPlaceholderSubtext: {
-    fontSize: 12,
-    fontFamily: Theme.fonts.regular,
-    color: Theme.colors.textSecondary,
-    marginTop: Theme.spacing.xs,
+  hiddenVideo: {
+    opacity: 0,
+    position: "absolute",
+    zIndex: -1,
   },
-
   callStatus: {
     flexDirection: "row",
     alignItems: "center",
@@ -1457,12 +1542,10 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     marginTop: Theme.spacing.sm,
     position: "absolute",
-    // zIndex: 50,
-    bottom: Theme.spacing.sm, // Position at bottom of video container
+    bottom: Theme.spacing.sm,
     zIndex: 50,
-    alignSelf: "center", // Center horizontally
+    alignSelf: "center",
   },
-
   statusDot: {
     width: 8,
     height: 8,
@@ -1471,54 +1554,20 @@ const styles = StyleSheet.create({
     marginRight: Theme.spacing.xs,
     zIndex: 100,
   },
-
   statusText: {
     fontSize: 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.livebuttonText,
     zIndex: 100,
   },
-
-  audioWaveSection: {
-    backgroundColor: Theme.colors.backgroundLight,
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.md,
-    marginBottom: Theme.spacing.md,
-    alignItems: "center",
-    ...Theme.shadows.sm,
-  },
-
-  audioWaveLabel: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.text,
-    marginBottom: Theme.spacing.sm,
-  },
-
-  audioWaveContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 40,
-    width: "100%",
-    gap: 3,
-  },
-
-  audioWaveBar: {
-    width: 6,
-    borderRadius: 3,
-    minHeight: 10,
-  },
-
   captionsOuterContainer: {
-    flex: 1, // This will take remaining space
+    flex: 1,
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     overflow: "hidden",
     marginBottom: Theme.spacing.md,
     ...Theme.shadows.sm,
   },
-
   captionsHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1527,7 +1576,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Theme.colors.border,
     backgroundColor: Theme.colors.backgroundLight,
   },
-
   captionsTitle: {
     fontSize: 16,
     fontFamily: Theme.fonts.semibold,
@@ -1535,7 +1583,6 @@ const styles = StyleSheet.create({
     marginLeft: Theme.spacing.sm,
     marginRight: "auto",
   },
-
   captionsStatus: {
     flexDirection: "row",
     alignItems: "center",
@@ -1544,37 +1591,30 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: Theme.borderRadius.sm,
   },
-
   captionsStatusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Theme.colors.livebuttonText, //Theme.colors.primaryDark,
+    backgroundColor: Theme.colors.livebuttonText,
     marginRight: 4,
   },
-
   captionsStatusText: {
     fontSize: 12,
     fontFamily: Theme.fonts.regular,
-    color: Theme.colors.livebuttonText, //Theme.colors.primaryDark,
+    color: Theme.colors.livebuttonText,
   },
-
   captionsScrollView: {
     flex: 1,
-    // paddingBottom: 0,
   },
-
   captionsContent: {
     padding: Theme.spacing.md,
-    paddingBottom: Theme.spacing.xs, // Extra padding at bottom
+    paddingBottom: Theme.spacing.xs,
   },
-
   emptyCaptions: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: Theme.spacing.xl,
   },
-
   emptyCaptionsText: {
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
@@ -1582,7 +1622,6 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.md,
     textAlign: "center",
   },
-
   captionItem: {
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
@@ -1590,23 +1629,19 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.sm,
     ...Theme.shadows.sm,
   },
-
   userCaptionItem: {
     borderLeftWidth: 3,
     borderLeftColor: Theme.colors.primary,
   },
-
   aiCaptionItem: {
     borderLeftWidth: 3,
     borderLeftColor: Theme.colors.secondary,
   },
-
   captionHeader: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: Theme.spacing.sm,
   },
-
   captionAvatar: {
     width: 32,
     height: 32,
@@ -1615,135 +1650,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: Theme.spacing.sm,
   },
-
   userCaptionAvatar: {
     backgroundColor: Theme.colors.primary,
   },
-
   aiCaptionAvatar: {
     backgroundColor: Theme.colors.secondary,
   },
-
-  captionInfo: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
   captionName: {
     fontSize: 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginRight: "auto",
   },
-
   captionTime: {
     fontSize: 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textLight,
   },
-
   captionMessage: {
     fontSize: 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     lineHeight: 20,
-  },
-
-  typingIndicatorCaption: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: Theme.spacing.xs,
-  },
-
-  typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Theme.colors.textSecondary,
-    marginRight: 4,
-  },
-
-  // Control Bar Styles
-  controlBar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.md,
-    backgroundColor: Theme.colors.background,
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.border,
-    paddingBottom: 50,
-    height: 130,
-  },
-
-  controlButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.md,
-    minWidth: 100,
-  },
-
-  secondaryControlButton: {
-    backgroundColor: Theme.colors.backgroundLight,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-
-  primaryControlButton: {
-    backgroundColor: Theme.colors.primaryDark,
-    // paddingHorizontal: Theme.spacing.lg,
-    // paddingVertical: Theme.spacing.md,
-    ...Theme.shadows.xl,
-    transform: [{ scale: 1 }],
-  },
-
-  dangerControlButton: {
-    backgroundColor: "#FF3B30",
-    // borderWidth: 1,
-    borderColor: "#FF3B30",
-    ...Theme.shadows.md,
-  },
-
-  controlButtonText: {
-    fontSize: 12,
-    fontFamily: Theme.fonts.regular,
-    color: Theme.colors.text,
-    marginTop: 4,
-    fontWeight: "500",
-  },
-
-  primaryControlButtonText: {
-    color: Theme.colors.backgroundLight,
-  },
-
-  dangerControlButtonText: {
-    color: Theme.colors.backgroundLight,
-  },
-  currentMessageIndicator: {
-    backgroundColor: "rgba(33, 150, 243, 0.1)",
-    borderRadius: Theme.borderRadius.md,
-    padding: Theme.spacing.sm,
-    marginBottom: Theme.spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: Theme.colors.primary,
-  },
-
-  currentMessageText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.primaryDark,
-    textAlign: "center",
-  },
-  videoBackground: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-    opacity: 0.7, // Adjust opacity as needed
-    //blurRadius: 10, // This works on iOS, for Android use the prop
   },
   avatarIcon: {
     width: 32,
@@ -1763,5 +1691,56 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 16,
     right: 16,
+  },
+  controlBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.md,
+    backgroundColor: Theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.border,
+    paddingBottom: 50,
+    height: 130,
+  },
+  controlButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.md,
+    minWidth: 100,
+  },
+  secondaryControlButton: {
+    backgroundColor: Theme.colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  primaryControlButton: {
+    backgroundColor: Theme.colors.primaryDark,
+    ...Theme.shadows.xl,
+    transform: [{ scale: 1 }],
+  },
+  dangerControlButton: {
+    backgroundColor: "#FF3B30",
+    borderColor: "#FF3B30",
+    ...Theme.shadows.md,
+  },
+  recordingControlButton: {
+    backgroundColor: Theme.colors.primary,
+    transform: [{ scale: 1.1 }],
+  },
+  controlButtonText: {
+    fontSize: 12,
+    fontFamily: Theme.fonts.regular,
+    color: Theme.colors.text,
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  primaryControlButtonText: {
+    color: Theme.colors.backgroundLight,
+  },
+  dangerControlButtonText: {
+    color: Theme.colors.backgroundLight,
   },
 });
