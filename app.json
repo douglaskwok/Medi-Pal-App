@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.medipal.app",
@@ -48,7 +46,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Medi-Pal to use your location to show nearby healthcare resources."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "medipal",
     "extra": {
@@ -58,4 +57,3 @@
     }
   }
 }
-
