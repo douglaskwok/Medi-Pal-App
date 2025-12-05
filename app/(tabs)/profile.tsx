@@ -28,6 +28,62 @@ interface UserProfile {
   phoneNumber?: string;
 }
 
+// Translation object
+const translations = {
+  en: {
+    settings: "Settings",
+    personalInfo: "Personal Information",
+    firstName: "First Name",
+    lastName: "Last Name",
+    age: "Age",
+    phone: "Phone",
+    email: "Email",
+    notSet: "Not set",
+    enterFirstName: "Enter first name",
+    enterLastName: "Enter last name",
+    enterAge: "Enter age",
+    enterPhone: "Enter phone",
+    cancel: "Cancel",
+    save: "Save",
+    notifications: "Notifications",
+    language: "Language",
+    privacySecurity: "Privacy & Security",
+    terms: "Terms of Service",
+    signOut: "Sign Out",
+    signOutConfirmTitle: "Sign Out",
+    signOutConfirmMessage: "Are you sure you want to sign out of your account?",
+    signOutConfirm: "Sign Out",
+    signOutCancel: "Cancel",
+    savedSuccessfully: "Saved Successfully",
+  },
+  es: {
+    settings: "Ajustes",
+    personalInfo: "Información Personal",
+    firstName: "Nombre",
+    lastName: "Apellido",
+    age: "Edad",
+    phone: "Teléfono",
+    email: "Correo Electrónico",
+    notSet: "No establecido",
+    enterFirstName: "Ingresa tu nombre",
+    enterLastName: "Ingresa tu apellido",
+    enterAge: "Ingresa tu edad",
+    enterPhone: "Ingresa tu teléfono",
+    cancel: "Cancelar",
+    save: "Guardar",
+    notifications: "Notificaciones",
+    language: "Idioma",
+    privacySecurity: "Privacidad y Seguridad",
+    terms: "Términos de Servicio",
+    signOut: "Cerrar Sesión",
+    signOutConfirmTitle: "Cerrar Sesión",
+    signOutConfirmMessage: "¿Estás seguro de que quieres cerrar sesión?",
+    signOutConfirm: "Cerrar Sesión",
+    signOutCancel: "Cancelar",
+    savedSuccessfully: "Guardado Exitosamente",
+  },
+};
+
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -49,8 +105,13 @@ export default function ProfileScreen() {
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
+
+  // Get translations based on selected language
+  const t =
+    translations[selectedLanguage as keyof typeof translations] ||
+    translations.en;
 
   React.useEffect(() => {
     loadUserData();
@@ -176,11 +237,29 @@ export default function ProfileScreen() {
     editable: boolean = true
   ) => {
     const isEditing = editingField === field;
-    const displayValue = value || "Not set";
+    const displayValue = value || t.notSet;
+
+    // Map field names to translation keys
+    const fieldTranslations: Record<string, string> = {
+      firstName: t.firstName,
+      lastName: t.lastName,
+      age: t.age,
+      phoneNumber: t.phone,
+      email: t.email,
+    };
+
+    const placeholders: Record<string, string> = {
+      firstName: t.enterFirstName,
+      lastName: t.enterLastName,
+      age: t.enterAge,
+      phoneNumber: t.enterPhone,
+    };
 
     return (
       <View style={styles.fieldContainer}>
-        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={styles.fieldLabel}>
+          {fieldTranslations[field] || label}
+        </Text>
         {isEditing && editable ? (
           <TextInput
             style={styles.fieldInput}
@@ -201,7 +280,7 @@ export default function ProfileScreen() {
                 handleFieldChange(field, text);
               }
             }}
-            placeholder={`Enter ${label.toLowerCase()}`}
+            placeholder={placeholders[field] || `Enter ${label.toLowerCase()}`}
             placeholderTextColor={Theme.colors.textLight}
             autoFocus
             keyboardType={
@@ -272,7 +351,7 @@ export default function ProfileScreen() {
               style={styles.headerLogo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.title}>{t.settings}</Text>
           </View>
         </View>
 
@@ -317,13 +396,13 @@ export default function ProfileScreen() {
                     style={styles.cancelButton}
                     onPress={handleCancel}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>{t.cancel}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.saveButton}
                     onPress={handleSave}
                   >
-                    <Text style={styles.saveButtonText}>Save</Text>
+                    <Text style={styles.saveButtonText}>{t.save}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -341,7 +420,7 @@ export default function ProfileScreen() {
                   size={18}
                   color={Theme.colors.text}
                 />
-                <Text style={styles.smallMenuItemTitle}>Notifications</Text>
+                <Text style={styles.smallMenuItemTitle}>{t.notifications}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -362,7 +441,7 @@ export default function ProfileScreen() {
                   size={18}
                   color={Theme.colors.text}
                 />
-                <Text style={styles.smallMenuItemTitle}>Language</Text>
+                <Text style={styles.smallMenuItemTitle}>{t.language}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -384,7 +463,7 @@ export default function ProfileScreen() {
                   color={Theme.colors.text}
                 />
                 <Text style={styles.smallMenuItemTitle}>
-                  Privacy & Security
+                  {t.privacySecurity}
                 </Text>
               </View>
               <Ionicons
@@ -406,7 +485,7 @@ export default function ProfileScreen() {
                   size={18}
                   color={Theme.colors.text}
                 />
-                <Text style={styles.smallMenuItemTitle}>Terms of Service</Text>
+                <Text style={styles.smallMenuItemTitle}>{t.terms}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -427,7 +506,7 @@ export default function ProfileScreen() {
                 size={18}
                 color={Theme.colors.error}
               />
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <Text style={styles.signOutText}>{t.signOut}</Text>
             </View>
           </TouchableOpacity>
         </ScrollView>
@@ -436,10 +515,10 @@ export default function ProfileScreen() {
         visible={signOutModalVisible}
         onClose={() => setSignOutModalVisible(false)}
         onConfirm={handleSignOut}
-        title="Sign Out"
-        message="Are you sure you want to sign out of your account?"
-        confirmText="Sign Out"
-        cancelText="Cancel"
+        title={t.signOutConfirmTitle}
+        message={t.signOutConfirmMessage}
+        confirmText={t.signOutConfirm}
+        cancelText={t.signOutCancel}
         destructive={true}
       />
       <NotificationPopup
@@ -520,7 +599,7 @@ export default function ProfileScreen() {
                 marginTop: Theme.spacing.md,
               }}
             >
-              Saved Successfully
+              {t.savedSuccessfully}
             </Text>
           </Animated.View>
         </Animated.View>
@@ -531,10 +610,9 @@ export default function ProfileScreen() {
           setShowPopUp={setShowLanguageSettings}
           selectedLanguage={selectedLanguage}
           setSelectedLanguage={setSelectedLanguage}
-          // proceed={handleStartRouteAfterTips}
-        ></SelectionModal>
+        />
       )}
-      <CustomTabBar />
+      <CustomTabBar language={selectedLanguage} />
     </SafeAreaView>
   );
 }

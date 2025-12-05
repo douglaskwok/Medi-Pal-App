@@ -32,6 +32,72 @@ const languageOptions = [
   { id: "es", name: "Español", flag: "🇪🇸" },
 ];
 
+// Translation object
+const translations = {
+  en: {
+    // Titles
+    beforeYouStart: "Before You Start",
+    chooseAvatar: "Choose Avatar",
+    selectLanguage: "Select Language",
+    todoList: "To-do list",
+
+    // Subtitles
+    tipsChecklistSubtitle:
+      "Remember to do these things before embarking on your journey",
+    chooseAvatarSubtitle: "Select your Medi-Pal companion:",
+    selectLanguageSubtitle:
+      "Choose your preferred language for the app interface:",
+    videoTipsSubtitle:
+      "Here are some of the suggested tips. You can add them to your checklist!",
+
+    // Tips checklist items
+    tip1: "Arrive 10 minutes early.",
+    tip2: "Bring your Medi-Cal card.",
+    tip3: "Bring a photo ID",
+    tip4: "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
+    tip5: "Walk on treadmills at Palo Alto YMCA Gym every week.",
+
+    // Button texts
+    startRoute: "Start Route",
+    addToChecklist: "Add to Checklist",
+    addedInChecklist: "Added in Checklist",
+    confirm: "Confirm",
+    cancel: "Cancel",
+    exit: "Exit",
+  },
+  es: {
+    // Titles
+    beforeYouStart: "Antes de Empezar",
+    chooseAvatar: "Elegir Avatar",
+    selectLanguage: "Seleccionar Idioma",
+    todoList: "Lista de Tareas",
+
+    // Subtitles
+    tipsChecklistSubtitle:
+      "Recuerda hacer estas cosas antes de comenzar tu viaje",
+    chooseAvatarSubtitle: "Selecciona tu compañero de Medi-Pal:",
+    selectLanguageSubtitle:
+      "Elige tu idioma preferido para la interfaz de la aplicación:",
+    videoTipsSubtitle:
+      "Aquí tienes algunos de los consejos sugeridos. ¡Puedes añadirlos a tu lista de tareas!",
+
+    // Tips checklist items
+    tip1: "Llega 10 minutos antes.",
+    tip2: "Trae tu tarjeta de Medi-Cal.",
+    tip3: "Trae una identificación con foto",
+    tip4: "Programa una prueba de laboratorio gratuita en Ravenswood Family Health Center en East Palo Alto.",
+    tip5: "Camina en las caminadoras del Gimnasio YMCA de Palo Alto cada semana.",
+
+    // Button texts
+    startRoute: "Iniciar Ruta",
+    addToChecklist: "Añadir a Lista",
+    addedInChecklist: "Añadido a la Lista",
+    confirm: "Confirmar",
+    cancel: "Cancelar",
+    exit: "Salir",
+  },
+};
+
 export default function SelectionModal({
   mode,
   from_video,
@@ -39,7 +105,7 @@ export default function SelectionModal({
   avatar,
   setAvatar,
   proceed,
-  selectedLanguage,
+  selectedLanguage = "en", // Default to "en" if undefined
   setSelectedLanguage,
 }: {
   mode: "tips_checklist" | "choose_avatar" | "select_language";
@@ -54,24 +120,27 @@ export default function SelectionModal({
   setSelectedLanguage?: React.Dispatch<React.SetStateAction<string>>;
 }) {
   const video_origin = from_video || false;
+
+  // Get the current language or default to "en"
+  const currentLanguage = selectedLanguage || "en";
+
+  // Get translations for current language
+  const t =
+    translations[currentLanguage as keyof typeof translations] ||
+    translations.en;
+
+  // Create checklists with translated items
   const prepTipsChecklist = [
-    { id: "1", title: "Arrive 10 minutes early.", completed: false },
-    { id: "2", title: "Bring your Medi-Cal card.", completed: false },
-    { id: "3", title: "Bring a photo ID", completed: false },
+    { id: "1", title: t.tip1, completed: false },
+    { id: "2", title: t.tip2, completed: false },
+    { id: "3", title: t.tip3, completed: false },
   ];
+
   const adviceChecklist = [
-    {
-      id: "1",
-      title:
-        "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
-      completed: false,
-    },
-    {
-      id: "2",
-      title: "Walk on treadmills at Palo Alto YMCA Gym every week.",
-      completed: false,
-    },
+    { id: "1", title: t.tip4, completed: false },
+    { id: "2", title: t.tip5, completed: false },
   ];
+
   const chosenChecklist = video_origin ? adviceChecklist : prepTipsChecklist;
   const [addedToChecklist, setAddedToChecklist] = useState(false);
   const [tipsChecklist, setTipsChecklist] = useState(chosenChecklist);
@@ -80,9 +149,8 @@ export default function SelectionModal({
   >(avatar ?? "dr-al");
 
   // State for language selection
-  const [tempSelectedLanguage, setTempSelectedLanguage] = useState(
-    selectedLanguage ?? "en"
-  );
+  const [tempSelectedLanguage, setTempSelectedLanguage] =
+    useState(currentLanguage);
 
   const resetTipsChecklist = () => {
     setTipsChecklist(
@@ -94,11 +162,11 @@ export default function SelectionModal({
   const getModalTitle = () => {
     switch (mode) {
       case "tips_checklist":
-        return video_origin ? `To-do list` : "Before You Start";
+        return video_origin ? t.todoList : t.beforeYouStart;
       case "choose_avatar":
-        return "Choose Avatar";
+        return t.chooseAvatar;
       case "select_language":
-        return "Select Language";
+        return t.selectLanguage;
       default:
         return "";
     }
@@ -107,13 +175,11 @@ export default function SelectionModal({
   const getModalSubtitle = () => {
     switch (mode) {
       case "tips_checklist":
-        return video_origin
-          ? "Here are some of the suggested tips. You can add them to your checklist!"
-          : "Remember to do these things before embarking on your journey";
+        return video_origin ? t.videoTipsSubtitle : t.tipsChecklistSubtitle;
       case "choose_avatar":
-        return "Select your Medi-Pal companion:";
+        return t.chooseAvatarSubtitle;
       case "select_language":
-        return "Choose your preferred language for the app interface:";
+        return t.selectLanguageSubtitle;
       default:
         return "";
     }
@@ -124,16 +190,20 @@ export default function SelectionModal({
       case "tips_checklist":
         return video_origin
           ? addedToChecklist
-            ? "Added in Checklist"
-            : "Add to Checklist"
-          : "Start Route";
+            ? t.addedInChecklist
+            : t.addToChecklist
+          : t.startRoute;
       case "choose_avatar":
-        return "Confirm";
+        return t.confirm;
       case "select_language":
-        return "Confirm";
+        return t.confirm;
       default:
-        return "Confirm";
+        return t.confirm;
     }
+  };
+
+  const getCancelButtonText = () => {
+    return video_origin ? t.exit : t.cancel;
   };
 
   const handleConfirmPress = () => {
@@ -351,9 +421,7 @@ export default function SelectionModal({
               setShowPopUp(false);
             }}
           >
-            <Text style={styles.modalCancelText}>
-              {video_origin ? "Exit" : "Cancel"}
-            </Text>
+            <Text style={styles.modalCancelText}>{getCancelButtonText()}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -504,13 +572,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalCancelButton: {
-    // flex: 3,
     backgroundColor: Theme.colors.backgroundLight,
     borderWidth: 1,
     borderColor: Theme.colors.border,
   },
   modalConfirmButton: {
-    // flex: 4,
     backgroundColor: Theme.colors.error,
   },
   modalCancelText: {

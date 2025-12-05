@@ -5,38 +5,61 @@ import { usePathname, useRouter } from "expo-router";
 import { Theme } from "../../constants/Theme";
 import React from "react";
 
-export function CustomTabBar() {
+// Add translations object
+const tabTranslations = {
+  en: {
+    home: "Home",
+    resources: "Resources",
+    chat: "Chat",
+    checklist: "Checklist",
+    profile: "Settings",
+  },
+  es: {
+    home: "Inicio",
+    resources: "Recursos",
+    chat: "Chat",
+    checklist: "Lista",
+    profile: "Ajustes",
+  },
+};
+
+export function CustomTabBar({ language = "en" }: { language?: string }) {
   const router = useRouter();
   const pathname = usePathname();
+
+  // Get translations for current language
+  const t =
+    tabTranslations[language as keyof typeof tabTranslations] ||
+    tabTranslations.en;
 
   const tabs = [
     {
       name: "home",
-      label: "Home",
+      label: t.home,
       icon: "home",
       route: "/(tabs)/home",
     },
     {
       name: "resources",
-      label: "Resources",
+      label: t.resources,
       icon: "location",
       route: "/(tabs)/resources",
     },
     {
       name: "chat",
-      label: "Chat",
+      label: t.chat,
       icon: "chatbubble-ellipses",
       route: "/(tabs)/chat",
     },
     {
       name: "checklist",
-      label: "Checklist",
+      label: t.checklist,
       icon: "checkmark-circle",
       route: "/(tabs)/checklist",
     },
     {
       name: "profile",
-      label: "Settings",
+      label: t.profile,
       icon: "settings",
       route: "/(tabs)/profile",
     },
