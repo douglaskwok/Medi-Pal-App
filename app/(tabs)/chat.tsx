@@ -149,6 +149,9 @@ export default function ChatScreen() {
   const [avatar, setAvatar] = useState<"dr-al" | "dr-lora" | "lexi" | "bert">(
     "dr-al"
   );
+  // Add these states near your other state declarations
+  const [dummyMessagesIndex, setDummyMessagesIndex] = useState(0);
+  const [isProcessingMessage, setIsProcessingMessage] = useState(false);
   const [showEndCallModal, setShowEndCallModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
 
@@ -190,6 +193,9 @@ export default function ChatScreen() {
     }
   };
 
+  // Replace the dummy messages array with a function that returns messages based on index
+  // Update the generateDummyMessages function with proper typing:
+  // Also update the generateDummyMessages function to use the current avatar
   const generateDummyMessages = (): Message[] => {
     const now = new Date();
     return [
@@ -198,34 +204,34 @@ export default function ChatScreen() {
         content: `Hello! I'm ${
           getAvatarById(avatar).name
         }, your AI healthcare assistant. How may I help you today?`,
-        role: "assistant",
+        role: "assistant" as const,
         timestamp: new Date(now.getTime() - 300000),
       },
       {
         id: "2",
         content:
           "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
-        role: "user",
+        role: "user" as const,
         timestamp: new Date(now.getTime() - 240000),
       },
       {
         id: "3",
         content:
           "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
-        role: "assistant",
+        role: "assistant" as const,
         timestamp: new Date(now.getTime() - 180000),
       },
       {
         id: "4",
         content: "Sure",
-        role: "user",
+        role: "user" as const,
         timestamp: new Date(now.getTime() - 120000),
       },
       {
         id: "5",
         content:
           "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
-        role: "assistant",
+        role: "assistant" as const,
         timestamp: new Date(now.getTime() - 60000),
       },
     ];
@@ -240,16 +246,42 @@ export default function ChatScreen() {
     }).start();
     loadSessions();
   }, []);
-
-  // Tips modal effect
   useEffect(() => {
-    if (currentView === "avatar-chat") {
-      const timer = setTimeout(() => {
-        setShowTipsModal(true);
-      }, 5000);
-      return () => clearTimeout(timer);
+    if (currentView === "avatar-chat" && messages.length > 0) {
+      // Update the first message (greeting) with new avatar name
+      const updatedMessages = [...messages];
+
+      // Update only the first assistant message (greeting)
+      if (updatedMessages[0] && updatedMessages[0].role === "assistant") {
+        updatedMessages[0] = {
+          ...updatedMessages[0],
+          content: `Hello! I'm ${
+            getAvatarById(avatar).name
+          }, your AI healthcare assistant. How may I help you today?`,
+        };
+      }
+
+      // Update any other assistant messages that reference the avatar
+      updatedMessages.forEach((msg, index) => {
+        if (msg.role === "assistant" && index > 0) {
+          // You might want to update other messages that reference the avatar name
+          // For now, we're only updating the greeting
+        }
+      });
+
+      setMessages(updatedMessages);
     }
-  }, [currentView]);
+  }, [avatar, currentView]);
+
+  // // Tips modal effect
+  // useEffect(() => {
+  //   if (currentView === "avatar-chat") {
+  //     const timer = setTimeout(() => {
+  //       setShowTipsModal(true);
+  //     }, 5000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [currentView]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -310,6 +342,7 @@ export default function ChatScreen() {
   }, [avatar, currentView]);
 
   // Handle recording state changes
+  // Update the useEffect for recording state changes:
   useEffect(() => {
     const handleRecordingChange = async () => {
       if (!isVideoReady) {
@@ -442,6 +475,121 @@ export default function ChatScreen() {
       console.error("Error switching to default:", error);
     }
   };
+  const SoundWaveIcon = ({ isActive, size = 24, color = "#fff" }) => {
+    const waveAnimations = useRef([
+      new Animated.Value(1),
+      new Animated.Value(1),
+      new Animated.Value(1),
+      new Animated.Value(1),
+    ]).current;
+
+    useEffect(() => {
+      if (isActive) {
+        // Create a staggered wave effect
+        waveAnimations.forEach((anim, index) => {
+          Animated.loop(
+            Animated.sequence([
+              Animated.delay(index * 100),
+              Animated.timing(anim, {
+                toValue: 1.5,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(anim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+            ])
+          ).start();
+        });
+      } else {
+        // Stop all animations
+        waveAnimations.forEach((anim) => {
+          anim.stopAnimation();
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        });
+      }
+    }, [isActive]);
+
+    return (
+      <View style={{ width: size, height: size, position: "relative" }}>
+        {/* Sound waves */}
+        {isActive && (
+          <>
+            <Animated.View
+              style={{
+                position: "absolute",
+                width: size * 0.7,
+                height: size * 0.7,
+                borderRadius: size * 0.35,
+                borderWidth: 1,
+                borderColor: color,
+                opacity: 0.3,
+                transform: [{ scale: waveAnimations[0] }],
+                alignSelf: "center",
+                top: size * 0.15,
+                left: size * 0.15,
+              }}
+            />
+            <Animated.View
+              style={{
+                position: "absolute",
+                width: size * 0.9,
+                height: size * 0.9,
+                borderRadius: size * 0.45,
+                borderWidth: 1,
+                borderColor: color,
+                opacity: 0.2,
+                transform: [{ scale: waveAnimations[1] }],
+                alignSelf: "center",
+                top: size * 0.05,
+                left: size * 0.05,
+              }}
+            />
+            <Animated.View
+              style={{
+                position: "absolute",
+                width: size * 1.1,
+                height: size * 1.1,
+                borderRadius: size * 0.55,
+                borderWidth: 1,
+                borderColor: color,
+                opacity: 0.1,
+                transform: [{ scale: waveAnimations[2] }],
+                alignSelf: "center",
+                top: -size * 0.05,
+                left: -size * 0.05,
+              }}
+            />
+          </>
+        )}
+
+        {/* Mic Icon */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Ionicons
+            name={isActive ? "mic" : "mic-outline"}
+            size={size}
+            color={color}
+          />
+        </View>
+      </View>
+    );
+  };
   const loadSessions = async () => {
     try {
       const {
@@ -559,13 +707,15 @@ export default function ChatScreen() {
     }
   };
 
+  // Replace the handleStartVoiceSession function:
   const handleStartVoiceSession = async () => {
     const sessionId = await createSession("voice");
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setCurrentView("avatar-chat");
-      const dummyMessages = generateDummyMessages();
-      setMessages(dummyMessages);
+      // Start with just the first assistant message
+      setMessages([generateDummyMessages()[0]]);
+      setDummyMessagesIndex(1); // Set index to 1 (next message is user message)
       await loadSessions();
     }
   };
@@ -697,8 +847,66 @@ export default function ChatScreen() {
     setIsRecording(true);
   };
 
-  const handleMicPressOut = () => {
+  const handleMicPressOut = async () => {
     console.log("Mic pressed OUT");
+
+    if (isRecording && !isProcessingMessage) {
+      setIsProcessingMessage(true);
+
+      // Get all dummy messages
+      const allDummyMessages = generateDummyMessages();
+
+      // Only add messages if we haven't shown all yet
+      if (dummyMessagesIndex < allDummyMessages.length) {
+        // Add the next message to the conversation
+        const nextMessage = allDummyMessages[dummyMessagesIndex];
+
+        // Simulate a small delay for "processing"
+        setTimeout(() => {
+          const newIndex = dummyMessagesIndex + 1;
+          setMessages((prev) => [...prev, nextMessage]);
+          setDummyMessagesIndex(newIndex);
+
+          // Check if this was the LAST message
+          if (newIndex >= allDummyMessages.length) {
+            // Show tips modal after a short delay when conversation ends
+            setTimeout(() => {
+              setShowTipsModal(true);
+            }, 1000);
+          }
+
+          // If we just added a user message, automatically add the next AI message after a delay
+          if (
+            nextMessage.role === "user" &&
+            newIndex < allDummyMessages.length
+          ) {
+            setTimeout(() => {
+              const aiMessage = allDummyMessages[newIndex];
+              const nextIndex = newIndex + 1;
+
+              setMessages((prev) => [...prev, aiMessage]);
+              setDummyMessagesIndex(nextIndex);
+
+              // Check if this AI message was the LAST message
+              if (nextIndex >= allDummyMessages.length) {
+                // Show tips modal after a short delay when conversation ends
+                setTimeout(() => {
+                  setShowTipsModal(true);
+                }, 3000);
+              }
+
+              setIsProcessingMessage(false);
+            }, 1500);
+          } else {
+            setIsProcessingMessage(false);
+          }
+        }, 800);
+      } else {
+        // All messages shown, just finish processing without adding anything
+        setIsProcessingMessage(false);
+      }
+    }
+
     setIsRecording(false);
   };
 
@@ -777,15 +985,19 @@ export default function ChatScreen() {
                       }
                       activeOpacity={0.7}
                     >
-                      <Ionicons
-                        name={
-                          session.session_type === "voice"
-                            ? "mic"
-                            : "chatbubbles"
-                        }
-                        size={24}
-                        color={Theme.colors.primary}
-                      />
+                      {session.session_type === "voice" ? (
+                        <Fontisto
+                          name="doctor"
+                          size={24}
+                          color={Theme.colors.primary}
+                        />
+                      ) : (
+                        <Ionicons
+                          name={"chatbubbles"}
+                          size={24}
+                          color={Theme.colors.primary}
+                        />
+                      )}
                       <View style={styles.sessionCardContent}>
                         <Text style={styles.sessionCardTitle}>
                           {session.title ||
@@ -1208,13 +1420,17 @@ export default function ChatScreen() {
                 styles.controlButton,
                 styles.primaryControlButton,
                 isRecording && styles.recordingControlButton,
+                (isProcessingMessage ||
+                  dummyMessagesIndex >= generateDummyMessages().length) &&
+                  styles.disabledControlButton,
               ]}
               onPressIn={handleMicPressIn}
               onPressOut={handleMicPressOut}
               activeOpacity={0.7}
+              disabled={isProcessingMessage}
             >
-              <Ionicons
-                name={isRecording ? "mic-off" : "mic"}
+              <SoundWaveIcon
+                isActive={isRecording || isProcessingMessage}
                 size={24}
                 color={Theme.colors.backgroundLight}
               />
@@ -1224,7 +1440,11 @@ export default function ChatScreen() {
                   styles.primaryControlButtonText,
                 ]}
               >
-                {isRecording ? "Listening..." : "Hold to Talk"}
+                {isProcessingMessage
+                  ? "Processing..."
+                  : isRecording
+                  ? "Listening..."
+                  : "Hold to Talk"}
               </Text>
             </TouchableOpacity>
 
@@ -1747,8 +1967,11 @@ const styles = StyleSheet.create({
     ...Theme.shadows.md,
   },
   recordingControlButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryAlt,
     transform: [{ scale: 1.1 }],
+  },
+  disabledControlButton: {
+    opacity: 0.7,
   },
   controlButtonText: {
     fontSize: 12,

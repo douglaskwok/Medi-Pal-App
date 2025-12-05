@@ -39,7 +39,7 @@ const translations = {
     beforeYouStart: "Before You Start",
     chooseAvatar: "Choose Avatar",
     selectLanguage: "Select Language",
-    todoList: "To-do list",
+    todoList: "To-Do List",
 
     // Subtitles
     tipsChecklistSubtitle:
@@ -59,8 +59,8 @@ const translations = {
 
     // Button texts
     startRoute: "Start Route",
-    addToChecklist: "Add to Checklist",
-    addedInChecklist: "Added in Checklist",
+    addToChecklist: "Save All To Checklist",
+    addedInChecklist: "Saved in Checklist",
     confirm: "Confirm",
     cancel: "Cancel",
     exit: "Exit",
