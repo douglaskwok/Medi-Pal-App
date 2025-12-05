@@ -29,7 +29,7 @@ interface ResourceData {
   category: string;
   latitude: number;
   longitude: number;
-  distance: string; // for hardcoding
+  distance: string;
   place_id: string;
   phone: string;
   email: string;
@@ -58,21 +58,18 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // for saving resources in the popup
-  // const [isSaved, setIsSaved] = useState(false);
   const [savedMap, setSavedMap] = useState<{ [key: string]: boolean }>({});
   const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
-  //const backdropOpacity = useRef(new Animated.Value(0)).current; // Add for overlay
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
-  // Convert resources to ResourceCard format
+
   const mappedResources = resources.map((resource) => ({
     id: resource.id,
     name: resource.name,
     type: resource.category,
-    distance: resource.distance, // You can calculate actual distance if you have user location
+    distance: resource.distance,
     address: resource.address,
-    rating: 4.5, // Default rating or fetch from API
+    rating: 4.5,
     image: resource.imageSource,
     latitude: resource.latitude,
     longitude: resource.longitude,
@@ -87,6 +84,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   /** ANIMATION VALUES **/
   const translateY = useRef(new Animated.Value(200)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current; // Added for overlay
   const pan = useRef(new Animated.ValueXY()).current;
 
   const autoDismissTimer = useRef<NodeJS.Timeout | null>(null);
@@ -122,7 +120,6 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
       autoDismissTimer.current = setTimeout(() => {
         dismissNotification();
       }, 30000);
-      // Reset active index when notification shows
       setActiveIndex(0);
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ x: 0, animated: false });
@@ -130,7 +127,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
     } else {
       translateY.setValue(200);
       opacity.setValue(0);
-      //backdropOpacity.setValue(0); // Reset backdrop opacity
+      backdropOpacity.setValue(0);
       pan.setValue({ x: 0, y: 0 });
     }
 
@@ -153,11 +150,11 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         duration: 250,
         useNativeDriver: true,
       }),
-      // Animated.timing(backdropOpacity, {
-      //   toValue: 1, // Fade in the overlay
-      //   duration: 250,
-      //   useNativeDriver: true,
-      // }),
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -179,11 +176,11 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         duration: 250,
         useNativeDriver: true,
       }),
-      // Animated.timing(backdropOpacity, {
-      //   toValue: 0, // Fade out the overlay
-      //   duration: 250,
-      //   useNativeDriver: true,
-      // }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       pan.setValue({ x: 0, y: 0 });
       onDismiss();
@@ -192,17 +189,16 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
 
   /** HANDLE SCROLL **/
   const handleScroll = (event: any) => {
-    const slideWidth = 240 + Theme.spacing.md; // ResourceCard width + margin
+    const slideWidth = 240 + Theme.spacing.md;
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / slideWidth);
     setActiveIndex(Math.min(index, mappedResources.length - 1));
   };
-  //   console.log("hi");
+
   /** HANDLE RESOURCE PRESS **/
   const handleResourcePress = (resource: any) => {
     dismissNotification();
     setTimeout(() => {
-      // Navigate to resource details
       router.push({
         pathname: "/(tabs)/resources",
         params: {
@@ -283,7 +279,6 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
           setSaveSuccessModalVisible(false);
         });
       }, 2000);
-      // dismissNotification();
     } catch (err) {
       console.error("Error saving resource:", err);
     }
@@ -292,241 +287,181 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   if (!visible || mappedResources.length === 0) return null;
 
   const activeResource = mappedResources[activeIndex];
-  // <View style={styles.overlay}>
-  // <>
-  {
-    /* Dark Overlay */
-  }
-  {
-    /* {visible && (
+
+  return (
+    <>
+      {/* Dark Overlay */}
+      <Animated.View
+        style={[
+          styles.overlay,
+          {
+            opacity: backdropOpacity,
+          },
+        ]}
+        pointerEvents={visible ? "auto" : "none"}
+      >
         <TouchableOpacity
           activeOpacity={1}
           onPress={dismissNotification}
-          style={[
-            styles.overlayTouchable,
-            { pointerEvents: visible ? "auto" : "none" },
-          ]}
-        >
-          <Animated.View
-            style={[
-              styles.overlay,
-              {
-                opacity: backdropOpacity,
-                pointerEvents: visible ? "auto" : "none",
-              },
-            ]}
-          />
-        </TouchableOpacity>
-      )} */
-  }
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
 
-  return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          bottom: height * 0.25,
-          opacity,
-          transform: [
-            { translateY: Animated.add(translateY, pan.y) },
-            { translateX: pan.x },
-          ],
-        },
-      ]}
-      {...panResponder.panHandlers}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.verifiedIcon}>
-              <Ionicons name="sparkles-sharp" size={18} color="blue" />
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            bottom: height * 0.25,
+            opacity,
+            transform: [
+              { translateY: Animated.add(translateY, pan.y) },
+              { translateX: pan.x },
+            ],
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.verifiedIcon}>
+                <Ionicons name="sparkles-sharp" size={18} color="blue" />
+              </View>
+              <Text style={styles.category}>
+                Verified Suggestions from Dr Al
+              </Text>
             </View>
-            <Text style={styles.category}>Verified Suggestions from Dr Al</Text>
-          </View>
 
-          <TouchableOpacity
-            onPress={dismissNotification}
-            style={styles.closeButton}
-          >
-            <Ionicons
-              name="close"
-              size={20}
-              color={Theme.colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.title}>Suggested Resources</Text>
-        <Text style={styles.subtitle}>
-          Here are some Medi-Cal resources that we recommend:
-        </Text>
-
-        {/* <View style={styles.eligibilityRow}>
-          <Ionicons
-            name="checkmark-circle"
-            size={20}
-            color={Theme.colors.success}
-          />
-          <Text style={styles.eligibilityText}>
-            {activeResource.eligibility}
-          </Text>
-        </View> */}
-
-        {/* Resource Carousel */}
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.carouselContainer}
-          contentContainerStyle={styles.carouselContent}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          pagingEnabled
-          snapToInterval={240 + Theme.spacing.md} // Card width + margin
-          decelerationRate="fast"
-        >
-          {mappedResources.map((resource) => (
-            <ResourceCard
-              key={resource.id}
-              id={resource.id}
-              name={resource.name}
-              type={resource.type}
-              distance={resource.distance}
-              address={resource.description}
-              rating={resource.rating}
-              image={resource.image}
-              onPress={() => handleResourcePress(resource)}
-              show_action_buttons={true}
-              saveResource={() => handleSaveResource(resource)}
-              small={false}
-              showBlackBorder={true}
-              hours={resource.hours}
-              email={resource.email}
-              phone={resource.phone}
-              isSaved={!!savedMap[resource.id]}
-            />
-          ))}
-        </ScrollView>
-
-        {/* Resource Description */}
-        {/* <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionText} numberOfLines={2}>
-            {activeResource.description}
-          </Text>
-        </View> */}
-
-        {/* Action Buttons */}
-        {/* <View style={styles.buttons}>
-          <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
-            onPress={() => handleSaveResource(activeResource)}
-          >
-            <Text style={styles.saveButtonText}>Save Resource</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.takeMeButton]}
-            onPress={() => handleResourcePress(activeResource)}
-          >
-            <Text style={styles.takeMeButtonText}>Take Me There!</Text>
-          </TouchableOpacity>
-        </View> */}
-
-        {/* Dots Indicator */}
-        {mappedResources.length > 1 && (
-          <View style={styles.footer}>
-            <View style={styles.dotsContainer}>
-              {mappedResources.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === activeIndex && styles.dotActive,
-                  ]}
-                />
-              ))}
-            </View>
-            <Text style={styles.footerText}>
-              {activeIndex + 1} of {mappedResources.length}
-            </Text>
-          </View>
-        )}
-      </View>
-      {saveSuccessModalVisible && (
-        <Animated.View
-          style={[
-            {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 2000,
-              opacity: saveSuccessAnim,
-            },
-          ]}
-          pointerEvents="box-none"
-        >
-          <Animated.View
-            style={[
-              {
-                backgroundColor: Theme.colors.backgroundLight,
-                borderRadius: Theme.borderRadius.lg,
-                padding: Theme.spacing.xl,
-                alignItems: "center",
-                ...Theme.shadows.lg,
-                transform: [{ scale: saveSuccessScale }],
-              },
-            ]}
-          >
-            <Ionicons
-              name="checkmark-circle"
-              size={48}
-              color={Theme.colors.success}
-            />
-            <Text
-              style={{
-                fontSize: 18,
-                fontFamily: Theme.fonts.semibold,
-                color: Theme.colors.text,
-                marginTop: Theme.spacing.md,
-              }}
+            <TouchableOpacity
+              onPress={dismissNotification}
+              style={styles.closeButton}
             >
-              Saved Successfully
-            </Text>
+              <Ionicons
+                name="close"
+                size={20}
+                color={Theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.title}>Suggested Resources</Text>
+          <Text style={styles.subtitle}>
+            Here are some Medi-Cal resources that we recommend:
+          </Text>
+
+          {/* Resource Carousel */}
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.carouselContainer}
+            contentContainerStyle={styles.carouselContent}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            pagingEnabled
+            snapToInterval={240 + Theme.spacing.md}
+            decelerationRate="fast"
+          >
+            {mappedResources.map((resource) => (
+              <ResourceCard
+                key={resource.id}
+                id={resource.id}
+                name={resource.name}
+                type={resource.type}
+                distance={resource.distance}
+                address={resource.description}
+                rating={resource.rating}
+                image={resource.image}
+                onPress={() => handleResourcePress(resource)}
+                show_action_buttons={true}
+                saveResource={() => handleSaveResource(resource)}
+                small={false}
+                showBlackBorder={true}
+                hours={resource.hours}
+                email={resource.email}
+                phone={resource.phone}
+                isSaved={!!savedMap[resource.id]}
+              />
+            ))}
+          </ScrollView>
+
+          {/* Dots Indicator */}
+          {mappedResources.length > 1 && (
+            <View style={styles.footer}>
+              <View style={styles.dotsContainer}>
+                {mappedResources.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      index === activeIndex && styles.dotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.footerText}>
+                {activeIndex + 1} of {mappedResources.length}
+              </Text>
+            </View>
+          )}
+        </View>
+        {saveSuccessModalVisible && (
+          <Animated.View
+            style={[
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 2000,
+                opacity: saveSuccessAnim,
+              },
+            ]}
+            pointerEvents="box-none"
+          >
+            <Animated.View
+              style={[
+                {
+                  backgroundColor: Theme.colors.backgroundLight,
+                  borderRadius: Theme.borderRadius.lg,
+                  padding: Theme.spacing.xl,
+                  alignItems: "center",
+                  ...Theme.shadows.lg,
+                  transform: [{ scale: saveSuccessScale }],
+                },
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={48}
+                color={Theme.colors.success}
+              />
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontFamily: Theme.fonts.semibold,
+                  color: Theme.colors.text,
+                  marginTop: Theme.spacing.md,
+                }}
+              >
+                Saved Successfully
+              </Text>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      )}
-    </Animated.View>
-    // </>
-    // </View>
+        )}
+      </Animated.View>
+    </>
   );
 };
 
 /** STYLES **/
 const styles = StyleSheet.create({
-  // overlay: {
-  //   flex: 1,
-  //   left: 0,
-  //   right: 0,
-  //   // top: 0,
-  //   // bottom: 0,
-  //   height: height,
-  //   width: width,
-  //   backgroundColor: "rgba(0, 0, 0, 0.5)",
-  //   // justifyContent: "center",
-  //   // alignItems: "center",
-  // },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)", // Dark semi-transparent
-    zIndex: 999,
-    // bottom: -4,
-  },
-  overlayTouchable: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     zIndex: 999,
   },
   container: {
@@ -579,17 +514,6 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.sm,
     lineHeight: 20,
   },
-  eligibilityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Theme.spacing.lg,
-    gap: Theme.spacing.sm,
-  },
-  eligibilityText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.medium,
-    color: Theme.colors.success,
-  },
   carouselContainer: {
     marginBottom: Theme.spacing.md,
   },
@@ -597,49 +521,9 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.md,
     paddingRight: Theme.spacing.md,
   },
-  descriptionContainer: {
-    marginBottom: Theme.spacing.md,
-    paddingHorizontal: Theme.spacing.xs,
-  },
-  descriptionText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.regular,
-    color: Theme.colors.textSecondary,
-    lineHeight: 20,
-  },
-  buttons: {
-    flexDirection: "row",
-    gap: Theme.spacing.sm,
-    marginBottom: Theme.spacing.sm,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveButton: {
-    backgroundColor: Theme.colors.background,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.text,
-  },
-  takeMeButton: {
-    backgroundColor: Theme.colors.primaryDark,
-  },
-  takeMeButtonText: {
-    fontSize: 14,
-    fontFamily: Theme.fonts.semibold,
-    color: Theme.colors.backgroundLight,
-  },
   footer: {
     alignItems: "center",
-    marginTop: 0, //Theme.spacing.xs,
+    marginTop: 0,
   },
   dotsContainer: {
     flexDirection: "row",

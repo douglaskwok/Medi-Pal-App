@@ -783,11 +783,11 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
 
-        <CustomTabBar />
+        <CustomTabBar opacity={showAIResources ? 0.4 : 1} />
         {showAIResources && (
           <AISuggestion
             visible={showAIResources}
-            onDismiss={() => {}}
+            onDismiss={() => setShowAIResources(false)}
             resources={(shownResources || DEFAULT_RESOURCES).map(
               (resource, index) => {
                 return {
