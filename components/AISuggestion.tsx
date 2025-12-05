@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ResourceCard } from "./ResourceCard";
 import { useRouter } from "expo-router";
+import { supabase } from "../lib/supabase";
 
 const { height, width } = Dimensions.get("window");
 
@@ -28,7 +29,11 @@ interface ResourceData {
   category: string;
   latitude: number;
   longitude: number;
+  distance: string; // for hardcoding
   place_id: string;
+  phone: string;
+  email: string;
+  hours: string;
 }
 
 interface NotificationPopupProps {
@@ -53,12 +58,18 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // for saving resources in the popup
+  // const [isSaved, setIsSaved] = useState(false);
+  const [savedMap, setSavedMap] = useState<{ [key: string]: boolean }>({});
+  const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
+  const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
+  const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   // Convert resources to ResourceCard format
   const mappedResources = resources.map((resource) => ({
     id: resource.id,
     name: resource.name,
     type: resource.category,
-    distance: "Nearby", // You can calculate actual distance if you have user location
+    distance: resource.distance, // You can calculate actual distance if you have user location
     address: resource.address,
     rating: 4.5, // Default rating or fetch from API
     image: resource.imageSource,
@@ -67,6 +78,9 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
     place_id: resource.place_id,
     description: resource.description,
     eligibility: resource.eligibility,
+    hours: resource.hours,
+    email: resource.email,
+    phone: resource.phone,
   }));
 
   /** ANIMATION VALUES **/
@@ -186,6 +200,9 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
           longitude: resource.longitude.toString(),
           description: resource.description,
           place_id: resource.place_id,
+          phone: resource.phone,
+          email: resource.email,
+          hours: resource.hours,
         },
       });
       onTakeMeThere?.(resource);
@@ -194,11 +211,67 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
 
   /** HANDLE SAVE RESOURCE **/
   const handleSaveResource = async (resource: any) => {
+    if (!!savedMap[resource.id]) {
+      return;
+    }
     try {
-      // You might want to add your Supabase save logic here
-      // For now, just call the callback
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const r = {
+        name: resource.name,
+        address: resource.address,
+        latitude: resource.latitude,
+        longitude: resource.longitude,
+        place_id: resource.place_id,
+      };
+
+      const { error } = await supabase.from("saved_resources").insert({
+        user_id: user.id,
+        ...r,
+      });
+
+      if (error) throw error;
+
       onSaveResource?.(resource);
       onSaveSuccess?.();
+      setSavedMap((prev) => ({
+        ...prev,
+        [resource.id]: true,
+      }));
+      setSaveSuccessModalVisible(true);
+      Animated.parallel([
+        Animated.timing(saveSuccessAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(saveSuccessScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+      ]).start();
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(saveSuccessAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(saveSuccessScale, {
+            toValue: 0.9,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setSaveSuccessModalVisible(false);
+        });
+      }, 2000);
+      // dismissNotification();
     } catch (err) {
       console.error("Error saving resource:", err);
     }
@@ -209,6 +282,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   const activeResource = mappedResources[activeIndex];
 
   return (
+    // <View style={styles.overlay}>
     <Animated.View
       style={[
         styles.container,
@@ -227,7 +301,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.verifiedIcon}>
-              <MaterialIcons name="verified" size={18} color="blue" />
+              <Ionicons name="sparkles-sharp" size={18} color="blue" />
             </View>
             <Text style={styles.category}>Verified Suggestions from Dr Al</Text>
           </View>
@@ -284,8 +358,14 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
               rating={resource.rating}
               image={resource.image}
               onPress={() => handleResourcePress(resource)}
+              show_action_buttons={true}
+              saveResource={() => handleSaveResource(resource)}
               small={false}
-              showBlackBorder={false}
+              showBlackBorder={true}
+              hours={resource.hours}
+              email={resource.email}
+              phone={resource.phone}
+              isSaved={!!savedMap[resource.id]}
             />
           ))}
         </ScrollView>
@@ -298,7 +378,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         </View> */}
 
         {/* Action Buttons */}
-        <View style={styles.buttons}>
+        {/* <View style={styles.buttons}>
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
             onPress={() => handleSaveResource(activeResource)}
@@ -312,7 +392,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
           >
             <Text style={styles.takeMeButtonText}>Take Me There!</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Dots Indicator */}
         {mappedResources.length > 1 && (
@@ -334,12 +414,72 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
           </View>
         )}
       </View>
+      {saveSuccessModalVisible && (
+        <Animated.View
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 2000,
+              opacity: saveSuccessAnim,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              {
+                backgroundColor: Theme.colors.backgroundLight,
+                borderRadius: Theme.borderRadius.lg,
+                padding: Theme.spacing.xl,
+                alignItems: "center",
+                ...Theme.shadows.lg,
+                transform: [{ scale: saveSuccessScale }],
+              },
+            ]}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={48}
+              color={Theme.colors.success}
+            />
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: Theme.fonts.semibold,
+                color: Theme.colors.text,
+                marginTop: Theme.spacing.md,
+              }}
+            >
+              Saved Successfully
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
     </Animated.View>
+    // </View>
   );
 };
 
 /** STYLES **/
 const styles = StyleSheet.create({
+  // overlay: {
+  //   flex: 1,
+  //   left: 0,
+  //   right: 0,
+  //   // top: 0,
+  //   // bottom: 0,
+  //   height: height,
+  //   width: width,
+  //   backgroundColor: "rgba(0, 0, 0, 0.5)",
+  //   // justifyContent: "center",
+  //   // alignItems: "center",
+  // },
   container: {
     position: "absolute",
     left: 0,
@@ -351,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.md,
-    ...Theme.shadows.lg,
+    ...Theme.shadows.xl,
   },
   header: {
     flexDirection: "row",
@@ -450,7 +590,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    marginTop: Theme.spacing.xs,
+    marginTop: 0, //Theme.spacing.xs,
   },
   dotsContainer: {
     flexDirection: "row",
@@ -465,10 +605,10 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     backgroundColor: Theme.colors.primary,
-    width: 12,
+    width: 16,
   },
   footerText: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },

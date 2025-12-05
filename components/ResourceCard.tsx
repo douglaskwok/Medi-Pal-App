@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Image,
   Animated,
-} from 'react-native';
-import { Theme } from '../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { Theme } from "../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
 
 interface ResourceCardProps {
   id: string;
@@ -19,8 +19,14 @@ interface ResourceCardProps {
   rating: number;
   image: any;
   onPress: () => void;
+  show_action_buttons?: boolean;
+  saveResource?: () => void;
   small?: boolean;
   showBlackBorder?: boolean;
+  phone?: string | null;
+  email?: string | null;
+  hours?: string | null;
+  isSaved?: boolean;
 }
 
 export const ResourceCard: React.FC<ResourceCardProps> = ({
@@ -32,8 +38,14 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   rating,
   image,
   onPress,
+  show_action_buttons = false,
+  saveResource = () => {},
   small = false,
   showBlackBorder = false,
+  phone = null,
+  email = null,
+  hours = null,
+  isSaved = false,
 }) => {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -68,12 +80,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
-        <View style={[styles.imageContainer, small && styles.imageContainerSmall]}>
-          <Image
-            source={image}
-            style={styles.image}
-            resizeMode="cover"
-          />
+        <View
+          style={[styles.imageContainer, small && styles.imageContainerSmall]}
+        >
+          <Image source={image} style={styles.image} resizeMode="cover" />
           <View style={styles.typeBadge}>
             <Text style={styles.typeText}>{type}</Text>
           </View>
@@ -89,11 +99,36 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             </View>
             <Text style={styles.distance}>{distance}</Text>
           </View>
-          <Text style={styles.address} numberOfLines={1}>
+          <Text
+            style={[
+              styles.address,
+              show_action_buttons && { height: styles.address.lineHeight * 3 },
+            ]}
+            numberOfLines={show_action_buttons ? 3 : 1}
+          >
             {address}
           </Text>
         </View>
       </TouchableOpacity>
+      {show_action_buttons && (
+        <View style={styles.buttons}>
+          <TouchableOpacity
+            style={[styles.button, styles.saveButton]}
+            onPress={saveResource}
+          >
+            <Text style={styles.saveButtonText}>
+              {isSaved ? "Is Saved" : "Save"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.takeMeButton]}
+            onPress={onPress}
+          >
+            <Text style={styles.takeMeButtonText}>Take Me There!</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -104,33 +139,34 @@ const styles = StyleSheet.create({
     marginRight: Theme.spacing.md,
     borderRadius: Theme.borderRadius.lg,
     backgroundColor: Theme.colors.backgroundLight,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Theme.shadows.md,
   },
   containerSmall: {
-    width: '100%',
+    width: "100%",
   },
   containerBlackBorder: {
-    borderWidth: 2,
-    borderColor: '#000000',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    ...Theme.shadows.lg,
   },
   imageContainer: {
-    width: '100%',
+    width: "100%",
     height: 120,
-    position: 'relative',
+    position: "relative",
   },
   imageContainerSmall: {
     height: 100,
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   typeBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: Theme.spacing.sm,
     left: Theme.spacing.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     paddingHorizontal: Theme.spacing.sm,
     paddingVertical: 4,
     borderRadius: Theme.borderRadius.sm,
@@ -151,15 +187,15 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xs,
   },
   meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Theme.spacing.xs,
     gap: Theme.spacing.sm,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   ratingText: {
@@ -178,5 +214,39 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
     lineHeight: 16,
   },
+  buttons: {
+    flexDirection: "row",
+    gap: Theme.spacing.sm,
+    marginBottom: Theme.spacing.sm,
+    justifyContent: "space-evenly",
+    paddingHorizontal: Theme.spacing.sm,
+  },
+  button: {
+    // flex: 1,
+    paddingVertical: Theme.spacing.sm,
+    // paddingHorizontal: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveButton: {
+    backgroundColor: Theme.colors.background,
+    flex: 2,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.text,
+  },
+  takeMeButton: {
+    backgroundColor: Theme.colors.primaryDark,
+    flex: 3,
+  },
+  takeMeButtonText: {
+    fontSize: 14,
+    fontFamily: Theme.fonts.semibold,
+    color: Theme.colors.backgroundLight,
+  },
 });
-

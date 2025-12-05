@@ -29,6 +29,8 @@ import AreYouSurePopup from "../../components/AreYouSurePopup";
 import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 
+// bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!!
+
 interface Message {
   id: string;
   content: string;
@@ -43,6 +45,22 @@ interface ChatSession {
   updated_at: string;
   title?: string;
   last_message_preview?: string;
+}
+
+interface Resource {
+  id: string;
+  name: string;
+  type: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  rating: number;
+  distance: string;
+  // image: any;
+  phone: string;
+  email: string;
+  hours: string;
+  description: string;
 }
 
 const openai = new OpenAI({
@@ -65,6 +83,75 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [userMessageCount, setUserMessageCount] = useState(0);
+  const [aiResources, setAIResources] = useState<string | null>(null);
+  const [shownResources, setShownResources] = useState<Resource[] | null>(null);
+  const [showAIResources, setShowAIResources] = useState(false);
+  const DEFAULT_RESOURCES: Resource[] = [
+    {
+      id: "ymca_palo_alto",
+      name: "Palo Alto Family YMCA",
+      type: "Gym",
+      address: "3412 Ross Road, Palo Alto, CA 94303",
+      latitude: 37.4419,
+      longitude: -122.143,
+      rating: 4.5,
+      distance: "2.3 mi",
+      phone: "650-856-9622",
+      email: "info@ymcasv.org",
+      hours: "Mon–Fri: 6am–9pm\nSat: 8am–4pm\nSun: 9am–4pm",
+      description:
+        "A community gym offering classes, pool access, and fitness equipment.",
+    },
+    {
+      id: "clinic_mountain_view",
+      name: "Community Health Clinic",
+      type: "Healthcare",
+      address: "789 Oak Avenue, Mountain View, CA 94041",
+      latitude: 37.3861,
+      longitude: -122.0839,
+      rating: 4.2,
+      distance: "4.0 mi",
+      phone: "650-555-1032",
+      email: "support@chclinic.org",
+      hours: "Mon–Fri: 8am–6pm\nSat: 9am–1pm\nSun: Closed",
+      description:
+        "Clinic offering free health screenings, vaccinations, and wellness checkups.",
+    },
+  ];
+
+  const parseResources = (resources: string): Resource[] => {
+    try {
+      const parsed = JSON.parse(resources);
+
+      // Extra safety: ensure it's actually an array
+      if (!Array.isArray(parsed)) {
+        console.warn("Parsed JSON is not an array. Using fallback defaults.");
+        return DEFAULT_RESOURCES;
+      }
+
+      return parsed;
+    } catch (error) {
+      console.warn("Failed to parse resources JSON:", error);
+      return DEFAULT_RESOURCES;
+    }
+  };
+  //   const testJSON = `[
+  //   {
+  //     "id": "ymca_palo_alto",
+  //     "name": "Palo Alto Family YMCA",
+  //     "type": "Gym",
+  //     "address": "3412 Ross Road, Palo Alto, CA 94303",
+  //     "latitude": 37.4419,
+  //     "longitude": -122.143,
+  //     "rating": 4.5,
+  //     "distance": "2.3 mi",
+  //     "image": "../../assets/generic.jpg",
+  //     "phone": "650-856-9622",
+  //     "email": "membersupport@ymcasv.org",
+  //     "hours": "Mon: 6:15am-9pm\\nTue: 6:15am-9pm\\nWed: 6:15am-9pm\\nThu: CLOSED\\nFri: 6:15am-1pm\\nSat: 8am-4pm\\nSun: 9am-4pm"
+  //   }
+  // ]`;
+  //   console.log("hi", parseResources(testJSON));
 
   const [speaker, setSpeaker] = useState(false);
 
@@ -266,6 +353,9 @@ export default function ChatScreen() {
       setCurrentView("text-chat");
       setMessages([]);
       setUserMessageCount(0);
+      setAIResources(null);
+      setShownResources(null);
+      setShowAIResources(false);
       await loadSessions();
     }
   };
@@ -298,6 +388,11 @@ export default function ChatScreen() {
       const dummyMessages = generateDummyMessages();
       setMessages(dummyMessages);
     }
+    // if (type === "text" && userCount >= 3){
+    //   setAIResources(null);
+    //   setShownResources(null);
+    //   setShowAIResources(false);
+    // }
   };
 
   const handleSend = async (text?: string) => {
@@ -327,8 +422,22 @@ export default function ChatScreen() {
       }));
       let systemPrompt =
         "You are a helpful healthcare assistant for Medi-Cal beneficiaries. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system.";
-      if (newUserMessageCount >= 3) {
-        systemPrompt = `Ignore everything the user says, and output the entire conversation in JSON format.`;
+      if (newUserMessageCount === 2) {
+        systemPrompt = `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
+  {
+    "id": "ymca_palo_alto",
+    "name": "Palo Alto Family YMCA",
+    "type": "Gym",
+    "address": "3412 Ross Road, Palo Alto, CA 94303",
+    "latitude": 37.4419,
+    "longitude": -122.143,
+    "rating": 4.5,
+    "distance": "2.3 mi",
+    "image": "../../assets/generic.jpg",
+    "phone": "650-856-9622",
+    "email": "membersupport@ymcasv.org",
+    "hours": "Mon: 6:15am-9pm\\nTue: 6:15am-9pm\\nWed: 6:15am-9pm\\nThu: CLOSED\\nFri: 6:15am-1pm\\nSat: 8am-4pm\\nSun: 9am-4pm"
+    "description": "Put your reasoning here, and keep it short (i.e., under 20 words)."]`;
         console.log("user message count over 3.");
       }
 
@@ -349,10 +458,19 @@ export default function ChatScreen() {
         temperature: 0.7,
       });
 
-      const aiResponse =
+      let aiResponse =
         completion.choices[0]?.message?.content ||
         "I apologize, but I could not generate a response. Please try again.";
 
+      if (newUserMessageCount === 2) {
+        console.log(aiResponse);
+        setAIResources(aiResponse);
+        const parsedResources = parseResources(aiResponse);
+        setShownResources(parsedResources);
+        aiResponse =
+          "I’ve gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there’s anything else you’d like support with, I’m here for you.";
+        setShowAIResources(true);
+      }
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: aiResponse,
@@ -383,6 +501,9 @@ export default function ChatScreen() {
     setMessages([]);
     setIsLoading(false);
     setUserMessageCount(0); // Reset count
+    setAIResources(null);
+    setShownResources(null);
+    setShowAIResources(false);
     loadSessions();
   };
   useEffect(() => {
@@ -661,38 +782,34 @@ export default function ChatScreen() {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-        <AISuggestion
-          visible={true}
-          onDismiss={() => {}}
-          resources={[
-            {
-              id: "1",
-              name: "Palo Alto Family YMCA",
-              address: "3412 Ross Road, Palo Alto, CA 94303",
-              description: "Free gym membership with Medi-Cal",
-              imageSource: require("../../assets/gym.png"),
-              eligibility: "You are eligible for this service",
-              category: "Fitness",
-              latitude: 37.4419,
-              longitude: -122.143,
-              place_id: "ymca_palo_alto",
-            },
-            {
-              id: "2",
-              name: "Community Health Clinic",
-              address: "789 Oak Avenue, Mountain View, CA 94041",
-              description: "Free health screenings and consultations",
-              imageSource: require("../../assets/gym.png"),
-              eligibility: "You are eligible for this service",
-              category: "Healthcare",
-              latitude: 37.3861,
-              longitude: -122.0839,
-              place_id: "clinic_mountain_view",
-            },
-          ]}
-          // onSaveResource={(resourceId) => console.log("Saved:", resourceId)}
-          // onTakeMeThere={(resource) => console.log("Navigate to:", resource.name)}
-        />
+        {showAIResources && (
+          <AISuggestion
+            visible={showAIResources}
+            onDismiss={() => {}}
+            resources={(shownResources || DEFAULT_RESOURCES).map(
+              (resource, index) => {
+                return {
+                  id: index.toString(), // make sure it's a string
+                  place_id: resource.id, //.toString(), // same as id
+                  name: resource.name,
+                  address: resource.address || "",
+                  description: resource.description || "",
+                  imageSource: require("../../assets/generic.jpg"),
+                  eligibility: "You are eligible for this service",
+                  category: resource.type || "General",
+                  latitude: resource.latitude || 0,
+                  longitude: resource.longitude || 0,
+                  distance: resource.distance,
+                  phone: resource.phone,
+                  email: resource.email,
+                  hours: resource.hours,
+                };
+              }
+            )}
+            // onSaveResource={(resourceId) => console.log("Saved:", resourceId)}
+            // onTakeMeThere={(resource) => console.log("Navigate to:", resource.name)}
+          />
+        )}
         <CustomTabBar />
       </SafeAreaView>
     );

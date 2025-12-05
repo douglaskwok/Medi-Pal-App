@@ -205,12 +205,13 @@ export default function ResourcesScreen() {
           (params.address as string) || "3412 Ross Road, Palo Alto, CA 94303",
         latitude: parseFloat(params.latitude as string),
         longitude: parseFloat(params.longitude as string),
-        rating: 4.5,
-        distance: "2.3 mi",
+        rating: params.rating || 4.5,
+        distance: params.distance || "2.3 mi",
         image: require("../../assets/generic.jpg"),
-        phone: "650-856-9622",
-        email: "membersupport@ymcasv.org",
+        phone: params.phone || "650-856-9622",
+        email: params.email || "membersupport@ymcasv.org",
         hours:
+          params.hours ||
           "Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm",
       };
       setTimeout(() => {
