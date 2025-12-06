@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ResourceCard } from "../../components/ResourceCard";
@@ -58,17 +59,23 @@ export default function HomeScreen() {
       duration: 400,
       useNativeDriver: true,
     }).start();
-    // Add 10-second delay for notification
-    const notificationTimer = setTimeout(() => {
-      setNotificationVisible(true);
-    }, 10000); // 10 seconds = 10000 milliseconds
-
-    // Cleanup timer on unmount
-    return () => {
-      clearTimeout(notificationTimer);
-    };
   }, []);
 
+  // Add this focus effect for notifications:
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only show notification after 3-second delay
+      const notificationTimer = setTimeout(() => {
+        setNotificationVisible(true);
+      }, 2000);
+
+      return () => {
+        clearTimeout(notificationTimer);
+        // Hide notification when leaving page
+        setNotificationVisible(false);
+      };
+    }, [])
+  );
   const loadUserData = async () => {
     try {
       const {
