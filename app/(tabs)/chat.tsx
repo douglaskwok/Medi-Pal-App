@@ -165,7 +165,7 @@ export default function ChatScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   // Video State
   const [videoMode, setVideoMode] = useState<
-    "default" | "listening" | "transition"
+    "default" | "listening" | "transition" | "talking"
   >("default");
   const [currentTransition, setCurrentTransition] = useState<
     "start" | "end" | null
@@ -176,8 +176,16 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const videoRef = useRef<Video>(null);
+  // const listeningVideoRef = useRef<Video>(null);
+  // const transitionVideoRef = useRef<Video>(null);
+  const defaultVideoRef = useRef<Video>(null);
+  const talkingVideoRef = useRef<Video>(null);
   const listeningVideoRef = useRef<Video>(null);
   const transitionVideoRef = useRef<Video>(null);
+  // Add state to track which video is currently visible
+  const [activeVideo, setActiveVideo] = useState<
+    "default" | "talking" | "listening" | "transition"
+  >("default");
 
   const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
     const avatar = avatars.find((avatar) => avatar.id === id);
@@ -344,61 +352,101 @@ export default function ChatScreen() {
     };
   }, []);
   // Video preloading and management
-  useEffect(() => {
-    const preloadVideos = async () => {
-      if (currentView !== "avatar-chat") return;
+  // Update the preload function
+  const preloadVideos = async () => {
+    if (currentView !== "avatar-chat") return;
 
-      try {
-        const avatarData = getAvatarById(avatar);
-        setIsVideoReady(false);
+    try {
+      const avatarData = getAvatarById(avatar);
+      setIsVideoReady(false);
 
-        const initialVideoSource = shouldShowTalkingVideo()
-          ? avatarData.video_talking?.[0] || avatarData.video_default.loop[0]
-          : avatarData.video_default.loop[0];
+      // Get video sources
+      const defaultVideoSource = avatarData.video_default.loop[0];
+      const talkingVideoSource =
+        avatarData.video_talking?.[0] || defaultVideoSource;
+      const listeningVideoSource = avatarData.video_listening.loop[0];
 
-        if (videoRef.current) {
-          await videoRef.current.loadAsync(
-            initialVideoSource,
+      console.log("Preloading all videos...");
+
+      // Preload all three videos simultaneously
+      const loadPromises = [];
+
+      // Load default video
+      if (defaultVideoRef.current) {
+        loadPromises.push(
+          defaultVideoRef.current.loadAsync(
+            defaultVideoSource,
             { shouldPlay: false, isLooping: true },
             false
-          );
-        }
-
-        // Load listening video
-        if (listeningVideoRef.current) {
-          await listeningVideoRef.current.loadAsync(
-            avatarData.video_listening.loop[0],
-            { shouldPlay: false, isLooping: true },
-            false
-          );
-        }
-
-        // Start with default video
-        if (videoRef.current) {
-          await videoRef.current.playAsync();
-          setVideoMode("default");
-          setIsVideoReady(true);
-          console.log("Videos loaded and ready");
-        }
-      } catch (error) {
-        console.error("Error preloading videos:", error);
+          )
+        );
       }
-    };
 
+      // Load talking video
+      if (talkingVideoRef.current && avatarData.video_talking) {
+        loadPromises.push(
+          talkingVideoRef.current.loadAsync(
+            talkingVideoSource,
+            { shouldPlay: false, isLooping: true },
+            false
+          )
+        );
+      }
+
+      // Load listening video
+      if (listeningVideoRef.current) {
+        loadPromises.push(
+          listeningVideoRef.current.loadAsync(
+            listeningVideoSource,
+            { shouldPlay: false, isLooping: true },
+            false
+          )
+        );
+      }
+
+      // Wait for all videos to load
+      await Promise.all(loadPromises);
+
+      // Start with appropriate video based on conversation state
+      const initialVideoType = shouldShowTalkingVideo() ? "talking" : "default";
+
+      if (initialVideoType === "talking" && talkingVideoRef.current) {
+        await talkingVideoRef.current.playAsync();
+        setActiveVideo("talking");
+      } else if (defaultVideoRef.current) {
+        await defaultVideoRef.current.playAsync();
+        setActiveVideo("default");
+      }
+
+      setVideoMode(initialVideoType === "talking" ? "talking" : "default");
+      setIsVideoReady(true);
+      console.log("All videos preloaded and ready");
+    } catch (error) {
+      console.error("Error preloading videos:", error);
+    }
+  };
+
+  // Update the cleanup function
+  useEffect(() => {
     preloadVideos();
 
     return () => {
       const cleanup = async () => {
-        if (videoRef.current) await videoRef.current.unloadAsync();
+        const unloadPromises = [];
+        if (defaultVideoRef.current)
+          unloadPromises.push(defaultVideoRef.current.unloadAsync());
+        if (talkingVideoRef.current)
+          unloadPromises.push(talkingVideoRef.current.unloadAsync());
         if (listeningVideoRef.current)
-          await listeningVideoRef.current.unloadAsync();
+          unloadPromises.push(listeningVideoRef.current.unloadAsync());
         if (transitionVideoRef.current)
-          await transitionVideoRef.current.unloadAsync();
+          unloadPromises.push(transitionVideoRef.current.unloadAsync());
+
+        await Promise.all(unloadPromises);
       };
       cleanup();
     };
   }, [avatar, currentView]);
-
   // Handle recording state changes
   // Update the useEffect for recording state changes:
   useEffect(() => {
@@ -453,16 +501,21 @@ export default function ChatScreen() {
 
       console.log(`Starting ${type} transition`);
       setCurrentTransition(type);
-      setVideoMode("transition");
+      setActiveVideo("transition");
 
-      // IMPORTANT: Stop both videos first to prevent flashes
-      if (videoRef.current) await videoRef.current.stopAsync();
-      if (listeningVideoRef.current)
-        await listeningVideoRef.current.stopAsync();
+      // Pause current videos
+      if (activeVideo === "default" && defaultVideoRef.current) {
+        await defaultVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "talking" && talkingVideoRef.current) {
+        await talkingVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "listening" && listeningVideoRef.current) {
+        await listeningVideoRef.current.pauseAsync();
+      }
 
       // Load and play transition
       if (transitionVideoRef.current) {
-        await transitionVideoRef.current.unloadAsync();
         await transitionVideoRef.current.loadAsync(
           transitionSource,
           { shouldPlay: true, isLooping: false },
@@ -473,7 +526,7 @@ export default function ChatScreen() {
         console.log(`Transition will take ${duration}ms`);
 
         // Add a small buffer to ensure smooth transition
-        const bufferDuration = 50; // 100ms buffer
+        const bufferDuration = 50;
 
         setTimeout(async () => {
           console.log(
@@ -484,16 +537,11 @@ export default function ChatScreen() {
           setCurrentTransition(null);
 
           if (type === "start") {
-            // Make sure default video is stopped before showing listening
-            if (videoRef.current) await videoRef.current.stopAsync();
             await switchToListening();
           } else {
-            // Make sure listening video is stopped before showing default
-            if (listeningVideoRef.current)
-              await listeningVideoRef.current.stopAsync();
             await switchToDefault();
           }
-        }, duration - bufferDuration); // Subtract buffer to prevent gap
+        }, duration - bufferDuration);
       }
     } catch (error) {
       console.error("Error in playTransition:", error);
@@ -506,79 +554,97 @@ export default function ChatScreen() {
     }
   };
 
-  const switchToListening = async () => {
+  const switchToTalking = async () => {
     try {
-      console.log("Switching to listening mode");
-      // Ensure default video is completely stopped
-      if (videoRef.current) {
-        await videoRef.current.stopAsync();
-        await videoRef.current.setPositionAsync(0);
+      console.log("Switching to talking mode");
+
+      // Stop current video
+      if (activeVideo === "default" && defaultVideoRef.current) {
+        await defaultVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "listening" && listeningVideoRef.current) {
+        await listeningVideoRef.current.pauseAsync();
       }
 
-      // Start listening video
-      if (listeningVideoRef.current) {
-        await listeningVideoRef.current.setPositionAsync(0);
-        await listeningVideoRef.current.playAsync();
-        setVideoMode("listening");
+      // Start talking video
+      if (talkingVideoRef.current) {
+        await talkingVideoRef.current.setPositionAsync(0);
+        await talkingVideoRef.current.playAsync();
+        setActiveVideo("talking");
+        setVideoMode("talking");
       }
     } catch (error) {
-      console.error("Error switching to listening:", error);
+      console.error("Error switching to talking:", error);
     }
   };
 
   const switchToDefault = async () => {
     try {
       console.log("Switching to default mode");
-      // Ensure listening video is completely stopped
-      if (listeningVideoRef.current) {
-        await listeningVideoRef.current.stopAsync();
-        await listeningVideoRef.current.setPositionAsync(0);
+
+      // Stop current video
+      if (activeVideo === "talking" && talkingVideoRef.current) {
+        await talkingVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "listening" && listeningVideoRef.current) {
+        await listeningVideoRef.current.pauseAsync();
       }
 
-      // Always use the appropriate video based on conversation state
-      const videoSource = getCurrentVideoSource();
-
-      if (videoRef.current) {
-        await videoRef.current.unloadAsync();
-        await videoRef.current.loadAsync(
-          videoSource,
-          { shouldPlay: true, isLooping: true },
-          false
-        );
-        await videoRef.current.playAsync();
+      // Start default video
+      if (defaultVideoRef.current) {
+        await defaultVideoRef.current.setPositionAsync(0);
+        await defaultVideoRef.current.playAsync();
+        setActiveVideo("default");
         setVideoMode("default");
-        console.log(
-          `Switched to ${
-            shouldShowTalkingVideo() ? "talking" : "default"
-          } video after transition`
-        );
       }
     } catch (error) {
       console.error("Error switching to default:", error);
     }
   };
+
+  const switchToListening = async () => {
+    try {
+      console.log("Switching to listening mode");
+
+      // Stop current video
+      if (activeVideo === "default" && defaultVideoRef.current) {
+        await defaultVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "talking" && talkingVideoRef.current) {
+        await talkingVideoRef.current.pauseAsync();
+      }
+
+      // Start listening video
+      if (listeningVideoRef.current) {
+        await listeningVideoRef.current.setPositionAsync(0);
+        await listeningVideoRef.current.playAsync();
+        setActiveVideo("listening");
+        setVideoMode("listening");
+      }
+    } catch (error) {
+      console.error("Error switching to listening:", error);
+    }
+  };
   // Add this function to update the video based on conversation state
   // Add this function to update the video
   const updateVideoBasedOnConversation = async () => {
-    if (videoRef.current && videoMode === "default" && !currentTransition) {
+    if (isVideoReady && !currentTransition) {
       try {
-        const newVideoSource = getCurrentVideoSource();
-        const avatarData = getAvatarById(avatar);
+        const shouldShowTalking = shouldShowTalkingVideo();
+        const targetVideoType = shouldShowTalking ? "talking" : "default";
 
-        // Get the current source to avoid unnecessary reloads
-        // We'll just reload whenever state changes
-        await videoRef.current.unloadAsync();
-        await videoRef.current.loadAsync(
-          newVideoSource,
-          { shouldPlay: true, isLooping: true },
-          false
-        );
-        await videoRef.current.playAsync();
-        console.log(
-          `Switched to ${
-            shouldShowTalkingVideo() ? "talking" : "default"
-          } video`
-        );
+        // Only switch if we're not already showing the correct video
+        if (
+          activeVideo !== targetVideoType &&
+          activeVideo !== "listening" &&
+          activeVideo !== "transition"
+        ) {
+          if (targetVideoType === "talking") {
+            await switchToTalking();
+          } else {
+            await switchToDefault();
+          }
+        }
       } catch (error) {
         console.error("Error updating video:", error);
       }
@@ -1407,40 +1473,56 @@ export default function ChatScreen() {
               />
 
               <View style={styles.videoPlaceholder}>
-                {/* Default Video */}
+                {/* Default Video (always preloaded) */}
                 <Video
-                  ref={videoRef}
+                  ref={defaultVideoRef}
                   style={[
                     styles.video,
-                    videoMode !== "default" && styles.hiddenVideo,
+                    activeVideo !== "default" && styles.hiddenVideo,
                   ]}
-                  shouldPlay={videoMode === "default"}
+                  shouldPlay={activeVideo === "default"}
                   isLooping={true}
                   resizeMode={ResizeMode.CONTAIN}
-                  onError={(error) => console.error("Video error:", error)}
+                  onError={(error) =>
+                    console.error("Default video error:", error)
+                  }
                 />
 
-                {/* Listening Video */}
+                {/* Talking Video (always preloaded) */}
+                <Video
+                  ref={talkingVideoRef}
+                  style={[
+                    styles.video,
+                    activeVideo !== "talking" && styles.hiddenVideo,
+                  ]}
+                  shouldPlay={activeVideo === "talking"}
+                  isLooping={true}
+                  resizeMode={ResizeMode.CONTAIN}
+                  onError={(error) =>
+                    console.error("Talking video error:", error)
+                  }
+                />
+
+                {/* Listening Video (always preloaded) */}
                 <Video
                   ref={listeningVideoRef}
-                  source={getAvatarById(avatar).video_listening.loop[0]}
                   style={[
                     styles.video,
-                    videoMode !== "listening" && styles.hiddenVideo,
+                    activeVideo !== "listening" && styles.hiddenVideo,
                   ]}
-                  shouldPlay={videoMode === "listening"}
+                  shouldPlay={activeVideo === "listening"}
                   isLooping={true}
                   resizeMode={ResizeMode.CONTAIN}
                 />
 
-                {/* Transition Video */}
+                {/* Transition Video (loaded on demand) */}
                 <Video
                   ref={transitionVideoRef}
                   style={[
                     styles.video,
-                    videoMode !== "transition" && styles.hiddenVideo,
+                    activeVideo !== "transition" && styles.hiddenVideo,
                   ]}
-                  shouldPlay={videoMode === "transition"}
+                  shouldPlay={activeVideo === "transition"}
                   isLooping={false}
                   resizeMode={ResizeMode.CONTAIN}
                   onError={(error) =>
