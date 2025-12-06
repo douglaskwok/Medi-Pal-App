@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Image,
+  Keyboard,
 } from "react-native";
 import {
   Video,
@@ -33,6 +34,7 @@ import SelectionModal from "../../components/selectionModal";
 import AreYouSurePopup from "../../components/AreYouSurePopup";
 import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!!
 
@@ -154,7 +156,13 @@ export default function ChatScreen() {
   const [isProcessingMessage, setIsProcessingMessage] = useState(false);
   const [showEndCallModal, setShowEndCallModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
-
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isKeyboardEverShown, setIsKeyboardEverShown] = useState(false);
+  // just to make sure height of input is correct on android.
+  useEffect(() => {
+    setIsKeyboardEverShown(true);
+  }, [isKeyboardVisible]);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   // Video State
   const [videoMode, setVideoMode] = useState<
     "default" | "listening" | "transition"
@@ -294,6 +302,47 @@ export default function ChatScreen() {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setIsKeyboardVisible(true);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    // Cleanup listeners
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height); // This is the keyboard height
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
   // Video preloading and management
   useEffect(() => {
     const preloadVideos = async () => {
@@ -918,6 +967,7 @@ export default function ChatScreen() {
     setShownResources(null);
     setShowAIResources(false);
     setShowEndCallModal(false);
+    setIsKeyboardEverShown(false);
     loadSessions();
   };
   const shouldShowTalkingVideo = () => {
@@ -1136,9 +1186,7 @@ export default function ChatScreen() {
           style={styles.keyboardView}
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
-          <Animated.View
-            style={[styles.content, { opacity: fadeAnim, paddingBottom: 100 }]}
-          >
+          <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
             <View style={styles.header}>
               <TouchableOpacity
                 onPress={handleExitSession}
@@ -1170,6 +1218,7 @@ export default function ChatScreen() {
               </View>
             </View>
 
+            {/* Messages ScrollView - Takes available space */}
             <ScrollView
               ref={scrollViewRef}
               style={styles.messagesContainer}
@@ -1230,7 +1279,24 @@ export default function ChatScreen() {
             </ScrollView>
           </Animated.View>
 
-          <View style={styles.inputContainer}>
+          {/* Input Container - Will move up with keyboard */}
+          <View
+            style={[
+              styles.inputContainer,
+              {
+                bottom: Platform.select({
+                  ios: 50,
+                  android: isKeyboardEverShown ? 10 : 90,
+                }),
+              },
+              isKeyboardVisible && {
+                bottom: Platform.select({
+                  ios: keyboardHeight * 0.92,
+                  android: 0,
+                }),
+              },
+            ]}
+          >
             <TextInput
               style={styles.input}
               placeholder="Ask me anything about resources..."
@@ -2087,5 +2153,8 @@ const styles = StyleSheet.create({
   },
   dangerControlButtonText: {
     color: Theme.colors.backgroundLight,
+  },
+  inputContainerKeyboardOpen: {
+    bottom: Platform.OS === "ios" ? 310 : 100,
   },
 });

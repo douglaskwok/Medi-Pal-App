@@ -9,6 +9,8 @@ import {
   SafeAreaView,
   Image,
   ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -128,310 +130,312 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            paddingBottom: insets.bottom + 80,
-          },
-        ]}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={require("../../assets/icon.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.headerTitle}>Medi-Pal</Text>
-              <Text style={styles.headerSubtitle}>Welcome {userName}!</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.searchSection}>
-          <View style={styles.searchBarContainer}>
-            <View style={styles.searchBar}>
-              <Ionicons
-                name="search-outline"
-                size={20}
-                color={Theme.colors.text}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Ask AI anything..."
-                placeholderTextColor={Theme.colors.textLight}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={Theme.colors.text}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-            <TouchableOpacity
-              style={styles.upArrowButton}
-              onPress={handleSearch}
-              disabled={!searchQuery.trim()}
-            >
-              <View
-                style={[
-                  styles.upArrowContainer,
-                  !searchQuery.trim()
-                    ? styles.upArrowDisabled
-                    : styles.upArrowActive,
-                ]}
-              >
-                <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.calendarSection}>
-          <Text style={styles.sectionTitle}>My Calendar</Text>
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity
-              onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={24}
-                color={Theme.colors.text}
-              />
-            </TouchableOpacity>
-            <Text style={styles.calendarMonth}>
-              {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-            >
-              <Ionicons
-                name="chevron-forward"
-                size={24}
-                color={Theme.colors.text}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.calendarGrid}>
-            {daysInWeek.map((day) => {
-              const dayItems = getItemsForDate(day);
-              const isSelected = isSameDay(day, selectedDate);
-              const isToday = isSameDay(day, new Date());
-              return (
-                <TouchableOpacity
-                  key={day.toISOString()}
-                  style={[
-                    styles.calendarDay,
-                    isSelected && styles.calendarDaySelected,
-                    isToday && !isSelected && styles.calendarDayToday,
-                  ]}
-                  onPress={() => setSelectedDate(day)}
-                >
-                  <Text
-                    style={[
-                      styles.calendarDayName,
-                      isSelected && { color: Theme.colors.backgroundLight },
-                    ]}
-                  >
-                    {format(day, "EEE")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.calendarDayText,
-                      isSelected && styles.calendarDayTextSelected,
-                    ]}
-                  >
-                    {format(day, "d")}
-                  </Text>
-                  {dayItems.length > 0 && (
-                    <View
-                      style={[
-                        styles.calendarDot,
-                        isSelected && styles.calendarDotSelected,
-                      ]}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {filteredChecklistItems.length > 0 && (
-            <View style={styles.eventsList}>
-              {filteredChecklistItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.eventItem}
-                  onPress={() => handleToggleChecklist(item.id)}
-                >
-                  <View
-                    style={[
-                      styles.eventCheckbox,
-                      item.completed && styles.eventCheckboxCompleted,
-                    ]}
-                  >
-                    {item.completed && (
-                      <Ionicons
-                        name="checkmark"
-                        size={12}
-                        color={Theme.colors.backgroundLight}
-                      />
-                    )}
-                  </View>
-                  <Text
-                    style={[
-                      styles.eventText,
-                      item.completed && styles.eventTextCompleted,
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.resourcesSection}>
-          <Text style={styles.sectionTitle}>Nearby Resources</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.resourcesScroll}
-          >
-            {dummyResources.map((resource) => (
-              <ResourceCard
-                key={resource.id}
-                {...resource}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/resources",
-                    params: { resourceId: resource.id },
-                  })
-                }
-              />
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.discoverMoreButton}
-            onPress={() => router.push("/(tabs)/resources")}
-          >
-            <Text style={styles.discoverMore}>Discover More</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-      <CustomModal
-        visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedItemId(null);
-        }}
-        onConfirm={handleConfirmModal}
-        title="Mark as Done?"
-        message={
-          selectedItemId
-            ? `Are you sure you want to mark "${
-                checklistItems.find((i) => i.id === selectedItemId)?.title
-              }" as completed?`
-            : undefined
-        }
-      />
-      <CustomTabBar opacity={notificationVisible ? 0.4 : 1} />
-
-      <NotificationPopup
-        visible={notificationVisible}
-        onDismiss={() => setNotificationVisible(false)}
-        onSaveSuccess={() => {
-          setSaveSuccessModalVisible(true);
-          Animated.parallel([
-            Animated.timing(saveSuccessAnim, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            Animated.spring(saveSuccessScale, {
-              toValue: 1,
-              useNativeDriver: true,
-              tension: 100,
-              friction: 8,
-            }),
-          ]).start();
-          setTimeout(() => {
-            Animated.parallel([
-              Animated.timing(saveSuccessAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(saveSuccessScale, {
-                toValue: 0.9,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              setSaveSuccessModalVisible(false);
-            });
-          }, 2000);
-        }}
-      />
-      {saveSuccessModalVisible && (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container}>
         <Animated.View
           style={[
+            styles.content,
             {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 2000,
-              opacity: saveSuccessAnim,
+              opacity: fadeAnim,
+              paddingBottom: insets.bottom + 80,
             },
           ]}
-          pointerEvents="box-none"
         >
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require("../../assets/icon.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+              <View>
+                <Text style={styles.headerTitle}>Medi-Pal</Text>
+                <Text style={styles.headerSubtitle}>Welcome {userName}!</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.searchSection}>
+            <View style={styles.searchBarContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons
+                  name="search-outline"
+                  size={20}
+                  color={Theme.colors.text}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Ask AI anything..."
+                  placeholderTextColor={Theme.colors.textLight}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery("")}>
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
+                      color={Theme.colors.text}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.upArrowButton}
+                onPress={handleSearch}
+                disabled={!searchQuery.trim()}
+              >
+                <View
+                  style={[
+                    styles.upArrowContainer,
+                    !searchQuery.trim()
+                      ? styles.upArrowDisabled
+                      : styles.upArrowActive,
+                  ]}
+                >
+                  <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.calendarSection}>
+            <Text style={styles.sectionTitle}>My Calendar</Text>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity
+                onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={24}
+                  color={Theme.colors.text}
+                />
+              </TouchableOpacity>
+              <Text style={styles.calendarMonth}>
+                {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={24}
+                  color={Theme.colors.text}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.calendarGrid}>
+              {daysInWeek.map((day) => {
+                const dayItems = getItemsForDate(day);
+                const isSelected = isSameDay(day, selectedDate);
+                const isToday = isSameDay(day, new Date());
+                return (
+                  <TouchableOpacity
+                    key={day.toISOString()}
+                    style={[
+                      styles.calendarDay,
+                      isSelected && styles.calendarDaySelected,
+                      isToday && !isSelected && styles.calendarDayToday,
+                    ]}
+                    onPress={() => setSelectedDate(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayName,
+                        isSelected && { color: Theme.colors.backgroundLight },
+                      ]}
+                    >
+                      {format(day, "EEE")}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        isSelected && styles.calendarDayTextSelected,
+                      ]}
+                    >
+                      {format(day, "d")}
+                    </Text>
+                    {dayItems.length > 0 && (
+                      <View
+                        style={[
+                          styles.calendarDot,
+                          isSelected && styles.calendarDotSelected,
+                        ]}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {filteredChecklistItems.length > 0 && (
+              <View style={styles.eventsList}>
+                {filteredChecklistItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.eventItem}
+                    onPress={() => handleToggleChecklist(item.id)}
+                  >
+                    <View
+                      style={[
+                        styles.eventCheckbox,
+                        item.completed && styles.eventCheckboxCompleted,
+                      ]}
+                    >
+                      {item.completed && (
+                        <Ionicons
+                          name="checkmark"
+                          size={12}
+                          color={Theme.colors.backgroundLight}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.eventText,
+                        item.completed && styles.eventTextCompleted,
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.resourcesSection}>
+            <Text style={styles.sectionTitle}>Nearby Resources</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.resourcesScroll}
+            >
+              {dummyResources.map((resource) => (
+                <ResourceCard
+                  key={resource.id}
+                  {...resource}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/resources",
+                      params: { resourceId: resource.id },
+                    })
+                  }
+                />
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.discoverMoreButton}
+              onPress={() => router.push("/(tabs)/resources")}
+            >
+              <Text style={styles.discoverMore}>Discover More</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+        <CustomModal
+          visible={modalVisible}
+          onClose={() => {
+            setModalVisible(false);
+            setSelectedItemId(null);
+          }}
+          onConfirm={handleConfirmModal}
+          title="Mark as Done?"
+          message={
+            selectedItemId
+              ? `Are you sure you want to mark "${
+                  checklistItems.find((i) => i.id === selectedItemId)?.title
+                }" as completed?`
+              : undefined
+          }
+        />
+        <CustomTabBar opacity={notificationVisible ? 0.4 : 1} />
+
+        <NotificationPopup
+          visible={notificationVisible}
+          onDismiss={() => setNotificationVisible(false)}
+          onSaveSuccess={() => {
+            setSaveSuccessModalVisible(true);
+            Animated.parallel([
+              Animated.timing(saveSuccessAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.spring(saveSuccessScale, {
+                toValue: 1,
+                useNativeDriver: true,
+                tension: 100,
+                friction: 8,
+              }),
+            ]).start();
+            setTimeout(() => {
+              Animated.parallel([
+                Animated.timing(saveSuccessAnim, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(saveSuccessScale, {
+                  toValue: 0.9,
+                  duration: 200,
+                  useNativeDriver: true,
+                }),
+              ]).start(() => {
+                setSaveSuccessModalVisible(false);
+              });
+            }, 2000);
+          }}
+        />
+        {saveSuccessModalVisible && (
           <Animated.View
             style={[
               {
-                backgroundColor: Theme.colors.backgroundLight,
-                borderRadius: Theme.borderRadius.lg,
-                padding: Theme.spacing.xl,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                justifyContent: "center",
                 alignItems: "center",
-                ...Theme.shadows.lg,
-                transform: [{ scale: saveSuccessScale }],
+                zIndex: 2000,
+                opacity: saveSuccessAnim,
               },
             ]}
+            pointerEvents="box-none"
           >
-            <Ionicons
-              name="checkmark-circle"
-              size={48}
-              color={Theme.colors.success}
-            />
-            <Text
-              style={{
-                fontSize: 18,
-                fontFamily: Theme.fonts.semibold,
-                color: Theme.colors.text,
-                marginTop: Theme.spacing.md,
-              }}
+            <Animated.View
+              style={[
+                {
+                  backgroundColor: Theme.colors.backgroundLight,
+                  borderRadius: Theme.borderRadius.lg,
+                  padding: Theme.spacing.xl,
+                  alignItems: "center",
+                  ...Theme.shadows.lg,
+                  transform: [{ scale: saveSuccessScale }],
+                },
+              ]}
             >
-              {"Saved Successfully"}
-            </Text>
+              <Ionicons
+                name="checkmark-circle"
+                size={48}
+                color={Theme.colors.success}
+              />
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontFamily: Theme.fonts.semibold,
+                  color: Theme.colors.text,
+                  marginTop: Theme.spacing.md,
+                }}
+              >
+                {"Saved Successfully"}
+              </Text>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      )}
-    </SafeAreaView>
+        )}
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 

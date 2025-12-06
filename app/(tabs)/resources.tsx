@@ -14,6 +14,7 @@ import {
   Platform,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
@@ -33,7 +34,9 @@ import AreYouSurePopup from "../../components/AreYouSurePopup";
 const { width, height } = Dimensions.get("window");
 const MAP_HEIGHT = height * 0.35;
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
+const dismissKeyboard = () => {
+  Keyboard.dismiss();
+};
 interface Place {
   place_id: string;
   description: string;
@@ -946,267 +949,280 @@ export default function ResourcesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            paddingBottom: insets.bottom + 80,
-          },
-        ]}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={require("../../assets/icon.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>Resources</Text>
-          </View>
-        </View>
-
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={Theme.colors.text}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for resources..."
-            placeholderTextColor={Theme.colors.textLight}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={() => {
-              if (autocompleteResults.length > 0) {
-                setShowAutocomplete(true);
-              }
-            }}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchQuery("");
-                handleCancelDirections();
-                setShowAutocomplete(false);
-              }}
-            >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={Theme.colors.text}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container}>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              paddingBottom: insets.bottom + 80,
+            },
+          ]}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require("../../assets/icon.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
               />
-            </TouchableOpacity>
-          )}
-          {searchQuery.length === 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setShowFilterPopup(true);
-              }}
-            >
-              <FontAwesome name="filter" size={20} color={Theme.colors.text} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {showAutocomplete && autocompleteResults.length > 0 && (
-          <View style={styles.autocompleteContainer}>
-            <ScrollView style={styles.autocompleteList}>
-              {autocompleteResults.map((place) => (
-                <TouchableOpacity
-                  key={place.place_id}
-                  style={styles.autocompleteItem}
-                  onPress={() => handlePlaceSelect(place)}
-                >
-                  <Ionicons
-                    name="location"
-                    size={20}
-                    color={Theme.colors.primary}
-                  />
-                  <View style={styles.autocompleteText}>
-                    <Text style={styles.autocompleteMain} numberOfLines={1}>
-                      {truncateAddress(
-                        place.structured_formatting.main_text,
-                        35
-                      )}
-                    </Text>
-                    <Text
-                      style={styles.autocompleteSecondary}
-                      numberOfLines={1}
-                    >
-                      {truncateAddress(
-                        place.structured_formatting.secondary_text,
-                        40
-                      )}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+              <Text style={styles.title}>Resources</Text>
+            </View>
           </View>
-        )}
 
-        <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            provider={PROVIDER_GOOGLE}
-            style={styles.map}
-            initialRegion={region}
-            region={region}
-            showsUserLocation={false}
-            showsMyLocationButton={false}
-            showsCompass={true}
-            showsTraffic={false}
-            zoomEnabled={true}
-            scrollEnabled={true}
-            pitchEnabled={true}
-            rotateEnabled={true}
-            onRegionChangeComplete={setRegion}
-          >
-            <Marker
-              coordinate={STANFORD_COORDS}
-              title="Your Location"
-              description="550 Lasuen Mall, Stanford, CA 94305"
-            >
-              <View style={styles.stanfordMarker}>
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color={Theme.colors.text}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for resources..."
+              placeholderTextColor={Theme.colors.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => {
+                if (autocompleteResults.length > 0) {
+                  setShowAutocomplete(true);
+                }
+              }}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery("");
+                  handleCancelDirections();
+                  setShowAutocomplete(false);
+                }}
+              >
                 <Ionicons
-                  name="location"
-                  size={24}
-                  color={Theme.colors.primary}
+                  name="close-circle"
+                  size={20}
+                  color={Theme.colors.text}
                 />
-              </View>
-            </Marker>
-            {!selectedDestination &&
-              !showDetails &&
-              filteredResources.map((resource) => (
-                <Marker
-                  key={resource.id}
-                  coordinate={{
-                    latitude: resource.latitude,
-                    longitude: resource.longitude,
-                  }}
-                  title={resource.name}
-                  description={resource.address}
-                  onPress={() => setSelectedResource(resource.id)}
-                >
-                  <View
-                    style={[
-                      styles.marker,
-                      selectedResource === resource.id && styles.markerSelected,
-                    ]}
+              </TouchableOpacity>
+            )}
+            {searchQuery.length === 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  dismissKeyboard(); // Add this line
+                  setShowFilterPopup(true);
+                }}
+              >
+                <FontAwesome
+                  name="filter"
+                  size={20}
+                  color={Theme.colors.text}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {showAutocomplete && autocompleteResults.length > 0 && (
+            <View style={styles.autocompleteContainer}>
+              <ScrollView style={styles.autocompleteList}>
+                {autocompleteResults.map((place) => (
+                  <TouchableOpacity
+                    key={place.place_id}
+                    style={styles.autocompleteItem}
+                    onPress={() => handlePlaceSelect(place)}
                   >
                     <Ionicons
-                      name="medical"
+                      name="location"
                       size={20}
+                      color={Theme.colors.primary}
+                    />
+                    <View style={styles.autocompleteText}>
+                      <Text style={styles.autocompleteMain} numberOfLines={1}>
+                        {truncateAddress(
+                          place.structured_formatting.main_text,
+                          35
+                        )}
+                      </Text>
+                      <Text
+                        style={styles.autocompleteSecondary}
+                        numberOfLines={1}
+                      >
+                        {truncateAddress(
+                          place.structured_formatting.secondary_text,
+                          40
+                        )}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View style={styles.mapContainer}>
+            <MapView
+              ref={mapRef}
+              provider={PROVIDER_GOOGLE}
+              style={styles.map}
+              initialRegion={region}
+              region={region}
+              showsUserLocation={false}
+              showsMyLocationButton={false}
+              showsCompass={true}
+              showsTraffic={false}
+              zoomEnabled={true}
+              scrollEnabled={true}
+              pitchEnabled={true}
+              rotateEnabled={true}
+              onRegionChangeComplete={setRegion}
+            >
+              <Marker
+                coordinate={STANFORD_COORDS}
+                title="Your Location"
+                description="550 Lasuen Mall, Stanford, CA 94305"
+              >
+                <View style={styles.stanfordMarker}>
+                  <Ionicons
+                    name="location"
+                    size={24}
+                    color={Theme.colors.primary}
+                  />
+                </View>
+              </Marker>
+              {!selectedDestination &&
+                !showDetails &&
+                filteredResources.map((resource) => (
+                  <Marker
+                    key={resource.id}
+                    coordinate={{
+                      latitude: resource.latitude,
+                      longitude: resource.longitude,
+                    }}
+                    title={resource.name}
+                    description={resource.address}
+                    onPress={() => setSelectedResource(resource.id)}
+                  >
+                    <View
+                      style={[
+                        styles.marker,
+                        selectedResource === resource.id &&
+                          styles.markerSelected,
+                      ]}
+                    >
+                      <Ionicons
+                        name="medical"
+                        size={20}
+                        color={
+                          selectedResource === resource.id
+                            ? Theme.colors.backgroundLight
+                            : Theme.colors.text
+                        }
+                      />
+                    </View>
+                  </Marker>
+                ))}
+              {routeCoordinates.length > 0 && (
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeColor={routeStarted ? "#1a237e" : Theme.colors.primary}
+                  strokeWidth={6}
+                  lineCap="round"
+                  lineJoin="round"
+                />
+              )}
+              {selectedDestination && (
+                <Marker
+                  coordinate={{
+                    latitude: selectedDestination.latitude,
+                    longitude: selectedDestination.longitude,
+                  }}
+                  title={selectedDestination.name}
+                >
+                  <View style={styles.destinationMarker}>
+                    <Ionicons
+                      name="flag"
+                      size={24}
+                      color={Theme.colors.error}
+                    />
+                  </View>
+                </Marker>
+              )}
+            </MapView>
+          </View>
+
+          {/* Show details, directions, or resource list */}
+          {showDetails && !routeStarted ? (
+            renderResourceDetails()
+          ) : routeStarted ? (
+            isLoadingDirections ? (
+              <LoadingOverlay mode={"start_route"} />
+            ) : (
+              renderDirections()
+            )
+          ) : selectedDestination &&
+            directionSteps.length > 0 &&
+            !showDetails ? (
+            <View style={styles.directionsSection}>
+              <View style={styles.directionsHeader}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={handleCancelDirections}
+                >
+                  <Ionicons name="close" size={24} color={Theme.colors.text} />
+                </TouchableOpacity>
+                <View style={styles.directionsHeaderLeft}>
+                  <Text style={styles.directionsTitle} numberOfLines={1}>
+                    {selectedDestination.name.length > 30
+                      ? selectedDestination.name.substring(0, 30) + "..."
+                      : selectedDestination.name}
+                  </Text>
+                  <View style={styles.directionsMeta}>
+                    <Text style={styles.directionsMetaText}>
+                      {formatDistance(totalDistance)}
+                    </Text>
+                    <Text style={styles.directionsMetaText}>•</Text>
+                    <Text style={styles.directionsMetaText}>
+                      {formatDuration(totalDuration)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.routeControls}>
+                  <TouchableOpacity
+                    style={[
+                      styles.saveResourceCircularButton,
+                      isResourceSaved && styles.unsaveResourceCircularButton,
+                    ]}
+                    onPress={() => {
+                      if (isResourceSaved) {
+                        unsaveResource();
+                      } else if (selectedDestination) {
+                        saveResource({
+                          name: selectedDestination.name,
+                          address: selectedDestination.address || "",
+                          latitude: selectedDestination.latitude,
+                          longitude: selectedDestination.longitude,
+                        });
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={isResourceSaved ? "trash-outline" : "add"}
+                      size={18}
                       color={
-                        selectedResource === resource.id
+                        isResourceSaved
                           ? Theme.colors.backgroundLight
                           : Theme.colors.text
                       }
                     />
-                  </View>
-                </Marker>
-              ))}
-            {routeCoordinates.length > 0 && (
-              <Polyline
-                coordinates={routeCoordinates}
-                strokeColor={routeStarted ? "#1a237e" : Theme.colors.primary}
-                strokeWidth={6}
-                lineCap="round"
-                lineJoin="round"
-              />
-            )}
-            {selectedDestination && (
-              <Marker
-                coordinate={{
-                  latitude: selectedDestination.latitude,
-                  longitude: selectedDestination.longitude,
-                }}
-                title={selectedDestination.name}
-              >
-                <View style={styles.destinationMarker}>
-                  <Ionicons name="flag" size={24} color={Theme.colors.error} />
-                </View>
-              </Marker>
-            )}
-          </MapView>
-        </View>
-
-        {/* Show details, directions, or resource list */}
-        {showDetails && !routeStarted ? (
-          renderResourceDetails()
-        ) : routeStarted ? (
-          isLoadingDirections ? (
-            <LoadingOverlay mode={"start_route"} />
-          ) : (
-            renderDirections()
-          )
-        ) : selectedDestination && directionSteps.length > 0 && !showDetails ? (
-          <View style={styles.directionsSection}>
-            <View style={styles.directionsHeader}>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={handleCancelDirections}
-              >
-                <Ionicons name="close" size={24} color={Theme.colors.text} />
-              </TouchableOpacity>
-              <View style={styles.directionsHeaderLeft}>
-                <Text style={styles.directionsTitle} numberOfLines={1}>
-                  {selectedDestination.name.length > 30
-                    ? selectedDestination.name.substring(0, 30) + "..."
-                    : selectedDestination.name}
-                </Text>
-                <View style={styles.directionsMeta}>
-                  <Text style={styles.directionsMetaText}>
-                    {formatDistance(totalDistance)}
-                  </Text>
-                  <Text style={styles.directionsMetaText}>•</Text>
-                  <Text style={styles.directionsMetaText}>
-                    {formatDuration(totalDuration)}
-                  </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.startRouteButton}
+                    onPress={handleStartRoute}
+                  >
+                    <Text style={styles.startRouteText}>Start Route</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <View style={styles.routeControls}>
-                <TouchableOpacity
-                  style={[
-                    styles.saveResourceCircularButton,
-                    isResourceSaved && styles.unsaveResourceCircularButton,
-                  ]}
-                  onPress={() => {
-                    if (isResourceSaved) {
-                      unsaveResource();
-                    } else if (selectedDestination) {
-                      saveResource({
-                        name: selectedDestination.name,
-                        address: selectedDestination.address || "",
-                        latitude: selectedDestination.latitude,
-                        longitude: selectedDestination.longitude,
-                      });
-                    }
-                  }}
-                >
-                  <Ionicons
-                    name={isResourceSaved ? "trash-outline" : "add"}
-                    size={18}
-                    color={
-                      isResourceSaved
-                        ? Theme.colors.backgroundLight
-                        : Theme.colors.text
-                    }
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.startRouteButton}
-                  onPress={handleStartRoute}
-                >
-                  <Text style={styles.startRouteText}>Start Route</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            {/* <ScrollView
+              {/* <ScrollView
               style={styles.stepsList}
               showsVerticalScrollIndicator={false}
             >
@@ -1231,266 +1247,267 @@ export default function ResourcesScreen() {
                 </View>
               ))}
             </ScrollView> */}
-            {/* hardcode dummy resource for now */}
-            <ScrollView
-              style={styles.detailsContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View
-                style={[
-                  styles.eligibilityRow,
-                  { marginBottom: Theme.spacing.md },
-                ]}
-              >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={Theme.colors.success}
-                />
-                <Text style={styles.eligibilityText}>
-                  You are eligible for this service
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name="location-outline"
-                  size={18}
-                  color={Theme.colors.primary}
-                />
-                <Text style={styles.detailText}>
-                  {selectedDestination.address}
-                </Text>
-              </View>
-              {dummyResources[1].phone && (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="call-outline"
-                    size={18}
-                    color={Theme.colors.primary}
-                  />
-                  <Text style={styles.detailText}>
-                    {deterministicPhoneNumber(selectedDestination.name)}
-                  </Text>
-                </View>
-              )}
-              {dummyResources[1].email && (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={Theme.colors.primary}
-                  />
-                  <Text style={styles.detailText}>
-                    {`medicalrecords@${getFirstWord(
-                      selectedDestination.name
-                    )}.org`}
-                  </Text>
-                </View>
-              )}
-              {dummyResources[1].hours && (
-                <View style={styles.detailRow}>
-                  <Ionicons
-                    name="time-outline"
-                    size={18}
-                    color={Theme.colors.primary}
-                  />
-                  <View style={{ flex: 1 }}>
-                    {dummyResources[1].hours
-                      .split("\n")
-                      .map((dayHours, index) => (
-                        <Text key={index} style={styles.detailText}>
-                          {dayHours.trim()}
-                        </Text>
-                      ))}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        ) : (
-          <View style={styles.resourcesSection}>
-            <View style={styles.tabSelectorContainer}>
-              <View style={styles.tabSelector}>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    activeTab === "nearby" && styles.tabActive,
-                  ]}
-                  onPress={() => setActiveTab("nearby")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === "nearby" && styles.tabTextActive,
-                    ]}
-                  >
-                    Nearby Resources
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    activeTab === "saved" && styles.tabActive,
-                  ]}
-                  onPress={() => setActiveTab("saved")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === "saved" && styles.tabTextActive,
-                    ]}
-                  >
-                    Saved Resources
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            {activeTab === "nearby" ? (
+              {/* hardcode dummy resource for now */}
               <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.resourcesScroll}
-              >
-                {filteredResources.map((resource) => (
-                  <ResourceCard
-                    key={resource.id}
-                    {...resource}
-                    onPress={() => handleResourceSelect(resource)}
-                  />
-                ))}
-              </ScrollView>
-            ) : (
-              <ScrollView
-                style={styles.savedResourcesScroll}
-                contentContainerStyle={styles.savedResourcesContent}
+                style={styles.detailsContent}
                 showsVerticalScrollIndicator={false}
               >
-                {savedResources.length > 0 ? (
-                  savedResources.map((resource) => (
-                    <TouchableOpacity
-                      key={resource.id}
-                      style={styles.savedResourceCard}
-                      onPress={() => handleSavedResourceSelect(resource)}
-                    >
-                      <View style={styles.savedResourceContent}>
-                        <Ionicons
-                          name="pin"
-                          size={20}
-                          color={Theme.colors.primary}
-                        />
-                        <View style={styles.savedResourceText}>
-                          <Text
-                            style={styles.savedResourceName}
-                            numberOfLines={1}
-                          >
-                            {resource.name}
-                          </Text>
-                          <Text
-                            style={styles.savedResourceAddress}
-                            numberOfLines={1}
-                          >
-                            {truncateAddress(resource.address, 50)}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.deleteSavedButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            deleteSavedResource(resource.id);
-                          }}
-                        >
-                          <Ionicons
-                            name="trash-outline"
-                            size={20}
-                            color={Theme.colors.error}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <View style={styles.emptySaved}>
-                    <Text style={styles.emptySavedText}>
-                      No saved resources
+                <View
+                  style={[
+                    styles.eligibilityRow,
+                    { marginBottom: Theme.spacing.md },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={Theme.colors.success}
+                  />
+                  <Text style={styles.eligibilityText}>
+                    You are eligible for this service
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name="location-outline"
+                    size={18}
+                    color={Theme.colors.primary}
+                  />
+                  <Text style={styles.detailText}>
+                    {selectedDestination.address}
+                  </Text>
+                </View>
+                {dummyResources[1].phone && (
+                  <View style={styles.detailRow}>
+                    <Ionicons
+                      name="call-outline"
+                      size={18}
+                      color={Theme.colors.primary}
+                    />
+                    <Text style={styles.detailText}>
+                      {deterministicPhoneNumber(selectedDestination.name)}
                     </Text>
                   </View>
                 )}
+                {dummyResources[1].email && (
+                  <View style={styles.detailRow}>
+                    <Ionicons
+                      name="mail-outline"
+                      size={18}
+                      color={Theme.colors.primary}
+                    />
+                    <Text style={styles.detailText}>
+                      {`medicalrecords@${getFirstWord(
+                        selectedDestination.name
+                      )}.org`}
+                    </Text>
+                  </View>
+                )}
+                {dummyResources[1].hours && (
+                  <View style={styles.detailRow}>
+                    <Ionicons
+                      name="time-outline"
+                      size={18}
+                      color={Theme.colors.primary}
+                    />
+                    <View style={{ flex: 1 }}>
+                      {dummyResources[1].hours
+                        .split("\n")
+                        .map((dayHours, index) => (
+                          <Text key={index} style={styles.detailText}>
+                            {dayHours.trim()}
+                          </Text>
+                        ))}
+                    </View>
+                  </View>
+                )}
               </ScrollView>
-            )}
-          </View>
-        )}
-      </Animated.View>
-      {isLoadingSearch && <LoadingOverlay mode={"search"} />}
-      {(showSaveSuccessModal || showDeleteSuccessModal) && (
-        <Animated.View
-          style={[styles.successModalOverlay, { opacity: successModalAnim }]}
-        >
-          <Animated.View
-            style={[
-              styles.successModal,
-              { transform: [{ scale: successModalScale }] },
-            ]}
-          >
-            <Ionicons
-              name="checkmark-circle"
-              size={48}
-              color={Theme.colors.success}
-            />
-            <Text style={styles.successModalText}>
-              {showSaveSuccessModal
-                ? "Saved Successfully"
-                : "Deleted Successfully"}
-            </Text>
-          </Animated.View>
+            </View>
+          ) : (
+            <View style={styles.resourcesSection}>
+              <View style={styles.tabSelectorContainer}>
+                <View style={styles.tabSelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      activeTab === "nearby" && styles.tabActive,
+                    ]}
+                    onPress={() => setActiveTab("nearby")}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeTab === "nearby" && styles.tabTextActive,
+                      ]}
+                    >
+                      Nearby Resources
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      activeTab === "saved" && styles.tabActive,
+                    ]}
+                    onPress={() => setActiveTab("saved")}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeTab === "saved" && styles.tabTextActive,
+                      ]}
+                    >
+                      Saved Resources
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {activeTab === "nearby" ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.resourcesScroll}
+                >
+                  {filteredResources.map((resource) => (
+                    <ResourceCard
+                      key={resource.id}
+                      {...resource}
+                      onPress={() => handleResourceSelect(resource)}
+                    />
+                  ))}
+                </ScrollView>
+              ) : (
+                <ScrollView
+                  style={styles.savedResourcesScroll}
+                  contentContainerStyle={styles.savedResourcesContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {savedResources.length > 0 ? (
+                    savedResources.map((resource) => (
+                      <TouchableOpacity
+                        key={resource.id}
+                        style={styles.savedResourceCard}
+                        onPress={() => handleSavedResourceSelect(resource)}
+                      >
+                        <View style={styles.savedResourceContent}>
+                          <Ionicons
+                            name="pin"
+                            size={20}
+                            color={Theme.colors.primary}
+                          />
+                          <View style={styles.savedResourceText}>
+                            <Text
+                              style={styles.savedResourceName}
+                              numberOfLines={1}
+                            >
+                              {resource.name}
+                            </Text>
+                            <Text
+                              style={styles.savedResourceAddress}
+                              numberOfLines={1}
+                            >
+                              {truncateAddress(resource.address, 50)}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.deleteSavedButton}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              deleteSavedResource(resource.id);
+                            }}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={20}
+                              color={Theme.colors.error}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptySaved}>
+                      <Text style={styles.emptySavedText}>
+                        No saved resources
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
+            </View>
+          )}
         </Animated.View>
-      )}
-      {showEndRouteModal && (
-        // <View style={styles.modalOverlay}>
-        //   <View style={styles.modalContainer}>
-        //     <Text style={styles.modalTitle}>End Route?</Text>
-        //     <Text style={styles.modalMessage}>
-        //       Are you sure you want to end the current route?
-        //     </Text>
-        //     <View style={styles.modalButtons}>
-        //       <TouchableOpacity
-        //         style={[styles.modalButton, styles.modalCancelButton]}
-        //         onPress={() => setShowEndRouteModal(false)}
-        //       >
-        //         <Text style={styles.modalCancelText}>Cancel</Text>
-        //       </TouchableOpacity>
-        //       <TouchableOpacity
-        //         style={[styles.modalButton, styles.modalConfirmButton]}
-        //         onPress={handleConfirmEndRoute}
-        //       >
-        //         <Text style={styles.modalConfirmText}>End Route</Text>
-        //       </TouchableOpacity>
-        //     </View>
-        //   </View>
-        // </View>
-        <AreYouSurePopup
-          mode={"end_route"}
-          setShowPopUp={setShowEndRouteModal}
-          proceed={handleConfirmEndRoute}
-        ></AreYouSurePopup>
-      )}
-      {showTipsModal && (
-        <SelectionModal
-          mode={"tips_checklist"}
-          setShowPopUp={setShowTipsModal}
-          proceed={handleStartRouteAfterTips}
-        ></SelectionModal>
-      )}
-      <CustomTabBar />
-      <AdvancedFilterPopup
-        visible={showFilterPopup}
-        onDismiss={() => setShowFilterPopup(false)}
-        onApplyFilters={(filters) => {
-          console.log("Applied filters:", filters);
-          // Here you can implement actual filtering logic
-          // For now, just log the filters
-        }}
-      />
-    </SafeAreaView>
+        {isLoadingSearch && <LoadingOverlay mode={"search"} />}
+        {(showSaveSuccessModal || showDeleteSuccessModal) && (
+          <Animated.View
+            style={[styles.successModalOverlay, { opacity: successModalAnim }]}
+          >
+            <Animated.View
+              style={[
+                styles.successModal,
+                { transform: [{ scale: successModalScale }] },
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={48}
+                color={Theme.colors.success}
+              />
+              <Text style={styles.successModalText}>
+                {showSaveSuccessModal
+                  ? "Saved Successfully"
+                  : "Deleted Successfully"}
+              </Text>
+            </Animated.View>
+          </Animated.View>
+        )}
+        {showEndRouteModal && (
+          // <View style={styles.modalOverlay}>
+          //   <View style={styles.modalContainer}>
+          //     <Text style={styles.modalTitle}>End Route?</Text>
+          //     <Text style={styles.modalMessage}>
+          //       Are you sure you want to end the current route?
+          //     </Text>
+          //     <View style={styles.modalButtons}>
+          //       <TouchableOpacity
+          //         style={[styles.modalButton, styles.modalCancelButton]}
+          //         onPress={() => setShowEndRouteModal(false)}
+          //       >
+          //         <Text style={styles.modalCancelText}>Cancel</Text>
+          //       </TouchableOpacity>
+          //       <TouchableOpacity
+          //         style={[styles.modalButton, styles.modalConfirmButton]}
+          //         onPress={handleConfirmEndRoute}
+          //       >
+          //         <Text style={styles.modalConfirmText}>End Route</Text>
+          //       </TouchableOpacity>
+          //     </View>
+          //   </View>
+          // </View>
+          <AreYouSurePopup
+            mode={"end_route"}
+            setShowPopUp={setShowEndRouteModal}
+            proceed={handleConfirmEndRoute}
+          ></AreYouSurePopup>
+        )}
+        {showTipsModal && (
+          <SelectionModal
+            mode={"tips_checklist"}
+            setShowPopUp={setShowTipsModal}
+            proceed={handleStartRouteAfterTips}
+          ></SelectionModal>
+        )}
+        <CustomTabBar />
+        <AdvancedFilterPopup
+          visible={showFilterPopup}
+          onDismiss={() => setShowFilterPopup(false)}
+          onApplyFilters={(filters) => {
+            console.log("Applied filters:", filters);
+            // Here you can implement actual filtering logic
+            // For now, just log the filters
+          }}
+        />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
