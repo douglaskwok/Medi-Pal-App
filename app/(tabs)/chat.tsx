@@ -650,6 +650,7 @@ export default function ChatScreen() {
       }
     }
   };
+
   const SoundWaveIcon = ({ isActive, size = 24, color = "#fff" }) => {
     const waveAnimations = useRef([
       new Animated.Value(1),
