@@ -1009,6 +1009,7 @@ export default function ChatScreen() {
         console.log(aiResponse);
         aiResponse =
           "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
+        Keyboard.dismiss();
         setShowAIResources(true);
       }
 
