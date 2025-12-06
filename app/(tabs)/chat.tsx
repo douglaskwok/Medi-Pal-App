@@ -252,7 +252,16 @@ export default function ChatScreen() {
       },
     ];
   };
-
+  useEffect(() => {
+    if (currentView === "text-chat") {
+      // Reset input-related states when entering text chat
+      setInputText("");
+      setIsLoading(false);
+      // Ensure keyboard state is fresh
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    }
+  }, [currentView]);
   // Initial effect
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -885,10 +894,13 @@ export default function ChatScreen() {
       setCurrentSessionId(sessionId);
       setCurrentView("text-chat");
       setMessages([]);
+      setInputText(""); // Ensure input is cleared
       setUserMessageCount(0);
       setAIResources(null);
       setShownResources(null);
       setShowAIResources(false);
+      setIsKeyboardEverShown(false); // Reset keyboard state
+      setIsKeyboardVisible(false);
       await loadSessions();
     }
   };
@@ -1030,6 +1042,7 @@ export default function ChatScreen() {
     setMessages([]);
     setIsLoading(false);
     setUserMessageCount(0);
+    setInputText(""); // ADD THIS: Clear input text
     setAIResources(null);
     setShownResources(null);
     setShowAIResources(false);
@@ -1251,6 +1264,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
+          key={currentSessionId || "new-session"} // Add key to force recreation
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
