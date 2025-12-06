@@ -11,6 +11,7 @@ export const Theme = {
     text: "#0F172A", // Primary text - very dark slate
     textSecondary: "#334155", // Secondary text - medium slate
     textLight: "#64748B",
+
     border: "#A8D5FF", // Light blue border color
     borderLight: "#D4E9FF",
     success: "#22C55E", // Green for success states

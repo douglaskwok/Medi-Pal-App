@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
-} from 'react-native';
-import { Theme } from '../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { format, isToday, isTomorrow } from 'date-fns';
+} from "react-native";
+import { Theme } from "../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { format, isToday, isTomorrow } from "date-fns";
 
 interface ChecklistItemProps {
   id: string;
@@ -86,7 +86,11 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
           activeOpacity={0.7}
         >
           {completed && (
-            <Ionicons name="checkmark" size={16} color={Theme.colors.background} />
+            <Ionicons
+              name="checkmark"
+              size={16}
+              color={Theme.colors.background}
+            />
           )}
         </TouchableOpacity>
         <TouchableOpacity
@@ -101,10 +105,10 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
             {startDate && (
               <Text style={styles.dateText}>
                 {isToday(new Date(startDate))
-                  ? 'Today'
+                  ? "Today"
                   : isTomorrow(new Date(startDate))
-                  ? 'Tomorrow'
-                  : format(new Date(startDate), 'MMM d')}
+                  ? "Tomorrow"
+                  : format(new Date(startDate), "MMM d")}
               </Text>
             )}
           </View>
@@ -116,7 +120,7 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
             activeOpacity={0.7}
           >
             <Ionicons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
+              name={expanded ? "chevron-up" : "chevron-down"}
               size={20}
               color={Theme.colors.textSecondary}
             />
@@ -146,7 +150,7 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Start:</Text>
               <Text style={styles.detailText}>
-                {format(new Date(startDate), 'MMM d, yyyy h:mm a')}
+                {format(new Date(startDate), "MMM d, yyyy h:mm a")}
               </Text>
             </View>
           )}
@@ -154,7 +158,7 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>End:</Text>
               <Text style={styles.detailText}>
-                {format(new Date(endDate), 'MMM d, yyyy h:mm a')}
+                {format(new Date(endDate), "MMM d, yyyy h:mm a")}
               </Text>
             </View>
           )}
@@ -163,7 +167,11 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
               style={styles.editButton}
               onPress={() => onEdit(id)}
             >
-              <Ionicons name="pencil" size={16} color={Theme.colors.primary} />
+              <Ionicons
+                name="pencil"
+                size={16}
+                color={Theme.colors.primaryDark}
+              />
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           )}
@@ -178,12 +186,12 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     marginBottom: Theme.spacing.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Theme.shadows.sm,
   },
   mainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: Theme.spacing.md,
     paddingHorizontal: Theme.spacing.md,
   },
@@ -194,20 +202,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Theme.colors.border,
     marginRight: Theme.spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxCompleted: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
+    borderColor: Theme.colors.primaryDark,
   },
   titleContainer: {
     flex: 1,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: Theme.spacing.sm,
   },
   title: {
@@ -222,7 +230,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   titleCompleted: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     color: Theme.colors.textSecondary,
   },
   expandButton: {
@@ -253,8 +261,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: Theme.spacing.md,
     paddingTop: Theme.spacing.md,
     borderTopWidth: 1,
@@ -264,10 +272,6 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 14,
     fontFamily: Theme.fonts.medium,
-    color: Theme.colors.primary,
+    color: Theme.colors.primaryDark,
   },
 });
-
-
-
-

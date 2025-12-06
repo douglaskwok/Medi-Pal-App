@@ -139,6 +139,14 @@ export default function HomeScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container}>
+        {/* <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive" // or "on-drag"
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss} // Dismiss on scroll
+        > */}
         <Animated.View
           style={[
             styles.content,
@@ -340,6 +348,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </Animated.View>
+        {/* </ScrollView> */}
         <CustomModal
           visible={modalVisible}
           onClose={() => {
@@ -451,6 +460,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Theme.colors.background,
   },
+  // scrollView: {
+  //   flex: 1,
+  // },
+  // scrollContent: {
+  //   // flexGrow: 1,
+  // },
   content: {
     flex: 1,
     paddingHorizontal: Theme.spacing.md,

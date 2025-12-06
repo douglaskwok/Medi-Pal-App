@@ -295,7 +295,7 @@ export default function SelectionModal({
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color={Theme.colors.primary}
+                      color={Theme.colors.primaryDark}
                     />
                   </View>
                 )}
@@ -316,7 +316,7 @@ export default function SelectionModal({
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color={Theme.colors.primary}
+                      color={Theme.colors.primaryDark}
                     />
                   </View>
                 )}
@@ -339,7 +339,7 @@ export default function SelectionModal({
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color={Theme.colors.primary}
+                      color={Theme.colors.primaryDark}
                     />
                   </View>
                 )}
@@ -360,7 +360,7 @@ export default function SelectionModal({
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color={Theme.colors.primary}
+                      color={Theme.colors.primaryDark}
                     />
                   </View>
                 )}
@@ -431,7 +431,7 @@ export default function SelectionModal({
               video_origin && { flex: 2 },
               video_origin &&
                 addedToChecklist && {
-                  backgroundColor: Theme.colors.primaryAlt,
+                  backgroundColor: Theme.colors.primary,
                 },
             ]}
             onPress={handleConfirmPress}
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   avatarButtonSelected: {
-    borderColor: Theme.colors.primary,
+    borderColor: Theme.colors.primaryAlt,
     borderWidth: 2,
     padding: Theme.spacing.xs - 1,
     backgroundColor: Theme.colors.primary + "10", // 10% opacity

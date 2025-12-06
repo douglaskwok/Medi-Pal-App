@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,13 @@ import {
   TouchableWithoutFeedback,
   Platform,
   Dimensions,
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Theme } from '../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Theme } from "../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface ChecklistItemModalProps {
   visible: boolean;
@@ -42,13 +42,13 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
   onSave,
   editingItem,
 }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
@@ -56,12 +56,16 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
     if (visible) {
       if (editingItem) {
         setTitle(editingItem.title);
-        setDescription(editingItem.description || '');
-        setStartDate(editingItem.startDate ? new Date(editingItem.startDate) : new Date());
-        setEndDate(editingItem.endDate ? new Date(editingItem.endDate) : new Date());
+        setDescription(editingItem.description || "");
+        setStartDate(
+          editingItem.startDate ? new Date(editingItem.startDate) : new Date()
+        );
+        setEndDate(
+          editingItem.endDate ? new Date(editingItem.endDate) : new Date()
+        );
       } else {
-        setTitle('');
-        setDescription('');
+        setTitle("");
+        setDescription("");
         const now = new Date();
         setStartDate(now);
         setEndDate(new Date(now.getTime() + 60 * 60 * 1000));
@@ -107,27 +111,27 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
       startDate,
       endDate,
     });
-    setTitle('');
-    setDescription('');
+    setTitle("");
+    setDescription("");
     onClose();
   };
 
   const formatDateTime = (date: Date) => {
-    return format(date, 'MMM d, yyyy h:mm a');
+    return format(date, "MMM d, yyyy h:mm a");
   };
 
   const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       setShowStartPicker(false);
     }
     if (selectedDate) {
-      if (pickerMode === 'date') {
+      if (pickerMode === "date") {
         const newDate = new Date(selectedDate);
         newDate.setHours(startDate.getHours());
         newDate.setMinutes(startDate.getMinutes());
         setStartDate(newDate);
-        if (Platform.OS === 'android') {
-          setPickerMode('time');
+        if (Platform.OS === "android") {
+          setPickerMode("time");
           setTimeout(() => setShowStartPicker(true), 100);
         }
       } else {
@@ -135,23 +139,23 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
         newDate.setHours(selectedDate.getHours());
         newDate.setMinutes(selectedDate.getMinutes());
         setStartDate(newDate);
-        setPickerMode('date');
+        setPickerMode("date");
       }
     }
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       setShowEndPicker(false);
     }
     if (selectedDate) {
-      if (pickerMode === 'date') {
+      if (pickerMode === "date") {
         const newDate = new Date(selectedDate);
         newDate.setHours(endDate.getHours());
         newDate.setMinutes(endDate.getMinutes());
         setEndDate(newDate);
-        if (Platform.OS === 'android') {
-          setPickerMode('time');
+        if (Platform.OS === "android") {
+          setPickerMode("time");
           setTimeout(() => setShowEndPicker(true), 100);
         }
       } else {
@@ -159,31 +163,31 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
         newDate.setHours(selectedDate.getHours());
         newDate.setMinutes(selectedDate.getMinutes());
         setEndDate(newDate);
-        setPickerMode('date');
+        setPickerMode("date");
       }
     }
   };
 
   const openStartPicker = () => {
-    setPickerMode('date');
+    setPickerMode("date");
     setShowStartPicker(true);
     setShowEndPicker(false);
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       // On iOS, show both date and time pickers together
       setTimeout(() => {
-        setPickerMode('time');
+        setPickerMode("time");
       }, 100);
     }
   };
 
   const openEndPicker = () => {
-    setPickerMode('date');
+    setPickerMode("date");
     setShowEndPicker(true);
     setShowStartPicker(false);
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       // On iOS, show both date and time pickers together
       setTimeout(() => {
-        setPickerMode('time');
+        setPickerMode("time");
       }, 100);
     }
   };
@@ -216,7 +220,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
             >
               <View style={styles.content}>
                 <Text style={styles.title}>
-                  {editingItem ? 'Edit Item' : 'Add Item'}
+                  {editingItem ? "Edit Item" : "Add Item"}
                 </Text>
 
                 <View style={styles.inputGroup}>
@@ -253,7 +257,11 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                       style={styles.dateButton}
                       onPress={openStartPicker}
                     >
-                      <Ionicons name="calendar-outline" size={18} color={Theme.colors.primary} />
+                      <Ionicons
+                        name="calendar-outline"
+                        size={18}
+                        color={Theme.colors.primary}
+                      />
                       <Text style={styles.dateButtonText} numberOfLines={1}>
                         {formatDateTime(startDate)}
                       </Text>
@@ -263,9 +271,11 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                         <DateTimePicker
                           value={startDate}
                           mode="date"
-                          display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                          display={
+                            Platform.OS === "ios" ? "compact" : "default"
+                          }
                           onChange={(event, selectedDate) => {
-                            if (Platform.OS === 'android') {
+                            if (Platform.OS === "android") {
                               setShowStartPicker(false);
                             }
                             if (selectedDate) {
@@ -273,9 +283,9 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                               newDate.setHours(startDate.getHours());
                               newDate.setMinutes(startDate.getMinutes());
                               setStartDate(newDate);
-                              if (Platform.OS === 'android') {
+                              if (Platform.OS === "android") {
                                 setTimeout(() => {
-                                  setPickerMode('time');
+                                  setPickerMode("time");
                                   setShowStartPicker(true);
                                 }, 100);
                               }
@@ -284,7 +294,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                           minimumDate={new Date()}
                           style={styles.picker}
                         />
-                        {Platform.OS === 'ios' && (
+                        {Platform.OS === "ios" && (
                           <DateTimePicker
                             value={startDate}
                             mode="time"
@@ -310,7 +320,11 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                       style={styles.dateButton}
                       onPress={openEndPicker}
                     >
-                      <Ionicons name="calendar-outline" size={18} color={Theme.colors.primary} />
+                      <Ionicons
+                        name="calendar-outline"
+                        size={18}
+                        color={Theme.colors.primary}
+                      />
                       <Text style={styles.dateButtonText} numberOfLines={1}>
                         {formatDateTime(endDate)}
                       </Text>
@@ -320,9 +334,11 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                         <DateTimePicker
                           value={endDate}
                           mode="date"
-                          display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                          display={
+                            Platform.OS === "ios" ? "compact" : "default"
+                          }
                           onChange={(event, selectedDate) => {
-                            if (Platform.OS === 'android') {
+                            if (Platform.OS === "android") {
                               setShowEndPicker(false);
                             }
                             if (selectedDate) {
@@ -330,9 +346,9 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                               newDate.setHours(endDate.getHours());
                               newDate.setMinutes(endDate.getMinutes());
                               setEndDate(newDate);
-                              if (Platform.OS === 'android') {
+                              if (Platform.OS === "android") {
                                 setTimeout(() => {
-                                  setPickerMode('time');
+                                  setPickerMode("time");
                                   setShowEndPicker(true);
                                 }, 100);
                               }
@@ -341,7 +357,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                           minimumDate={startDate}
                           style={styles.picker}
                         />
-                        {Platform.OS === 'ios' && (
+                        {Platform.OS === "ios" && (
                           <DateTimePicker
                             value={endDate}
                             mode="time"
@@ -371,13 +387,17 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.button, styles.saveButton, !title.trim() && styles.saveButtonDisabled]}
+                    style={[
+                      styles.button,
+                      styles.saveButton,
+                      !title.trim() && styles.saveButtonDisabled,
+                    ]}
                     onPress={handleSave}
                     activeOpacity={0.7}
                     disabled={!title.trim()}
                   >
                     <Text style={styles.saveButtonText}>
-                      {editingItem ? 'Save' : 'Add'}
+                      {editingItem ? "Save" : "Add"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -393,15 +413,15 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Theme.spacing.lg,
   },
   modalContainer: {
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.lg,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     ...Theme.shadows.lg,
   },
@@ -413,7 +433,7 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputGroup: {
     marginBottom: Theme.spacing.md,
@@ -440,7 +460,7 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.sm,
   },
   dateTimeRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
   },
@@ -448,8 +468,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.sm,
@@ -466,14 +486,14 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     marginTop: Theme.spacing.xs,
-    flexDirection: Platform.OS === 'ios' ? 'row' : 'column',
-    gap: Platform.OS === 'ios' ? Theme.spacing.xs : 0,
+    flexDirection: Platform.OS === "ios" ? "row" : "column",
+    gap: Platform.OS === "ios" ? Theme.spacing.xs : 0,
   },
   picker: {
-    flex: Platform.OS === 'ios' ? 1 : undefined,
+    flex: Platform.OS === "ios" ? 1 : undefined,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
     marginTop: Theme.spacing.sm,
   },
@@ -481,9 +501,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   cancelButton: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -491,7 +511,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   saveButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
   },
   saveButtonDisabled: {
     opacity: 0.5,

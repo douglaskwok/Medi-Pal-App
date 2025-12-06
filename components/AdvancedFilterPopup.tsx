@@ -154,7 +154,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
                 onValueChange={setMediCalEligible}
                 trackColor={{
                   false: Theme.colors.border,
-                  true: Theme.colors.primary,
+                  true: Theme.colors.primaryDark,
                 }}
                 thumbColor={Theme.colors.backgroundLight}
               />
@@ -228,9 +228,9 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
                 step={1}
                 value={radius}
                 onValueChange={setRadius}
-                minimumTrackTintColor={Theme.colors.primary}
+                minimumTrackTintColor={Theme.colors.primaryDark}
                 maximumTrackTintColor={Theme.colors.border}
-                thumbTintColor={Theme.colors.primary}
+                thumbTintColor={Theme.colors.primaryDark}
               />
               <View style={styles.radiusLabels}>
                 <Text style={styles.radiusLabel}>1 mi</Text>
@@ -349,8 +349,8 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   chipSelected: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
+    borderColor: Theme.colors.primaryDark,
   },
   chipText: {
     fontSize: 14,
@@ -375,8 +375,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayChipSelected: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
+    borderColor: Theme.colors.primaryDark,
   },
   dayChipText: {
     fontSize: 12,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   applyButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
   },
   clearButtonText: {
     fontSize: 16,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,17 +8,17 @@ import {
   ScrollView,
   Animated,
   Image,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Theme } from '../../constants/Theme';
-import { ChecklistItem } from '../../components/ChecklistItem';
-import { CustomModal } from '../../components/Modal';
-import { ChecklistItemModal } from '../../components/ChecklistItemModal';
-import { dummyChecklistItems } from '../../constants/DummyData';
-import { Ionicons } from '@expo/vector-icons';
-import { isToday, isPast, isFuture, isThisWeek, isThisMonth } from 'date-fns';
-import { CustomTabBar } from './_layout';
-import { supabase } from '../../lib/supabase';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Theme } from "../../constants/Theme";
+import { ChecklistItem } from "../../components/ChecklistItem";
+import { CustomModal } from "../../components/Modal";
+import { ChecklistItemModal } from "../../components/ChecklistItemModal";
+import { dummyChecklistItems } from "../../constants/DummyData";
+import { Ionicons } from "@expo/vector-icons";
+import { isToday, isPast, isFuture, isThisWeek, isThisMonth } from "date-fns";
+import { CustomTabBar } from "./_layout";
+import { supabase } from "../../lib/supabase";
 
 interface ChecklistItemType {
   id: string;
@@ -37,9 +37,13 @@ export default function ChecklistScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [addEditModalVisible, setAddEditModalVisible] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<ChecklistItemType | null>(null);
+  const [editingItem, setEditingItem] = useState<ChecklistItemType | null>(
+    null
+  );
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "today" | "week" | "month"
+  >("today");
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -53,14 +57,16 @@ export default function ChecklistScreen() {
 
   const loadChecklistItems = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('checklist_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: true });
+        .from("checklist_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("start_date", { ascending: true });
 
       if (error) throw error;
 
@@ -83,7 +89,7 @@ export default function ChecklistScreen() {
         );
       }
     } catch (error) {
-      console.error('Error loading checklist items:', error);
+      console.error("Error loading checklist items:", error);
       // Fallback to dummy data
       setChecklistItems(
         dummyChecklistItems.map((item) => ({
@@ -114,7 +120,9 @@ export default function ChecklistScreen() {
         i.id === selectedItemId ? { ...i, completed: true } : i
       );
       setChecklistItems(updatedItems);
-      await saveChecklistItem(updatedItems.find((i) => i.id === selectedItemId)!);
+      await saveChecklistItem(
+        updatedItems.find((i) => i.id === selectedItemId)!
+      );
       setModalVisible(false);
       setSelectedItemId(null);
     }
@@ -144,21 +152,23 @@ export default function ChecklistScreen() {
     endDate: Date;
   }) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       if (editingItem) {
         // Update existing item
         const { error } = await supabase
-          .from('checklist_items')
+          .from("checklist_items")
           .update({
             title: data.title,
             description: data.description,
             start_date: data.startDate.toISOString(),
             end_date: data.endDate.toISOString(),
           })
-          .eq('id', editingItem.id)
-          .eq('user_id', user.id);
+          .eq("id", editingItem.id)
+          .eq("user_id", user.id);
 
         if (error) throw error;
 
@@ -179,7 +189,7 @@ export default function ChecklistScreen() {
       } else {
         // Create new item
         const { data: newItem, error } = await supabase
-          .from('checklist_items')
+          .from("checklist_items")
           .insert({
             user_id: user.id,
             title: data.title,
@@ -201,7 +211,9 @@ export default function ChecklistScreen() {
               title: newItem.title,
               description: newItem.description,
               startDate: new Date(newItem.start_date),
-              endDate: newItem.end_date ? new Date(newItem.end_date) : undefined,
+              endDate: newItem.end_date
+                ? new Date(newItem.end_date)
+                : undefined,
               date: new Date(newItem.start_date),
               completed: newItem.completed,
               user_id: newItem.user_id,
@@ -212,39 +224,43 @@ export default function ChecklistScreen() {
       setAddEditModalVisible(false);
       setEditingItem(null);
     } catch (error) {
-      console.error('Error saving checklist item:', error);
+      console.error("Error saving checklist item:", error);
     }
   };
 
   const saveChecklistItem = async (item: ChecklistItemType) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user || !item.user_id) return;
 
       const { error } = await supabase
-        .from('checklist_items')
+        .from("checklist_items")
         .update({
           completed: item.completed,
         })
-        .eq('id', item.id)
-        .eq('user_id', user.id);
+        .eq("id", item.id)
+        .eq("user_id", user.id);
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating checklist item:', error);
+      console.error("Error updating checklist item:", error);
     }
   };
 
   const filterItemsByPeriod = (items: ChecklistItemType[]) => {
     const now = new Date();
     const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    
+
     switch (selectedPeriod) {
-      case 'today':
+      case "today":
         return items.filter((item) => isToday(item.date));
-      case 'week':
-        return items.filter((item) => isThisWeek(item.date, { weekStartsOn: 0 }));
-      case 'month':
+      case "week":
+        return items.filter((item) =>
+          isThisWeek(item.date, { weekStartsOn: 0 })
+        );
+      case "month":
         return items.filter((item) => item.date >= startOfNextMonth);
       default:
         return items;
@@ -271,7 +287,7 @@ export default function ChecklistScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require("../../assets/icon.png")}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -283,33 +299,61 @@ export default function ChecklistScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.addButtonCircle}>
-              <Ionicons name="add" size={24} color={Theme.colors.backgroundLight} />
+              <Ionicons
+                name="add"
+                size={24}
+                color={Theme.colors.backgroundLight}
+              />
             </View>
           </TouchableOpacity>
         </View>
         <View style={styles.periodSelectorContainer}>
           <View style={styles.periodSelector}>
             <TouchableOpacity
-              style={[styles.periodButton, selectedPeriod === 'today' && styles.periodButtonActive]}
-              onPress={() => setSelectedPeriod('today')}
+              style={[
+                styles.periodButton,
+                selectedPeriod === "today" && styles.periodButtonActive,
+              ]}
+              onPress={() => setSelectedPeriod("today")}
             >
-              <Text style={[styles.periodButtonText, selectedPeriod === 'today' && styles.periodButtonTextActive]}>
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  selectedPeriod === "today" && styles.periodButtonTextActive,
+                ]}
+              >
                 Today
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.periodButton, selectedPeriod === 'week' && styles.periodButtonActive]}
-              onPress={() => setSelectedPeriod('week')}
+              style={[
+                styles.periodButton,
+                selectedPeriod === "week" && styles.periodButtonActive,
+              ]}
+              onPress={() => setSelectedPeriod("week")}
             >
-              <Text style={[styles.periodButtonText, selectedPeriod === 'week' && styles.periodButtonTextActive]}>
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  selectedPeriod === "week" && styles.periodButtonTextActive,
+                ]}
+              >
                 This Week
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.periodButton, selectedPeriod === 'month' && styles.periodButtonActive]}
-              onPress={() => setSelectedPeriod('month')}
+              style={[
+                styles.periodButton,
+                selectedPeriod === "month" && styles.periodButtonActive,
+              ]}
+              onPress={() => setSelectedPeriod("month")}
             >
-              <Text style={[styles.periodButtonText, selectedPeriod === 'month' && styles.periodButtonTextActive]}>
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  selectedPeriod === "month" && styles.periodButtonTextActive,
+                ]}
+              >
                 Future
               </Text>
             </TouchableOpacity>
@@ -340,8 +384,14 @@ export default function ChecklistScreen() {
 
           {filteredItems.length === 0 && (
             <View style={styles.emptyState}>
-              <Ionicons name="checkmark-circle-outline" size={64} color={Theme.colors.textSecondary} />
-              <Text style={styles.emptyText}>No checklist items for this period</Text>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={64}
+                color={Theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyText}>
+                No checklist items for this period
+              </Text>
             </View>
           )}
         </ScrollView>
@@ -356,7 +406,9 @@ export default function ChecklistScreen() {
         title="Mark as Done?"
         message={
           selectedItemId
-            ? `Are you sure you want to mark "${checklistItems.find((i) => i.id === selectedItemId)?.title}" as completed?`
+            ? `Are you sure you want to mark "${
+                checklistItems.find((i) => i.id === selectedItemId)?.title
+              }" as completed?`
             : undefined
         }
       />
@@ -383,16 +435,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Theme.spacing.lg,
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.sm,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Theme.spacing.sm,
   },
   headerLogo: {
@@ -403,14 +455,14 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   periodSelectorContainer: {
     paddingHorizontal: Theme.spacing.lg,
     marginBottom: Theme.spacing.md,
   },
   periodSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.md,
     padding: 3,
@@ -420,11 +472,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   periodButtonActive: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
   },
   periodButtonText: {
     fontSize: 14,
@@ -438,16 +490,16 @@ const styles = StyleSheet.create({
   addButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   addButtonCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Theme.colors.primaryDark,
+    alignItems: "center",
+    justifyContent: "center",
     ...Theme.shadows.md,
   },
   scrollView: {
@@ -465,8 +517,8 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: Theme.spacing.xxl,
   },
   emptyText: {

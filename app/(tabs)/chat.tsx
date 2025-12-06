@@ -1156,7 +1156,7 @@ export default function ChatScreen() {
                 <Ionicons
                   name="chatbubbles"
                   size={48}
-                  color={Theme.colors.primary}
+                  color={Theme.colors.primaryDark}
                 />
                 <Text style={styles.sessionTypeText}>Text</Text>
               </TouchableOpacity>
@@ -1168,7 +1168,7 @@ export default function ChatScreen() {
                 <Fontisto
                   name="doctor"
                   size={48}
-                  color={Theme.colors.primary}
+                  color={Theme.colors.primaryDark}
                 />
                 <Text style={styles.sessionTypeText}>Avatar</Text>
               </TouchableOpacity>
@@ -1198,13 +1198,13 @@ export default function ChatScreen() {
                         <Fontisto
                           name="doctor"
                           size={24}
-                          color={Theme.colors.primary}
+                          color={Theme.colors.primaryDark}
                         />
                       ) : (
                         <Ionicons
                           name={"chatbubbles"}
                           size={24}
-                          color={Theme.colors.primary}
+                          color={Theme.colors.primaryDark}
                         />
                       )}
                       <View style={styles.sessionCardContent}>
@@ -1276,7 +1276,7 @@ export default function ChatScreen() {
                     <Ionicons
                       name="chatbubbles"
                       size={14}
-                      color={Theme.colors.primary}
+                      color={Theme.colors.primaryAlt}
                     />
                     <Text style={styles.modeText}>Text Chat</Text>
                   </View>
@@ -1351,7 +1351,7 @@ export default function ChatScreen() {
               styles.inputContainer,
               {
                 bottom: Platform.select({
-                  ios: 50,
+                  ios: 40,
                   android: isKeyboardEverShown ? 10 : 90,
                 }),
               },
@@ -1453,7 +1453,7 @@ export default function ChatScreen() {
                   <Fontisto
                     name="doctor"
                     size={14}
-                    color={Theme.colors.primary}
+                    color={Theme.colors.primaryAlt}
                   />
                   <Text style={styles.modeText}>Avatar Call</Text>
                 </View>
@@ -1552,7 +1552,11 @@ export default function ChatScreen() {
             {/* Live Captions */}
             <View style={styles.captionsOuterContainer}>
               <View style={styles.captionsHeader}>
-                <Ionicons name="text" size={20} color={Theme.colors.primary} />
+                <Ionicons
+                  name="text"
+                  size={20}
+                  color={Theme.colors.primaryAlt}
+                />
                 <Text style={styles.captionsTitle}>Live Conversation</Text>
                 <View style={styles.captionsStatus}>
                   <View style={styles.captionsStatusDot} />
@@ -1961,8 +1965,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   sendButton: {
-    width: 40,
-    height: 40,
+    width: 40 + 3,
+    height: 40 + 3,
     borderRadius: Theme.borderRadius.md,
     backgroundColor: Theme.colors.primaryDark,
     alignItems: "center",
@@ -1970,7 +1974,7 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   sendButtonDisabled: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
     opacity: 0.8,
   },
   avatarMainContainer: {

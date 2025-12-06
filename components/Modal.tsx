@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,8 +7,8 @@ import {
   StyleSheet,
   Animated,
   TouchableWithoutFeedback,
-} from 'react-native';
-import { Theme } from '../constants/Theme';
+} from "react-native";
+import { Theme } from "../constants/Theme";
 
 interface CustomModalProps {
   visible: boolean;
@@ -27,8 +27,8 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = 'Mark as Done',
-  cancelText = 'Cancel',
+  confirmText = "Mark as Done",
+  cancelText = "Cancel",
   destructive = false,
 }) => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -101,7 +101,11 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   <Text style={styles.cancelButtonText}>{cancelText}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.button, styles.confirmButton, destructive && styles.confirmButtonDestructive]}
+                  style={[
+                    styles.button,
+                    styles.confirmButton,
+                    destructive && styles.confirmButtonDestructive,
+                  ]}
                   onPress={onConfirm}
                   activeOpacity={0.7}
                 >
@@ -119,16 +123,16 @@ export const CustomModal: React.FC<CustomModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Theme.spacing.lg,
   },
   modalContainer: {
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     ...Theme.shadows.lg,
   },
@@ -137,24 +141,24 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   message: {
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.xl,
-    textAlign: 'center',
+    textAlign: "center",
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
   },
   button: {
     flex: 1,
     paddingVertical: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -162,7 +166,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   confirmButton: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
   },
   confirmButtonDestructive: {
     backgroundColor: Theme.colors.error,
@@ -178,7 +182,3 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
 });
-
-
-
-
