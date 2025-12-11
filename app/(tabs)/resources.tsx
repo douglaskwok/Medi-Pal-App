@@ -36,7 +36,7 @@ import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
-const MAP_HEIGHT = height * 0.35;
+const MAP_HEIGHT = Platform.OS === "ios" ? height * 0.35 : height * 0.4;
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const dismissKeyboard = () => {
   Keyboard.dismiss();
@@ -332,7 +332,7 @@ export default function ResourcesScreen() {
         };
       }
     } catch (error) {
-      console.error("Error getting location:", error);
+      console.warn("Error getting location:", error);
       // Fallback to Stanford on error
       const fallbackRegion = {
         latitude: STANFORD_COORDS.latitude,
