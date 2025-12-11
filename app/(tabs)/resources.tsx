@@ -260,6 +260,30 @@ export default function ResourcesScreen() {
     }
   }, [selectedDestination, selectedResourceForDirections, savedResources]);
 
+  // supabase listener:
+
+  useEffect(() => {
+    // Set up real-time subscription for saved resources
+    const channel = supabase
+      .channel("saved_resources_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen to all events
+          schema: "public",
+          table: "saved_resources",
+        },
+        () => {
+          // Refresh saved resources when any change occurs
+          loadSavedResources();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   const loadSavedResources = async () => {
     try {
       const {
@@ -1834,6 +1858,7 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.xl,
     maxHeight: height * 0.4,
+    minHeight: height * 0.4,
     ...Theme.shadows.lg,
   },
   directionsHeader: {
@@ -1972,8 +1997,8 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   imHereButton: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
+    borderColor: Theme.colors.primaryDark,
   },
   imHereText: {
     color: Theme.colors.backgroundLight,
@@ -2034,7 +2059,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primaryDark,
     alignItems: "center",
     justifyContent: "center",
     marginRight: Theme.spacing.md,

@@ -36,7 +36,7 @@ import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
-// bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!!
+// bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
 interface Message {
   id: string;

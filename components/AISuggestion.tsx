@@ -235,6 +235,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
         longitude: resource.longitude,
         place_id: resource.place_id,
       };
+      // console.log(r);
 
       const { error } = await supabase.from("saved_resources").insert({
         user_id: user.id,
