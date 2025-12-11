@@ -29,13 +29,15 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 
 ### Getting Your API Keys
 
-1. **Supabase**: 
+1. **Supabase**:
+
    - Go to https://supabase.com
    - Create a new project
    - Go to Settings > API
    - Copy the Project URL and anon/public key
 
 2. **OpenAI**:
+
    - Go to https://platform.openai.com
    - Create an API key in your account settings
    - Copy the key
@@ -49,6 +51,7 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ## Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -56,9 +59,14 @@ npm install
 2. Create `.env` file with your API keys (see above)
 
 3. Start the development server:
+
 ```bash
 npm start
 ```
+
+## Remarks
+
+If you are running our app on iOS simulator, please disconnect the keyboard by navigating to > Simulator > I/O > Connect Hardware Keyboard and unchecking the check mark. This is because our app is optimized for native mobile experience.
 
 ## Project Structure
 
@@ -103,7 +111,3 @@ npm run build
 ## License
 
 Private - All rights reserved
-
-
-
-
