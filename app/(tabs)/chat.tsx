@@ -1517,6 +1517,7 @@ export default function ChatScreen() {
                   onError={(error) =>
                     console.error("Talking video error:", error)
                   }
+                  isMuted={true}
                 />
 
                 {/* Listening Video (always preloaded) */}
@@ -1529,6 +1530,7 @@ export default function ChatScreen() {
                   shouldPlay={activeVideo === "listening"}
                   isLooping={true}
                   resizeMode={ResizeMode.CONTAIN}
+                  isMuted={true}
                 />
 
                 {/* Transition Video (loaded on demand) */}
@@ -1544,6 +1546,7 @@ export default function ChatScreen() {
                   onError={(error) =>
                     console.error("Transition video error:", error)
                   }
+                  isMuted={true}
                 />
               </View>
 
