@@ -33,6 +33,7 @@ import SelectionModal from "../../components/selectionModal";
 import AreYouSurePopup from "../../components/AreYouSurePopup";
 
 const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 const MAP_HEIGHT = height * 0.35;
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const dismissKeyboard = () => {
@@ -813,11 +814,15 @@ export default function ResourcesScreen() {
             style={styles.closeButton}
             onPress={handleCancelDirections}
           >
-            <Ionicons name="close" size={24} color={Theme.colors.text} />
+            <Ionicons
+              name="close"
+              size={isTablet ? 36 : 24}
+              color={Theme.colors.text}
+            />
           </TouchableOpacity>
           <View style={styles.detailsHeaderLeft}>
             <Text style={styles.detailsTitle} numberOfLines={1}>
-              {resource.name.length > 30
+              {resource.name.length > (isTablet ? 40 : 30)
                 ? resource.name.substring(0, 30) + "..."
                 : resource.name}
             </Text>
@@ -843,7 +848,7 @@ export default function ResourcesScreen() {
             >
               <Ionicons
                 name={isResourceSaved ? "trash-outline" : "add"}
-                size={18}
+                size={isTablet ? 24 : 18}
                 color={
                   isResourceSaved
                     ? Theme.colors.backgroundLight
@@ -868,7 +873,7 @@ export default function ResourcesScreen() {
           >
             <Ionicons
               name="checkmark-circle"
-              size={20}
+              size={isTablet ? 26 : 20}
               color={Theme.colors.success}
             />
             <Text style={styles.eligibilityText}>
@@ -878,7 +883,7 @@ export default function ResourcesScreen() {
           <View style={styles.detailRow}>
             <Ionicons
               name="location-outline"
-              size={18}
+              size={isTablet ? 24 : 18}
               color={Theme.colors.primary}
             />
             <Text style={styles.detailText}>{resource.address}</Text>
@@ -887,7 +892,7 @@ export default function ResourcesScreen() {
             <View style={styles.detailRow}>
               <Ionicons
                 name="call-outline"
-                size={18}
+                size={isTablet ? 24 : 18}
                 color={Theme.colors.primary}
               />
               <Text style={styles.detailText}>{resource.phone}</Text>
@@ -897,7 +902,7 @@ export default function ResourcesScreen() {
             <View style={styles.detailRow}>
               <Ionicons
                 name="mail-outline"
-                size={18}
+                size={isTablet ? 24 : 18}
                 color={Theme.colors.primary}
               />
               <Text style={styles.detailText}>{resource.email}</Text>
@@ -907,7 +912,7 @@ export default function ResourcesScreen() {
             <View style={styles.detailRow}>
               <Ionicons
                 name="time-outline"
-                size={18}
+                size={isTablet ? 24 : 18}
                 color={Theme.colors.primary}
               />
               <View style={{ flex: 1 }}>
@@ -1025,7 +1030,7 @@ export default function ResourcesScreen() {
           <View style={styles.searchContainer}>
             <Ionicons
               name="search-outline"
-              size={20}
+              size={isTablet ? 32 : 20}
               color={Theme.colors.text}
               style={styles.searchIcon}
             />
@@ -1051,7 +1056,7 @@ export default function ResourcesScreen() {
               >
                 <Ionicons
                   name="close-circle"
-                  size={20}
+                  size={isTablet ? 32 : 20}
                   color={Theme.colors.text}
                 />
               </TouchableOpacity>
@@ -1065,7 +1070,7 @@ export default function ResourcesScreen() {
               >
                 <FontAwesome
                   name="filter"
-                  size={20}
+                  size={isTablet ? 32 : 20}
                   color={Theme.colors.text}
                 />
               </TouchableOpacity>
@@ -1310,7 +1315,7 @@ export default function ResourcesScreen() {
               >
                 <Ionicons
                   name="checkmark-circle"
-                  size={20}
+                  size={isTablet ? 26 : 20}
                   color={Theme.colors.success}
                 />
                 <Text style={styles.eligibilityText}>
@@ -1320,7 +1325,7 @@ export default function ResourcesScreen() {
               <View style={styles.detailRow}>
                 <Ionicons
                   name="location-outline"
-                  size={18}
+                  size={isTablet ? 24 : 18}
                   color={Theme.colors.primary}
                 />
                 <Text style={styles.detailText}>
@@ -1331,7 +1336,7 @@ export default function ResourcesScreen() {
                 <View style={styles.detailRow}>
                   <Ionicons
                     name="call-outline"
-                    size={18}
+                    size={isTablet ? 24 : 18}
                     color={Theme.colors.primary}
                   />
                   <Text style={styles.detailText}>
@@ -1343,7 +1348,7 @@ export default function ResourcesScreen() {
                 <View style={styles.detailRow}>
                   <Ionicons
                     name="mail-outline"
-                    size={18}
+                    size={isTablet ? 24 : 18}
                     color={Theme.colors.primary}
                   />
                   <Text style={styles.detailText}>
@@ -1357,7 +1362,7 @@ export default function ResourcesScreen() {
                 <View style={styles.detailRow}>
                   <Ionicons
                     name="time-outline"
-                    size={18}
+                    size={isTablet ? 24 : 18}
                     color={Theme.colors.primary}
                   />
                   <View style={{ flex: 1 }}>
@@ -1583,11 +1588,11 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   headerLogo: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 80 : 40,
+    height: isTablet ? 80 : 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: isTablet ? 52 : 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -1609,7 +1614,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: isTablet ? 28 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     paddingVertical: Theme.spacing.sm,
@@ -1674,7 +1679,7 @@ const styles = StyleSheet.create({
     ...Theme.shadows.md,
   },
   mapContainer: {
-    height: MAP_HEIGHT,
+    height: isTablet ? MAP_HEIGHT * 1.2 : MAP_HEIGHT,
     marginBottom: Theme.spacing.md,
   },
   map: {
@@ -1701,7 +1706,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Theme.borderRadius.xl,
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.xl,
-    minHeight: height * 0.3,
+    minHeight: isTablet ? height * 0.4 : height * 0.3,
     ...Theme.shadows.lg,
   },
   tabSelectorContainer: {
@@ -1726,7 +1731,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primaryDark,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
@@ -1736,6 +1741,7 @@ const styles = StyleSheet.create({
   },
   savedResourcesScroll: {
     minHeight: 280,
+    // paddingBottom: 40,
   },
   savedResourcesContent: {
     paddingHorizontal: Theme.spacing.lg,
@@ -1789,6 +1795,7 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.xl,
     maxHeight: height * 0.5,
+    minHeight: height * 0.4,
     ...Theme.shadows.lg,
   },
   detailsHeader: {
@@ -1805,7 +1812,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailsTitle: {
-    fontSize: 16,
+    fontSize: isTablet ? 24 : 16,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -1819,11 +1826,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: Theme.spacing.md,
-    gap: Theme.spacing.sm,
+    gap: isTablet ? Theme.spacing.lg : Theme.spacing.sm,
   },
   detailText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     lineHeight: 20,
@@ -1835,7 +1842,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   eligibilityText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.success,
   },
@@ -1865,7 +1872,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
   directionsSection: {
-    // bug: if the directions are short (e.g., Palm Drive, the box is very small)
+    // bug: if the directions are short (e.g., Palm Drive, the box is very small) --> fixed
     backgroundColor: Theme.colors.backgroundLight,
     borderTopLeftRadius: Theme.borderRadius.xl,
     borderTopRightRadius: Theme.borderRadius.xl,
@@ -1895,7 +1902,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   directionsTitle: {
-    fontSize: 16,
+    fontSize: isTablet ? 22 : 16,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -1907,7 +1914,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   directionsMetaText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
@@ -1992,7 +1999,7 @@ const styles = StyleSheet.create({
     minWidth: 50, //100,
   },
   startRouteText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
   },
@@ -2006,7 +2013,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   routeControlText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },

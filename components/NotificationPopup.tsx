@@ -17,7 +17,8 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 interface NotificationPopupProps {
   visible: boolean;
@@ -246,7 +247,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
               ]}
             >
               <View style={[{ paddingRight: Theme.spacing.sm }]}>
-                <MaterialIcons name="verified" size={18} color="blue" />
+                <MaterialIcons
+                  name="verified"
+                  size={isTablet ? 24 : 18}
+                  color="blue"
+                />
               </View>
               <Text style={styles.category}>
                 Medi-Pal Verified: Nearby Resource
@@ -259,7 +264,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             >
               <Ionicons
                 name="close"
-                size={20}
+                size={isTablet ? 24 : 20}
                 color={Theme.colors.textSecondary}
               />
             </TouchableOpacity>
@@ -271,7 +276,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           <View style={[styles.eligibilityRow]}>
             <Ionicons
               name="checkmark-circle"
-              size={20}
+              size={isTablet ? 24 : 20}
               color={Theme.colors.success}
             />
             <Text style={styles.eligibilityText}>
@@ -282,7 +287,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           <View style={styles.detailRow}>
             <Ionicons
               name="location"
-              size={20}
+              size={isTablet ? 24 : 20}
               color={Theme.colors.textSecondary}
             />
             <Text style={styles.detailText}>
@@ -351,12 +356,15 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: Theme.spacing.md,
     zIndex: 1000,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.md,
     ...Theme.shadows.lg,
+    width: isTablet ? "60%" : "100%",
   },
   header: {
     flexDirection: "row",
@@ -365,7 +373,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xs,
   },
   category: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
     letterSpacing: 0.6,
@@ -379,7 +387,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: isTablet ? 26 : 18,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
@@ -387,7 +395,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: "100%",
-    height: 200,
+    height: isTablet ? 300 : 200,
     position: "relative",
     marginBottom: Theme.spacing.md,
   },
@@ -403,10 +411,10 @@ const styles = StyleSheet.create({
   },
   detailText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: isTablet ? 17 : 13,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: isTablet ? 24 : 18,
     textAlignVertical: "center",
     alignSelf: "center",
   },
@@ -417,7 +425,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   eligibilityText: {
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.success,
   },
@@ -438,7 +446,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   saveButtonText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },
@@ -447,7 +455,7 @@ const styles = StyleSheet.create({
     // flex: 3,
   },
   takeMeButtonText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
   },

@@ -5,11 +5,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Dimensions,
   Animated,
 } from "react-native";
 import { Theme } from "../constants/Theme";
 import { ImageSourcePropType } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 interface ResourceCardProps {
   id: string;
@@ -95,7 +98,11 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           </Text>
           <View style={styles.meta}>
             <View style={styles.rating}>
-              <Ionicons name="star" size={14} color={Theme.colors.warning} />
+              <Ionicons
+                name="star"
+                size={isTablet ? 18 : 14}
+                color={Theme.colors.warning}
+              />
               <Text style={styles.ratingText}>{rating}</Text>
             </View>
             <Text style={styles.distance}>{distance}</Text>
@@ -136,7 +143,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: 240,
+    width: isTablet ? 360 : 240,
     marginRight: Theme.spacing.md,
     borderRadius: Theme.borderRadius.lg,
     backgroundColor: Theme.colors.backgroundLight,
@@ -153,7 +160,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: "100%",
-    height: 120,
+    height: isTablet ? 160 : 120,
     position: "relative",
   },
   imageContainerSmall: {
@@ -173,7 +180,7 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.sm,
   },
   typeText: {
-    fontSize: 12,
+    fontSize: isTablet ? 20 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.background,
   },
@@ -182,7 +189,7 @@ const styles = StyleSheet.create({
     minHeight: 100,
   },
   name: {
-    fontSize: 16,
+    fontSize: isTablet ? 22 : 16,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.xs,
@@ -200,20 +207,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ratingText: {
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
   },
   distance: {
-    fontSize: 13,
+    fontSize: isTablet ? 18 : 13,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },
   address: {
-    fontSize: 12,
+    fontSize: isTablet ? 15 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
-    lineHeight: 16,
+    lineHeight: isTablet ? 20 : 16,
   },
   buttons: {
     flexDirection: "row",

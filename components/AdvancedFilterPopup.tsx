@@ -12,7 +12,8 @@ import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 
-const { height } = Dimensions.get("window");
+const { height, width } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 interface AdvancedFilterPopupProps {
   visible: boolean;
@@ -270,6 +271,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
   },
   content: {
@@ -280,6 +282,7 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.lg,
     paddingBottom: Theme.spacing.xl,
     height: height * 0.7,
+    width: isTablet ? "80%" : "100%",
   },
   header: {
     flexDirection: "row",

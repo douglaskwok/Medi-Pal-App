@@ -19,7 +19,7 @@ import { supabase } from "../lib/supabase";
 import { ImageSourcePropType } from "react-native";
 
 const { height, width } = Dimensions.get("window");
-
+const isTablet = width - 80 > height * 0.5;
 interface ResourceData {
   id: string;
   name: string;
@@ -336,7 +336,11 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.verifiedIcon}>
-                <Ionicons name="sparkles-sharp" size={18} color="blue" />
+                <Ionicons
+                  name="sparkles-sharp"
+                  size={isTablet ? 28 : 18}
+                  color="blue"
+                />
               </View>
               <Text style={styles.category}>
                 Verified Suggestions from Dr Al
@@ -349,7 +353,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
             >
               <Ionicons
                 name="close"
-                size={20}
+                size={isTablet ? 32 : 20}
                 color={Theme.colors.textSecondary}
               />
             </TouchableOpacity>
@@ -502,7 +506,7 @@ const styles = StyleSheet.create({
     paddingRight: Theme.spacing.sm,
   },
   category: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
     letterSpacing: 0.6,
@@ -512,18 +516,18 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: isTablet ? 28 : 18,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
     fontWeight: "700",
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 24 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.sm,
-    lineHeight: 20,
+    lineHeight: isTablet ? 36 : 20,
   },
   carouselContainer: {
     marginBottom: Theme.spacing.md,
@@ -542,17 +546,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: isTablet ? 10 : 6,
+    height: isTablet ? 10 : 6,
+    borderRadius: isTablet ? 5 : 3,
     backgroundColor: Theme.colors.border,
   },
   dotActive: {
     backgroundColor: Theme.colors.primary,
-    width: 16,
+    width: isTablet ? 28 : 16,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },

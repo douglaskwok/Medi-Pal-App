@@ -9,6 +9,7 @@ import {
   Animated,
   SafeAreaView,
   Image,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -20,6 +21,8 @@ import { CustomTabBar } from "./_layout";
 import { NotificationPopup } from "../../components/NotificationPopup";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import SelectionModal from "../../components/selectionModal";
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 interface UserProfile {
   firstName: string;
@@ -365,7 +368,11 @@ export default function ProfileScreen() {
         >
           <View style={styles.profileSection}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={32} color={Theme.colors.text} />
+              <Ionicons
+                name="person"
+                size={isTablet ? 52 : 32}
+                color={Theme.colors.text}
+              />
             </View>
             <Text style={styles.name}>{userName}</Text>
             <Text style={styles.email}>{userEmail}</Text>
@@ -417,14 +424,14 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <Ionicons
                   name="notifications-outline"
-                  size={18}
+                  size={isTablet ? 28 : 18}
                   color={Theme.colors.text}
                 />
                 <Text style={styles.smallMenuItemTitle}>{t.notifications}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
-                size={16}
+                size={isTablet ? 24 : 16}
                 color={Theme.colors.text}
               />
             </TouchableOpacity>
@@ -438,14 +445,14 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <MaterialIcons
                   name="language"
-                  size={18}
+                  size={isTablet ? 28 : 18}
                   color={Theme.colors.text}
                 />
                 <Text style={styles.smallMenuItemTitle}>{t.language}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
-                size={16}
+                size={isTablet ? 24 : 16}
                 color={Theme.colors.text}
               />
             </TouchableOpacity>
@@ -459,7 +466,7 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <Ionicons
                   name="shield-checkmark-outline"
-                  size={18}
+                  size={isTablet ? 28 : 18}
                   color={Theme.colors.text}
                 />
                 <Text style={styles.smallMenuItemTitle}>
@@ -468,7 +475,7 @@ export default function ProfileScreen() {
               </View>
               <Ionicons
                 name="chevron-forward"
-                size={16}
+                size={isTablet ? 24 : 16}
                 color={Theme.colors.text}
               />
             </TouchableOpacity>
@@ -482,14 +489,14 @@ export default function ProfileScreen() {
               <View style={styles.menuItemLeft}>
                 <Ionicons
                   name="document-text-outline"
-                  size={18}
+                  size={isTablet ? 28 : 18}
                   color={Theme.colors.text}
                 />
                 <Text style={styles.smallMenuItemTitle}>{t.terms}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
-                size={16}
+                size={isTablet ? 24 : 16}
                 color={Theme.colors.text}
               />
             </TouchableOpacity>
@@ -503,7 +510,7 @@ export default function ProfileScreen() {
             <View style={styles.signOutContent}>
               <Ionicons
                 name="log-out-outline"
-                size={18}
+                size={isTablet ? 28 : 18}
                 color={Theme.colors.error}
               />
               <Text style={styles.signOutText}>{t.signOut}</Text>
@@ -639,11 +646,11 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   headerLogo: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 80 : 40,
+    height: isTablet ? 80 : 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: isTablet ? 52 : 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -660,9 +667,9 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.sm,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: isTablet ? 100 : 60,
+    height: isTablet ? 100 : 60,
+    borderRadius: isTablet ? 50 : 30,
     backgroundColor: Theme.colors.backgroundLight,
     alignItems: "center",
     justifyContent: "center",
@@ -671,13 +678,13 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.borderLight,
   },
   name: {
-    fontSize: 18,
+    fontSize: isTablet ? 28 : 18,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: 2,
   },
   email: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },
@@ -706,7 +713,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.xs,
@@ -726,7 +733,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   fieldDisplayText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     flex: 1,
@@ -796,7 +803,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   smallMenuItemTitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
   },
@@ -820,7 +827,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   signOutText: {
-    fontSize: 14,
+    fontSize: isTablet ? 22 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.error,
   },

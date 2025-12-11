@@ -11,6 +11,7 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
@@ -34,6 +35,8 @@ import { CustomTabBar } from "./_layout";
 // remove later
 import { NotificationPopup } from "../../components/NotificationPopup";
 
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -175,7 +178,7 @@ export default function HomeScreen() {
               <View style={styles.searchBar}>
                 <Ionicons
                   name="search-outline"
-                  size={20}
+                  size={isTablet ? 32 : 20}
                   color={Theme.colors.text}
                 />
                 <TextInput
@@ -191,7 +194,7 @@ export default function HomeScreen() {
                   <TouchableOpacity onPress={() => setSearchQuery("")}>
                     <Ionicons
                       name="close-circle"
-                      size={20}
+                      size={isTablet ? 32 : 20}
                       color={Theme.colors.text}
                     />
                   </TouchableOpacity>
@@ -210,13 +213,17 @@ export default function HomeScreen() {
                       : styles.upArrowActive,
                   ]}
                 >
-                  <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
+                  <Ionicons
+                    name="arrow-up"
+                    size={isTablet ? 28 : 18}
+                    color="#FFFFFF"
+                  />
                 </View>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.calendarSection}>
+          <View style={[styles.calendarSection, isTablet && { marginTop: 32 }]}>
             <Text style={styles.sectionTitle}>My Calendar</Text>
             <View style={styles.calendarHeader}>
               <TouchableOpacity
@@ -224,7 +231,7 @@ export default function HomeScreen() {
               >
                 <Ionicons
                   name="chevron-back"
-                  size={24}
+                  size={isTablet ? 36 : 24}
                   color={Theme.colors.text}
                 />
               </TouchableOpacity>
@@ -236,7 +243,7 @@ export default function HomeScreen() {
               >
                 <Ionicons
                   name="chevron-forward"
-                  size={24}
+                  size={isTablet ? 36 : 24}
                   color={Theme.colors.text}
                 />
               </TouchableOpacity>
@@ -320,7 +327,9 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <View style={styles.resourcesSection}>
+          <View
+            style={[styles.resourcesSection, isTablet && { marginTop: 32 }]}
+          >
             <Text style={styles.sectionTitle}>Nearby Resources</Text>
             <ScrollView
               horizontal
@@ -482,17 +491,17 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   headerLogo: {
-    width: 50,
-    height: 50,
+    width: isTablet ? 100 : 50,
+    height: isTablet ? 100 : 50,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: isTablet ? 40 : 28,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
   },
@@ -523,20 +532,20 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: isTablet ? 26 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
   },
   upArrowButton: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 52 : 40,
+    height: isTablet ? 52 : 40,
     justifyContent: "center",
     alignItems: "center",
   },
   upArrowContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: isTablet ? 52 : 40,
+    height: isTablet ? 52 : 40,
+    borderRadius: isTablet ? 40 : 20,
     backgroundColor: Theme.colors.primaryDark,
     justifyContent: "center",
     alignItems: "center",
@@ -558,7 +567,7 @@ const styles = StyleSheet.create({
     ...Theme.shadows.sm,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: isTablet ? 36 : 24,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.md,
@@ -571,7 +580,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   calendarMonth: {
-    fontSize: 18,
+    fontSize: isTablet ? 30 : 18,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },
@@ -587,7 +596,7 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     paddingVertical: Theme.spacing.sm,
     position: "relative",
-    minHeight: 70,
+    minHeight: isTablet ? 140 : 70,
   },
   calendarDaySelected: {
     backgroundColor: Theme.colors.primaryDark,
@@ -598,13 +607,13 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.primary,
   },
   calendarDayName: {
-    fontSize: 10,
+    fontSize: isTablet ? 20 : 10,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
     marginBottom: 2,
   },
   calendarDayText: {
-    fontSize: 18,
+    fontSize: isTablet ? 32 : 18,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },
@@ -614,10 +623,10 @@ const styles = StyleSheet.create({
   },
   calendarDot: {
     position: "absolute",
-    bottom: 4,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    bottom: isTablet ? 8 : 4,
+    width: isTablet ? 8 : 4,
+    height: isTablet ? 8 : 4,
+    borderRadius: isTablet ? 4 : 2,
     backgroundColor: Theme.colors.primary,
   },
   calendarDotSelected: {
@@ -633,8 +642,8 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   eventCheckbox: {
-    width: 18,
-    height: 18,
+    width: isTablet ? 30 : 18,
+    height: isTablet ? 30 : 18,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: Theme.colors.border,
@@ -647,7 +656,7 @@ const styles = StyleSheet.create({
   },
   eventText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: isTablet ? 26 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
   },
@@ -659,7 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   discoverMore: {
-    fontSize: 14,
+    fontSize: isTablet ? 24 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.primaryDark,
   },

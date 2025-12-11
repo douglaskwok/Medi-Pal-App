@@ -1,9 +1,17 @@
 import { Tabs } from "expo-router";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { Theme } from "../../constants/Theme";
 import React from "react";
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 // Add translations object
 const tabTranslations = {
@@ -88,12 +96,28 @@ export function CustomTabBar({
             <TouchableOpacity
               key={tab.name}
               style={styles.tab}
-              onPress={() => router.push(tab.route as any)}
+              onPress={() =>
+                router.push(
+                  tab.route as
+                    | "home"
+                    | "resources"
+                    | "chat"
+                    | "checklist"
+                    | "profile"
+                )
+              }
               activeOpacity={0.7}
             >
               <Ionicons
-                name={tab.icon as any}
-                size={24}
+                name={
+                  tab.icon as
+                    | "home"
+                    | "location"
+                    | "chatbubble-ellipses"
+                    | "checkmark-circle"
+                    | "settings"
+                }
+                size={isTablet ? 32 : 24}
                 color={
                   isActive
                     ? Theme.colors.primaryAlt
@@ -172,7 +196,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.xs,
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: isTablet ? 18 : 11,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },

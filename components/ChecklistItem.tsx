@@ -5,11 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Dimensions,
 } from "react-native";
 import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import { format, isToday, isTomorrow } from "date-fns";
-
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 interface ChecklistItemProps {
   id: string;
   title: string;
@@ -220,12 +222,12 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 16,
+    fontSize: isTablet ? 20 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: isTablet ? 16 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },

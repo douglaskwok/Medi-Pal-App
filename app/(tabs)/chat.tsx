@@ -39,6 +39,9 @@ import * as Speech from "expo-speech";
 
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
+
 interface Message {
   id: string;
   content: string;
@@ -141,7 +144,7 @@ const DEFAULT_RESOURCES: Resource[] = [
       "Clinic offering free health screenings, vaccinations, and wellness checkups.",
   },
 ];
-
+// const { width, height } = Dimensions.get("window");
 export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -1203,6 +1206,7 @@ export default function ChatScreen() {
 
     setIsRecording(false);
   };
+  console.log(height);
 
   const handleEndCall = () => {
     if (videoRef.current) videoRef.current.stopAsync();
@@ -1240,7 +1244,7 @@ export default function ChatScreen() {
               >
                 <Ionicons
                   name="chatbubbles"
-                  size={48}
+                  size={isTablet ? 72 : 48}
                   color={Theme.colors.primaryDark}
                 />
                 <Text style={styles.sessionTypeText}>Text</Text>
@@ -1252,7 +1256,7 @@ export default function ChatScreen() {
               >
                 <Fontisto
                   name="doctor"
-                  size={48}
+                  size={isTablet ? 72 : 48}
                   color={Theme.colors.primaryDark}
                 />
                 <Text style={styles.sessionTypeText}>Avatar</Text>
@@ -1282,13 +1286,13 @@ export default function ChatScreen() {
                       {session.session_type === "voice" ? (
                         <Fontisto
                           name="doctor"
-                          size={24}
+                          size={isTablet ? 36 : 24}
                           color={Theme.colors.primaryDark}
                         />
                       ) : (
                         <Ionicons
                           name={"chatbubbles"}
-                          size={24}
+                          size={isTablet ? 36 : 24}
                           color={Theme.colors.primaryDark}
                         />
                       )}
@@ -1361,7 +1365,7 @@ export default function ChatScreen() {
                   <View style={styles.modeIndicator}>
                     <Ionicons
                       name="chatbubbles"
-                      size={14}
+                      size={isTablet ? 24 : 14}
                       color={Theme.colors.primaryAlt}
                     />
                     <Text style={styles.modeText}>Text Chat</Text>
@@ -1437,13 +1441,15 @@ export default function ChatScreen() {
               styles.inputContainer,
               {
                 bottom: Platform.select({
-                  ios: 40,
+                  ios: isTablet ? 80 : 40,
                   android: isKeyboardEverShown ? 10 : 90,
                 }),
               },
               isKeyboardVisible && {
                 bottom: Platform.select({
-                  ios: keyboardHeight * 0.92,
+                  ios: isTablet
+                    ? keyboardHeight * 0.935
+                    : keyboardHeight * 0.92,
                   android: 0,
                 }),
               },
@@ -1648,7 +1654,7 @@ export default function ChatScreen() {
               <View style={styles.captionsHeader}>
                 <Ionicons
                   name="text"
-                  size={20}
+                  size={isTablet ? 30 : 20}
                   color={Theme.colors.primaryAlt}
                 />
                 <Text style={styles.captionsTitle}>Live Conversation</Text>
@@ -1748,7 +1754,7 @@ export default function ChatScreen() {
             >
               <Ionicons
                 name={speaker ? "volume-high" : "volume-off"}
-                size={24}
+                size={isTablet ? 40 : 24}
                 color={speaker ? Theme.colors.text : Theme.colors.text + "99"}
               />
               <Text
@@ -1782,7 +1788,7 @@ export default function ChatScreen() {
             >
               <SoundWaveIcon
                 isActive={isRecording || isProcessingMessage}
-                size={24}
+                size={isTablet ? 40 : 24}
                 color={Theme.colors.backgroundLight}
               />
               <Text
@@ -1805,7 +1811,7 @@ export default function ChatScreen() {
             >
               <Ionicons
                 name="call"
-                size={24}
+                size={isTablet ? 40 : 24}
                 color={Theme.colors.backgroundLight}
               />
               <Text
@@ -1882,11 +1888,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 80 : 40,
+    height: isTablet ? 80 : 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: isTablet ? 52 : 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -1894,11 +1900,11 @@ const styles = StyleSheet.create({
   modeIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: isTablet ? 8 : 4,
     marginTop: 2,
   },
   modeText: {
-    fontSize: 12,
+    fontSize: isTablet ? 24 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
@@ -1907,7 +1913,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 28 : 18,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginTop: Theme.spacing.xl,
@@ -1925,11 +1931,11 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.xl,
     alignItems: "center",
     justifyContent: "center",
-    gap: Theme.spacing.sm,
+    gap: isTablet ? Theme.spacing.md : Theme.spacing.sm,
     ...Theme.shadows.md,
   },
   sessionTypeText: {
-    fontSize: 18,
+    fontSize: isTablet ? 28 : 18,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
   },
@@ -1951,19 +1957,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sessionCardTitle: {
-    fontSize: 16,
+    fontSize: isTablet ? 24 : 16,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.xs,
   },
   sessionCardPreview: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginBottom: Theme.spacing.xs,
   },
   sessionCardDate: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textLight,
   },
@@ -1982,10 +1988,10 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: isTablet ? 22 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
-    lineHeight: 24,
+    lineHeight: isTablet ? 32 : 24,
     textAlign: "center",
   },
   messageContainer: {
@@ -2055,7 +2061,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.md,
     paddingTop: (Theme.spacing.sm + Theme.spacing.md) / 2,
     paddingBottom: (Theme.spacing.sm + Theme.spacing.md) / 2,
-    fontSize: 16,
+    fontSize: isTablet ? 20 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     maxHeight: 100,
@@ -2085,7 +2091,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    aspectRatio: 1.3,
+    aspectRatio: isTablet ? 1.5 : 1.3,
     marginTop: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
     ...Theme.shadows.md,
@@ -2138,15 +2144,15 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: isTablet ? 15 : 8,
+    height: isTablet ? 15 : 8,
+    borderRadius: isTablet ? 8 : 4,
     backgroundColor: Theme.colors.livebuttonText,
     marginRight: Theme.spacing.xs,
     zIndex: 100,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.livebuttonText,
     zIndex: 100,
@@ -2168,7 +2174,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
   },
   captionsTitle: {
-    fontSize: 16,
+    fontSize: isTablet ? 26 : 16,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginLeft: Theme.spacing.sm,
@@ -2183,14 +2189,14 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.sm,
   },
   captionsStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: isTablet ? 10 : 6,
+    height: isTablet ? 10 : 6,
+    borderRadius: isTablet ? 5 : 3,
     backgroundColor: Theme.colors.livebuttonText,
     marginRight: 4,
   },
   captionsStatusText: {
-    fontSize: 12,
+    fontSize: isTablet ? 20 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.livebuttonText,
   },
@@ -2207,7 +2213,7 @@ const styles = StyleSheet.create({
     paddingVertical: Theme.spacing.xl,
   },
   emptyCaptionsText: {
-    fontSize: 16,
+    fontSize: isTablet ? 24 : 16,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textSecondary,
     marginTop: Theme.spacing.md,
@@ -2248,21 +2254,21 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.secondary,
   },
   captionName: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginRight: "auto",
   },
   captionTime: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.textLight,
   },
   captionMessage: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
-    lineHeight: 20,
+    lineHeight: isTablet ? 24 : 20,
   },
   avatarIcon: {
     width: 32,
@@ -2292,15 +2298,15 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.border,
-    paddingBottom: 50,
-    height: 130,
+    paddingBottom: isTablet ? 90 : 50,
+    height: isTablet ? height * 0.16 : height * 0.15,
   },
   controlButton: {
     alignItems: "center",
     justifyContent: "center",
     padding: Theme.spacing.sm,
     borderRadius: Theme.borderRadius.md,
-    minWidth: 100,
+    minWidth: isTablet ? 140 : 100,
   },
   secondaryControlButton: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -2325,7 +2331,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   controlButtonText: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     marginTop: 4,

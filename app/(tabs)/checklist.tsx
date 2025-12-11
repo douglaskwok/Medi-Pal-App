@@ -8,6 +8,7 @@ import {
   ScrollView,
   Animated,
   Image,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
@@ -30,6 +31,8 @@ interface ChecklistItemType {
   completed: boolean;
   user_id?: string;
 }
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 export default function ChecklistScreen() {
   const insets = useSafeAreaInsets();
@@ -301,7 +304,7 @@ export default function ChecklistScreen() {
             <View style={styles.addButtonCircle}>
               <Ionicons
                 name="add"
-                size={24}
+                size={isTablet ? 40 : 24}
                 color={Theme.colors.backgroundLight}
               />
             </View>
@@ -448,11 +451,11 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   headerLogo: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 100 : 40,
+    height: isTablet ? 100 : 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: isTablet ? 52 : 32,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     fontWeight: "bold",
@@ -479,7 +482,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primaryDark,
   },
   periodButtonText: {
-    fontSize: 14,
+    fontSize: isTablet ? 24 : 14,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.textSecondary,
   },
@@ -488,15 +491,15 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
   },
   addButton: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 68 : 40,
+    height: isTablet ? 68 : 40,
     alignItems: "center",
     justifyContent: "center",
   },
   addButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: isTablet ? 68 : 40,
+    height: isTablet ? 68 : 40,
+    borderRadius: isTablet ? 40 : 20,
     backgroundColor: Theme.colors.primaryDark,
     alignItems: "center",
     justifyContent: "center",

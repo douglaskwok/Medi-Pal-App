@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Animated,
+  Dimensions,
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -21,6 +22,8 @@ import type { AuthError } from "@supabase/supabase-js";
 //   status?: number;
 //   name: string;
 // }
+const { width, height } = Dimensions.get("window");
+const isTablet = width - 80 > height * 0.5;
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -409,12 +412,12 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.md,
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: isTablet ? 100 : 40,
+    height: isTablet ? 100 : 40,
     marginBottom: Theme.spacing.xs,
   },
   logoText: {
-    fontSize: 24,
+    fontSize: isTablet ? 40 : 24,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     letterSpacing: 0.5,
@@ -428,7 +431,7 @@ const styles = StyleSheet.create({
     ...Theme.shadows.md,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: isTablet ? 28 : 20,
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
   },
@@ -483,7 +486,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xs,
   },
   label: {
-    fontSize: 12,
+    fontSize: isTablet ? 18 : 12,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.xs,
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.sm,
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     borderWidth: 1,
@@ -511,7 +514,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: Theme.spacing.sm,
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.text,
     height: 44,
@@ -530,7 +533,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: 14,
     fontFamily: Theme.fonts.medium,
-    color: Theme.colors.primary,
+    color: Theme.colors.primaryAlt,
   },
   submitButton: {
     backgroundColor: Theme.colors.primaryDark,
@@ -542,7 +545,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   submitButtonText: {
-    fontSize: 14,
+    fontSize: isTablet ? 20 : 14,
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.backgroundLight,
   },
@@ -613,11 +616,11 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.sm,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: isTablet ? 16 : 12,
     fontFamily: Theme.fonts.regular,
     color: "#000000",
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: isTablet ? 24 : 18,
   },
   footerLink: {
     color: "#000000",
