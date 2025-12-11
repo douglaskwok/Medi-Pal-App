@@ -27,6 +27,7 @@ import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
 import { useLocalSearchParams } from "expo-router";
 import { AdvancedFilterPopup } from "../../components/AdvancedFilterPopup";
+import * as Location from "expo-location";
 
 // import type { DirectionsLeg, DirectionsStep } from "@types/google.maps";
 import SelectionModal from "../../components/selectionModal";
@@ -223,9 +224,10 @@ export default function ResourcesScreen() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
-  const [userLocation] = useState<{ latitude: number; longitude: number }>(
-    STANFORD_COORDS
-  );
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  }>(STANFORD_COORDS);
   const [region, setRegion] = useState({
     latitude: STANFORD_COORDS.latitude,
     longitude: STANFORD_COORDS.longitude,
@@ -281,6 +283,73 @@ export default function ResourcesScreen() {
   const containerRef = useRef(null);
   // console.log(selectedSavedResource);
   // console.log(selectedDestination?.address);
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        console.warn("Location permission not granted");
+        // Use Stanford as fallback if permission denied
+        const fallbackRegion = {
+          latitude: STANFORD_COORDS.latitude,
+          longitude: STANFORD_COORDS.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setRegion(fallbackRegion);
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(fallbackRegion, 1000);
+        }
+        return {
+          latitude: STANFORD_COORDS.latitude,
+          longitude: STANFORD_COORDS.longitude,
+        };
+      }
+
+      const location = await Location.getCurrentPositionAsync();
+
+      if (location) {
+        const userRegion = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        setRegion(userRegion);
+
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(userRegion, 1000);
+        }
+
+        return {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+      // Fallback to Stanford on error
+      const fallbackRegion = {
+        latitude: STANFORD_COORDS.latitude,
+        longitude: STANFORD_COORDS.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      setRegion(fallbackRegion);
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(fallbackRegion, 1000);
+      }
+      return {
+        latitude: STANFORD_COORDS.latitude,
+        longitude: STANFORD_COORDS.longitude,
+      };
+    }
+  };
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -288,26 +357,10 @@ export default function ResourcesScreen() {
       useNativeDriver: true,
     }).start();
 
-    setRegion({
-      latitude: STANFORD_COORDS.latitude,
-      longitude: STANFORD_COORDS.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
-
-    if (mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: STANFORD_COORDS.latitude,
-          longitude: STANFORD_COORDS.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        },
-        1000
-      );
-    }
+    getLocation();
     loadSavedResources();
   }, []);
+  console.log(userLocation);
   useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
@@ -323,38 +376,48 @@ export default function ResourcesScreen() {
 
   useEffect(() => {
     // Handle navigation from home page or notification
-    if (params.resourceId) {
-      const resource = dummyResources.find((r) => r.id === params.resourceId);
-      if (resource) {
-        setTimeout(() => {
-          handleResourceSelect(resource);
-        }, 500);
+    const handleNavigation = async () => {
+      // Get the user's current location and use the returned value
+      const currentLocation = await getLocation();
+
+      if (params.resourceId) {
+        // Handle resource selection from home page
+        const resource = dummyResources.find((r) => r.id === params.resourceId);
+        if (resource) {
+          handleResourceSelect(resource, currentLocation);
+        }
+      } else if (params.name && params.latitude && params.longitude) {
+        // Handle custom resource from notification (YMCA)
+        const yMCAResource = {
+          id: "ymca_palo_alto",
+          name: params.name as string,
+          type: "Gym",
+          address:
+            (params.address as string) || "3412 Ross Road, Palo Alto, CA 94303",
+          latitude: parseFloat(params.latitude as string),
+          longitude: parseFloat(params.longitude as string),
+          rating: params.rating || 4.5,
+          distance: params.distance || "2.3 mi",
+          image: require("../../assets/generic.jpg"),
+          phone: params.phone || "650-856-9622",
+          email: params.email || "membersupport@ymcasv.org",
+          hours:
+            params.hours ||
+            "Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm",
+        };
+        console.log("User location:", currentLocation);
+        // Now using the actual user location returned from getLocation
+        handleResourceSelect(
+          yMCAResource as (typeof dummyResources)[0],
+          currentLocation
+        );
       }
-    } else if (params.name && params.latitude && params.longitude) {
-      // Handle custom resource from notification (YMCA)
-      const yMCAResource = {
-        id: "ymca_palo_alto",
-        name: params.name as string,
-        type: "Gym",
-        address:
-          (params.address as string) || "3412 Ross Road, Palo Alto, CA 94303",
-        latitude: parseFloat(params.latitude as string),
-        longitude: parseFloat(params.longitude as string),
-        rating: params.rating || 4.5,
-        distance: params.distance || "2.3 mi",
-        image: require("../../assets/generic.jpg"),
-        phone: params.phone || "650-856-9622",
-        email: params.email || "membersupport@ymcasv.org",
-        hours:
-          params.hours ||
-          "Mon: 6:15am-9pm\nTue: 6:15am-9pm\nWed: 6:15am-9pm\nThu: CLOSED\nFri: 6:15am-1pm\nSat: 8am-4pm\nSun: 9am-4pm",
-      };
-      setTimeout(() => {
-        handleResourceSelect(yMCAResource as (typeof dummyResources)[0]);
-      }, 500);
+    };
+
+    if (params.resourceId || params.name) {
+      handleNavigation();
     }
   }, [params.resourceId, params.name, params.latitude, params.longitude]);
-
   useEffect(() => {
     // Check if current destination/resource is saved
     if (selectedDestination) {
@@ -634,7 +697,10 @@ export default function ResourcesScreen() {
         setShowDetails(false);
         setShowSaveOption(false);
 
-        await getDirections(STANFORD_COORDS, destination);
+        await getDirections(
+          //userLocation || STANFORD_COORDS,
+          destination
+        );
       }
     } catch (error) {
       console.error("Error fetching place details:", error);
@@ -685,13 +751,13 @@ export default function ResourcesScreen() {
   };
 
   const getDirections = async (
-    origin: { latitude: number; longitude: number },
     destination: {
       latitude: number;
       longitude: number;
       name: string;
       address?: string;
-    }
+    },
+    origin?: { latitude: number; longitude: number }
   ) => {
     if (!GOOGLE_MAPS_API_KEY) {
       Alert.alert("Error", "Google Maps API key not configured.");
@@ -702,7 +768,9 @@ export default function ResourcesScreen() {
     setDirectionSteps([]);
 
     try {
-      const originStr = `${origin.latitude},${origin.longitude}`;
+      // Use provided origin or fall back to state
+      const actualOrigin = origin || userLocation;
+      const originStr = `${actualOrigin.latitude},${actualOrigin.longitude}`;
       const destStr = `${destination.latitude},${destination.longitude}`;
 
       const response = await fetch(
@@ -724,14 +792,12 @@ export default function ResourcesScreen() {
           totalDur += leg?.duration?.value || 0;
           if (leg.steps) {
             leg.steps.forEach((step: DirectionStep) => {
-              // if (step.distance && step.duration && step.instructions) {
               steps.push({
                 distance: step.distance,
                 duration: step.duration,
                 html_instructions: step.html_instructions,
                 maneuver: step.maneuver,
               });
-              // }
             });
           }
         });
@@ -739,11 +805,17 @@ export default function ResourcesScreen() {
         setTotalDistance(totalDist);
         setTotalDuration(totalDur);
 
-        if (mapRef.current && decoded.length > 0 && origin) {
-          const minLat = Math.min(origin.latitude, destination.latitude);
-          const maxLat = Math.max(origin.latitude, destination.latitude);
-          const minLng = Math.min(origin.longitude, destination.longitude);
-          const maxLng = Math.max(origin.longitude, destination.longitude);
+        if (mapRef.current && decoded.length > 0) {
+          const minLat = Math.min(actualOrigin.latitude, destination.latitude);
+          const maxLat = Math.max(actualOrigin.latitude, destination.latitude);
+          const minLng = Math.min(
+            actualOrigin.longitude,
+            destination.longitude
+          );
+          const maxLng = Math.max(
+            actualOrigin.longitude,
+            destination.longitude
+          );
 
           const latDelta = (maxLat - minLat) * 1.5;
           const lngDelta = (maxLng - minLng) * 1.5;
@@ -796,7 +868,10 @@ export default function ResourcesScreen() {
     </View>
   );
 
-  const handleResourceSelect = async (resource: (typeof dummyResources)[0]) => {
+  const handleResourceSelect = async (
+    resource: (typeof dummyResources)[0],
+    origin?: { latitude: number; longitude: number }
+  ) => {
     setSelectedResource(resource.id);
     setSelectedResourceForDirections(resource);
     setSelectedSavedResource(null);
@@ -804,14 +879,20 @@ export default function ResourcesScreen() {
     setRouteStarted(false);
     setShowDetails(true);
     setShowSaveOption(false);
-    await getDirections(STANFORD_COORDS, {
-      latitude: resource.latitude,
-      longitude: resource.longitude,
-      name: resource.name,
-    });
+    await getDirections(
+      {
+        latitude: resource.latitude,
+        longitude: resource.longitude,
+        name: resource.name,
+      },
+      origin
+    );
   };
 
-  const handleSavedResourceSelect = async (resource: SavedResource) => {
+  const handleSavedResourceSelect = async (
+    resource: SavedResource,
+    origin?: { latitude: number; longitude: number }
+  ) => {
     setSelectedSavedResource(resource);
     setSelectedResourceForDirections(null);
     const newDestination = {
@@ -825,12 +906,15 @@ export default function ResourcesScreen() {
     setRouteStarted(false);
     setShowDetails(false);
     setShowSaveOption(false);
-    await getDirections(STANFORD_COORDS, {
-      latitude: resource.latitude,
-      longitude: resource.longitude,
-      name: resource.name,
-      address: resource.address,
-    });
+    await getDirections(
+      {
+        latitude: resource.latitude,
+        longitude: resource.longitude,
+        name: resource.name,
+        address: resource.address,
+      },
+      origin
+    );
     // console.log(resource.address);
     // console.log(selectedDestination);
   };
@@ -854,8 +938,8 @@ export default function ResourcesScreen() {
     if (mapRef.current) {
       mapRef.current.animateToRegion(
         {
-          latitude: STANFORD_COORDS.latitude,
-          longitude: STANFORD_COORDS.longitude,
+          latitude: userLocation.latitude || STANFORD_COORDS.latitude,
+          longitude: userLocation.longitude || STANFORD_COORDS.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         },
@@ -1252,7 +1336,7 @@ export default function ResourcesScreen() {
               onRegionChangeComplete={setRegion}
             >
               <Marker
-                coordinate={STANFORD_COORDS}
+                coordinate={userLocation || STANFORD_COORDS}
                 title="Your Location"
                 description="550 Lasuen Mall, Stanford, CA 94305"
               >
