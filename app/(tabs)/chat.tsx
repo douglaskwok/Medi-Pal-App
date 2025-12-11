@@ -35,6 +35,7 @@ import AreYouSurePopup from "../../components/AreYouSurePopup";
 import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import * as Speech from "expo-speech";
 
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
@@ -94,6 +95,13 @@ const TRANSITION_DURATIONS = {
     start: 3333, // 3:10 = ~3.333 seconds
     end: 2500, // 2:15 = ~2.5 seconds
   },
+};
+
+const VOICE_CONFIGS = {
+  "dr-al": { language: "en-GB", pitch: 1.0, rate: 1.0 },
+  "dr-lora": { language: "en-ZA", pitch: 0.8, rate: 1.0 },
+  lexi: { language: "en-AU", pitch: 1, rate: 1.1 },
+  bert: { language: "en-GB", pitch: 2, rate: 1.1 },
 };
 
 const DEFAULT_RESOURCES: Resource[] = [
@@ -186,6 +194,11 @@ export default function ChatScreen() {
   const [activeVideo, setActiveVideo] = useState<
     "default" | "talking" | "listening" | "transition"
   >("default");
+
+  //   // Audio:
+  //   const [isAudioRecording, setIsAudioRecording] = useState(false);
+  // const [transcription, setTranscription] = useState("");
+  // const [hasSpeechPermission, setHasSpeechPermission] = useState(false);
 
   const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
     const avatar = avatars.find((avatar) => avatar.id === id);
@@ -904,6 +917,46 @@ export default function ChatScreen() {
       await loadSessions();
     }
   };
+  useEffect(() => {
+    return () => {
+      // Clean up speech when component unmounts
+      Speech.stop();
+    };
+  }, []);
+  useEffect(() => {
+    // Get the last message
+    const lastMessage = messages[messages.length - 1];
+
+    // If the last message is from assistant, speak it
+    if (lastMessage && lastMessage.role === "assistant") {
+      speak(lastMessage.content);
+    }
+  }, [messages]); // Trigger whenever messages change
+  const speak = (thingToSay: string) => {
+    // const thingToSay = "hello";
+    Speech.stop();
+    Speech.speak(
+      thingToSay,
+      VOICE_CONFIGS[avatar]
+      // dr al: 1,
+      // bert: 1.5,
+      // dr lora: language en, pitch 1.2
+      // lexi: language en, pitch 1.7
+
+      //   ,
+      //   {
+      //   language: "en", // Optional: specify language
+      //   pitch: 2, // Optional: adjust pitch
+      //   rate: 0.9, // Optional: adjust speaking rate
+      // }
+    );
+  };
+  // useEffect(() => {
+  //   if (true) {
+  //     speak();
+  //   }
+  // }, []);
+  // //
 
   // Replace the handleStartVoiceSession function:
   const handleStartVoiceSession = async () => {
@@ -1038,6 +1091,7 @@ export default function ChatScreen() {
   };
 
   const handleExitSession = () => {
+    Speech.stop();
     setCurrentView("session-select");
     setCurrentSessionId(null);
     setMessages([]);
@@ -1502,6 +1556,8 @@ export default function ChatScreen() {
                   onError={(error) =>
                     console.error("Default video error:", error)
                   }
+                  isMuted={true}
+                  volume={0}
                 />
 
                 {/* Talking Video (always preloaded) */}
@@ -1518,6 +1574,7 @@ export default function ChatScreen() {
                     console.error("Talking video error:", error)
                   }
                   isMuted={true}
+                  volume={0}
                 />
 
                 {/* Listening Video (always preloaded) */}
@@ -1531,6 +1588,7 @@ export default function ChatScreen() {
                   isLooping={true}
                   resizeMode={ResizeMode.CONTAIN}
                   isMuted={true}
+                  volume={0}
                 />
 
                 {/* Transition Video (loaded on demand) */}
@@ -1547,6 +1605,7 @@ export default function ChatScreen() {
                     console.error("Transition video error:", error)
                   }
                   isMuted={true}
+                  volume={0}
                 />
               </View>
 
@@ -1666,7 +1725,10 @@ export default function ChatScreen() {
                 styles.secondaryControlButton,
                 speaker && Theme.shadows.md,
               ]}
-              onPress={() => setSpeaker(!speaker)}
+              onPress={() => {
+                setSpeaker(!speaker);
+                // speak();
+              }}
             >
               <Ionicons
                 name={speaker ? "volume-high" : "volume-off"}
