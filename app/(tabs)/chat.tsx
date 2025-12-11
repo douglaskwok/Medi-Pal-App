@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import {
   VideoFullscreenUpdate,
   ResizeMode,
 } from "expo-av";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,7 +36,7 @@ import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
-// bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!!
+// bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> fixed
 
 interface Message {
   id: string;
@@ -163,6 +163,78 @@ export default function ChatScreen() {
     setIsKeyboardEverShown(true);
   }, [isKeyboardVisible]);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // handle leave page
+  useFocusEffect(
+    React.useCallback(() => {
+      // This runs when the screen comes into focus
+      console.log("Chat page focused");
+
+      return () => {
+        // This cleanup function runs when the screen goes out of focus (leaves chat page)
+        console.log("Leaving chat page - cleanup");
+
+        // Reset states or perform cleanup
+        handleExitSession(); // Or call any specific cleanup function
+
+        // Stop any ongoing recording
+        setIsRecording(false);
+
+        // Reset video states
+        setCurrentTransition(null);
+        setActiveVideo("default");
+        setVideoMode("default");
+
+        // Unload videos
+        const cleanupVideos = async () => {
+          const unloadPromises = [];
+          if (defaultVideoRef.current)
+            unloadPromises.push(defaultVideoRef.current.unloadAsync());
+          if (talkingVideoRef.current)
+            unloadPromises.push(talkingVideoRef.current.unloadAsync());
+          if (listeningVideoRef.current)
+            unloadPromises.push(listeningVideoRef.current.unloadAsync());
+          if (transitionVideoRef.current)
+            unloadPromises.push(transitionVideoRef.current.unloadAsync());
+
+          await Promise.all(unloadPromises);
+        };
+        cleanupVideos();
+      };
+    }, []) // Empty dependency array means this runs only on focus/blur
+  );
+  useEffect(() => {
+    if (currentView === "text-chat" && messages.length > 0) {
+      // Give it a moment for the messages to render
+      const timer = setTimeout(() => {
+        console.log("Focusing text input for resumed session");
+        Keyboard.dismiss();
+        setTimeout(() => {
+          if (textInputRef.current) {
+            textInputRef.current.focus();
+          }
+        }, 100);
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, messages.length]);
+
+  const focusInput = useCallback(() => {
+    if (textInputRef.current && currentView === "text-chat") {
+      console.log("Focusing input with callback");
+      textInputRef.current.focus();
+    }
+  }, [currentView]);
+
+  // Call focusInput when needed
+  useEffect(() => {
+    if (currentView === "text-chat") {
+      const timer = setTimeout(focusInput, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, focusInput]);
+
   // Video State
   const [videoMode, setVideoMode] = useState<
     "default" | "listening" | "transition" | "talking"
@@ -186,6 +258,42 @@ export default function ChatScreen() {
   const [activeVideo, setActiveVideo] = useState<
     "default" | "talking" | "listening" | "transition"
   >("default");
+  const textInputRef = useRef<TextInput>(null);
+  // Add this ref near your other refs
+  const isLeavingPageRef = useRef(false);
+
+  // Update your useFocusEffect
+  useFocusEffect(
+    React.useCallback(() => {
+      isLeavingPageRef.current = false;
+
+      return () => {
+        isLeavingPageRef.current = true;
+        console.log("Leaving chat page - cleanup");
+
+        // Only cleanup videos, don't reset the session
+        setIsRecording(false);
+        setCurrentTransition(null);
+        setActiveVideo("default");
+        setVideoMode("default");
+
+        const cleanupVideos = async () => {
+          const unloadPromises = [];
+          if (defaultVideoRef.current)
+            unloadPromises.push(defaultVideoRef.current.unloadAsync());
+          if (talkingVideoRef.current)
+            unloadPromises.push(talkingVideoRef.current.unloadAsync());
+          if (listeningVideoRef.current)
+            unloadPromises.push(listeningVideoRef.current.unloadAsync());
+          if (transitionVideoRef.current)
+            unloadPromises.push(transitionVideoRef.current.unloadAsync());
+
+          await Promise.all(unloadPromises);
+        };
+        cleanupVideos();
+      };
+    }, [])
+  );
 
   const getAvatarById = (id: "dr-al" | "dr-lora" | "lexi" | "bert"): Avatar => {
     const avatar = avatars.find((avatar) => avatar.id === id);
@@ -252,16 +360,67 @@ export default function ChatScreen() {
       },
     ];
   };
+
   useEffect(() => {
     if (currentView === "text-chat") {
-      // Reset input-related states when entering text chat
+      console.log("Setting up text-chat view");
+
+      // Clear input text
       setInputText("");
-      setIsLoading(false);
-      // Ensure keyboard state is fresh
-      setIsKeyboardVisible(false);
-      setKeyboardHeight(0);
+
+      // For Android, we need a different approach due to hardware keyboard issues
+      if (Platform.OS === "android") {
+        // On Android, wait a bit longer and use requestAnimationFrame
+        const timer = setTimeout(() => {
+          requestAnimationFrame(() => {
+            if (textInputRef.current) {
+              console.log("Android: Focusing text input");
+              textInputRef.current.focus();
+            }
+          });
+        }, 300);
+        return () => clearTimeout(timer);
+      } else {
+        // On iOS, focus immediately
+        const timer = setTimeout(() => {
+          if (textInputRef.current) {
+            console.log("iOS: Focusing text input");
+            textInputRef.current.focus();
+          }
+        }, 100);
+        return () => clearTimeout(timer);
+      }
     }
   }, [currentView]);
+  useEffect(() => {
+    if (currentView === "text-chat" && currentSessionId) {
+      console.log("Text chat view activated, attempting to focus input");
+
+      // Clear any existing focus first
+      Keyboard.dismiss();
+
+      // Short delay to ensure component is fully rendered
+      const focusTimer = setTimeout(() => {
+        requestAnimationFrame(() => {
+          if (textInputRef.current && currentView === "text-chat") {
+            console.log("Setting focus to text input");
+            textInputRef.current.focus();
+
+            // For Android, sometimes we need to try again
+            if (Platform.OS === "android") {
+              setTimeout(() => {
+                if (textInputRef.current) {
+                  textInputRef.current.focus();
+                }
+              }, 100);
+            }
+          }
+        });
+      }, 100);
+
+      return () => clearTimeout(focusTimer);
+    }
+  }, [currentView, currentSessionId]);
   // Initial effect
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -320,15 +479,15 @@ export default function ChatScreen() {
   }, [messages]);
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
+    const keyboardWillShowListener = Keyboard.addListener(
+      "keyboardWillShow",
       () => {
         setIsKeyboardVisible(true);
       }
     );
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
+    const keyboardWillHideListener = Keyboard.addListener(
+      "keyboardWillHide",
       () => {
         setIsKeyboardVisible(false);
       }
@@ -336,30 +495,33 @@ export default function ChatScreen() {
 
     // Cleanup listeners
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
     };
   }, []);
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardDidShow",
+    const keyboardWillShowListener = Keyboard.addListener(
+      "keyboardWillShow",
       (e) => {
         setKeyboardHeight(e.endCoordinates.height); // This is the keyboard height
       }
     );
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardDidHide",
+    const keyboardWillHideListener = Keyboard.addListener(
+      "keyboardWillHide",
       () => {
         setKeyboardHeight(0);
       }
     );
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
     };
   }, []);
+
+  // force keyboard to show in hardware:
+
   // Video preloading and management
   // Update the preload function
   const preloadVideos = async () => {
@@ -929,15 +1091,42 @@ export default function ChatScreen() {
     sessionId: string,
     type: "text" | "voice"
   ) => {
+    console.log(`Resuming session: ${sessionId}, type: ${type}`);
+
+    // First, set the session ID and view
     setCurrentSessionId(sessionId);
     setCurrentView(type === "voice" ? "avatar-chat" : "text-chat");
-    await loadMessages(sessionId);
-    const userCount = messages.filter((msg) => msg.role === "user").length;
-    setUserMessageCount(userCount);
 
-    if (type === "voice" && messages.length === 0) {
-      const dummyMessages = generateDummyMessages();
-      setMessages(dummyMessages);
+    // Clear any previous messages
+    setMessages([]);
+
+    // Load messages for this session
+    await loadMessages(sessionId);
+
+    if (type === "text") {
+      // Reset input state for text chat
+      setInputText("");
+      setUserMessageCount(0);
+      setAIResources(null);
+      setShownResources(null);
+      setShowAIResources(false);
+
+      // Force focus after a delay when messages are loaded
+      setTimeout(() => {
+        if (currentView === "text-chat" && textInputRef.current) {
+          console.log("Focusing text input after session resume");
+          textInputRef.current.focus();
+        }
+      }, 300);
+    } else if (type === "voice") {
+      // Handle voice session resume
+      const userCount = messages.filter((msg) => msg.role === "user").length;
+      setUserMessageCount(userCount);
+
+      if (messages.length === 0) {
+        const dummyMessages = generateDummyMessages();
+        setMessages(dummyMessages);
+      }
     }
   };
 
@@ -1009,6 +1198,7 @@ export default function ChatScreen() {
         console.log(aiResponse);
         aiResponse =
           "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
+        // setIsKeyboardVisible(true); // dummy
         Keyboard.dismiss();
         setShowAIResources(true);
       }
@@ -1033,9 +1223,15 @@ export default function ChatScreen() {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
+      setIsKeyboardEverShown(true);
       setIsLoading(false);
     }
   };
+  console.log("-");
+  console.log("keyboard ever shown: ", isKeyboardEverShown);
+  console.log("keyboard visible: ", isKeyboardVisible);
+  console.log(currentView);
+  console.log(keyboardHeight);
 
   const handleExitSession = () => {
     setCurrentView("session-select");
@@ -1043,13 +1239,15 @@ export default function ChatScreen() {
     setMessages([]);
     setIsLoading(false);
     setUserMessageCount(0);
-    setInputText(""); // ADD THIS: Clear input text
+    setInputText(""); // Clear input text
     setAIResources(null);
     setShownResources(null);
     setShowAIResources(false);
     setShowEndCallModal(false);
     setIsKeyboardEverShown(false);
+    setIsKeyboardVisible(false);
     loadSessions();
+    console.log("exit session called");
   };
   const shouldShowTalkingVideo = () => {
     const totalDummyMessages = generateDummyMessages().length;
@@ -1265,8 +1463,9 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
-          key={currentSessionId || "new-session"} // Add key to force recreation
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+          key={currentSessionId || "new-session"} // This forces recreation
+          enabled={true}
         >
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
             <View style={styles.header}>
@@ -1297,6 +1496,32 @@ export default function ChatScreen() {
                     <Text style={styles.modeText}>Text Chat</Text>
                   </View>
                 </View>
+                {/* <TouchableOpacity // remove later
+                  onPress={() => {
+                    console.log("Manual focus button pressed");
+                    Keyboard.dismiss();
+                    setTimeout(() => {
+                      if (textInputRef.current) {
+                        textInputRef.current.focus();
+                        console.log("Manual focus applied");
+                      }
+                    }, 100);
+                  }}
+                  style={{
+                    padding: 8,
+                    marginLeft: "auto",
+                    height: 40,
+
+                    borderColor: "red",
+                    borderWidth: 2,
+                  }}
+                >
+                  <Ionicons
+                    name="keypad"
+                    size={24}
+                    color={Theme.colors.primary}
+                  />
+                </TouchableOpacity> */}
               </View>
             </View>
 
@@ -1380,6 +1605,7 @@ export default function ChatScreen() {
             ]}
           >
             <TextInput
+              ref={textInputRef}
               style={styles.input}
               placeholder="Ask me anything about resources..."
               placeholderTextColor={Theme.colors.textLight}
@@ -1389,6 +1615,10 @@ export default function ChatScreen() {
               maxLength={500}
               onSubmitEditing={() => handleSend()}
               returnKeyType="send"
+              blurOnSubmit={false} // Add this to prevent losing focus on submit
+              editable={true} // Explicitly set editable
+              enablesReturnKeyAutomatically={true}
+              importantForAutofill="yes"
             />
             <TouchableOpacity
               style={[
