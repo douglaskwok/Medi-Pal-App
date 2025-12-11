@@ -1834,7 +1834,6 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.xl,
     maxHeight: height * 0.4,
-    minHeight: height * 0.4,
     ...Theme.shadows.lg,
   },
   directionsHeader: {
@@ -1973,8 +1972,8 @@ const styles = StyleSheet.create({
     color: Theme.colors.text,
   },
   imHereButton: {
-    backgroundColor: Theme.colors.primaryDark,
-    borderColor: Theme.colors.primaryDark,
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
   },
   imHereText: {
     color: Theme.colors.backgroundLight,
@@ -2035,7 +2034,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primaryDark,
+    backgroundColor: Theme.colors.primary,
     alignItems: "center",
     justifyContent: "center",
     marginRight: Theme.spacing.md,
