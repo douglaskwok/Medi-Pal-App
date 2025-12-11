@@ -36,6 +36,7 @@ import { AISuggestion } from "../../components/AISuggestion";
 import { Avatar, avatars } from "../../constants/Avatars";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Speech from "expo-speech";
+import { useLanguage } from "../../constants/LanguageContext";
 
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
@@ -85,6 +86,53 @@ const openai = new OpenAI({
 
 type ChatView = "session-select" | "text-chat" | "avatar-chat";
 
+const translations = {
+  en: {
+    aiAssistant: "AI Assistant",
+    startNewSession: "Start a new session",
+    resumePreviousSession: "Resume Previous Session",
+    liveConversation: "Live Conversation",
+    newChat: "New Chat",
+    selectAvatar: "Select Avatar",
+    textChat: "Text Chat",
+    avatarChat: "Avatar Call",
+    welcomeMessage:
+      "Hello! I'm your Medi-Pal AI assistant, Dr. Al. I specialize in helping residents find Medi-Cal resources. How can I help you with your healthcare needs today?",
+    askPlaceholder: "Ask me anything about resources...",
+    connected: "Connected",
+    live: "Live",
+    holdToTalk: "Hold to Talk",
+    listening: "Listening...",
+    processing: "Processing...",
+    speakerOn: "Speaker On",
+    speakerOff: "Speaker Off",
+    endCall: "End Call",
+    startSpeaking: "Start speaking to begin conversation",
+  },
+  es: {
+    aiAssistant: "Asistente IA",
+    startNewSession: "Comenzar una nueva sesión",
+    resumePreviousSession: "Reanudar Sesión Anterior",
+    liveConversation: "Conversación en Vivo",
+    newChat: "Nuevo Chat",
+    selectAvatar: "Seleccionar Avatar",
+    textChat: "Chat de Texto",
+    avatarChat: "Llamada Avatar",
+    welcomeMessage:
+      "¡Hola! Soy tu asistente IA de Medi-Pal, el Dr. Al. Me especializo en ayudar a residentes a encontrar recursos de Medi-Cal. ¿Cómo puedo ayudarte con tus necesidades de salud hoy?",
+    askPlaceholder: "Pregúntame cualquier cosa sobre recursos...",
+    connected: "Conectado",
+    live: "En Vivo",
+    holdToTalk: "Mantén el Mic",
+    listening: "Escuchando...",
+    processing: "Procesando...",
+    speakerOn: "Altavoz Encendido",
+    speakerOff: "Altavoz Apagado",
+    endCall: "Terminar Llamada",
+    startSpeaking: "Empieza a hablar para comenzar la conversación",
+  },
+};
+
 // Hardcoded transition durations (seconds:frames converted to milliseconds)
 const TRANSITION_DURATIONS = {
   "dr-al": {
@@ -103,13 +151,6 @@ const TRANSITION_DURATIONS = {
     start: 3333, // 3:10 = ~3.333 seconds
     end: 2500, // 2:15 = ~2.5 seconds
   },
-};
-
-const VOICE_CONFIGS = {
-  "dr-al": { language: "en-GB", pitch: 1.0, rate: 1.0 },
-  "dr-lora": { language: "en-ZA", pitch: 0.8, rate: 1.0 },
-  lexi: { language: "en-AU", pitch: 1, rate: 1.1 },
-  bert: { language: "en-GB", pitch: 2, rate: 1.1 },
 };
 
 const DEFAULT_RESOURCES: Resource[] = [
@@ -146,6 +187,28 @@ const DEFAULT_RESOURCES: Resource[] = [
 ];
 // const { width, height } = Dimensions.get("window");
 export default function ChatScreen() {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
+
+  const VOICE_CONFIGS = {
+    "dr-al":
+      language === "en"
+        ? { language: "en-GB", pitch: 1.0, rate: 1.0 }
+        : { language: "es-US", pitch: 0.0, rate: 0.9 },
+    "dr-lora":
+      language === "en"
+        ? { language: "en-ZA", pitch: 0.8, rate: 1.0 }
+        : { language: "es-MX", pitch: 1.0, rate: 1.0 },
+    lexi:
+      language === "en"
+        ? { language: "en-AU", pitch: 1, rate: 1.1 }
+        : { language: "es-ES", pitch: 1.2, rate: 1.0 },
+    bert:
+      language === "en"
+        ? { language: "en-GB", pitch: 2, rate: 1.1 }
+        : { language: "es-US", pitch: 0.2, rate: 1.0 },
+  };
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -235,39 +298,55 @@ export default function ChatScreen() {
   // Also update the generateDummyMessages function to use the current avatar
   const generateDummyMessages = (): Message[] => {
     const now = new Date();
+    const avatarName = getAvatarById(avatar).name;
+
+    let messages;
+    if (language === "es") {
+      messages = [
+        `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`,
+        "Hola, un par de mis familiares recientemente han sufrido enfermedades cardíacas, y estoy muy preocupado de que esto me pueda pasar a mí. ¿Qué debo hacer?",
+        "Esa es una preocupación muy sabia y proactiva. El historial familiar es un factor de riesgo importante. Entiendo que estás en Medi-Cal, ¿te gustaría que cree una lista de tareas para ti?",
+        "Claro",
+        "Vale. Primero, haz un análisis de laboratorio gratuito para verificar cualquier riesgo de enfermedad cardíaca. También es importante hacer algo de ejercicio, y puedes caminar en una de las caminadoras en tu YMCA cercana todos los domingos por la tarde.",
+      ];
+    } else {
+      messages = [
+        `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`,
+        "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
+        "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
+        "Sure",
+        "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
+      ];
+    }
+
     return [
       {
         id: "1",
-        content: `Hello! I'm ${
-          getAvatarById(avatar).name
-        }, your AI healthcare assistant. How may I help you today?`,
+        content: messages[0],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 300000),
       },
       {
         id: "2",
-        content:
-          "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
+        content: messages[1],
         role: "user" as const,
         timestamp: new Date(now.getTime() - 240000),
       },
       {
         id: "3",
-        content:
-          "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
+        content: messages[2],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 180000),
       },
       {
         id: "4",
-        content: "Sure",
+        content: messages[3],
         role: "user" as const,
         timestamp: new Date(now.getTime() - 120000),
       },
       {
         id: "5",
-        content:
-          "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
+        content: messages[4],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 60000),
       },
@@ -299,11 +378,15 @@ export default function ChatScreen() {
 
       // Update only the first assistant message (greeting)
       if (updatedMessages[0] && updatedMessages[0].role === "assistant") {
+        const avatarName = getAvatarById(avatar).name;
+        const greeting =
+          language === "es"
+            ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
+            : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
+
         updatedMessages[0] = {
           ...updatedMessages[0],
-          content: `Hello! I'm ${
-            getAvatarById(avatar).name
-          }, your AI healthcare assistant. How may I help you today?`,
+          content: greeting,
         };
       }
 
@@ -868,7 +951,7 @@ export default function ChatScreen() {
         .insert({
           user_id: user.id,
           session_type: type,
-          title: type === "text" ? "Text Chat" : "Avatar Chat",
+          title: type === "text" ? t.textChat : t.avatarChat,
         })
         .select()
         .single();
@@ -1039,10 +1122,13 @@ export default function ChatScreen() {
       }));
 
       let systemPrompt =
-        "You are a helpful healthcare assistant for Medi-Cal beneficiaries, and your job is to suggest Medi-Cal resources to the user. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system. Ask clarifying questions if the user input is insufficient for you to discern which resources the user needs (e.g., resource type, location).";
+        language === "es"
+          ? "Eres un asistente de salud útil para beneficiarios de Medi-Cal, y tu trabajo es sugerir recursos de Medi-Cal al usuario. Proporciona orientación de salud clara, empática y precisa. Enfócate en ayudar a los usuarios a encontrar recursos, comprender sus necesidades de salud y navegar por el sistema de salud. Haz preguntas aclaratorias si la entrada del usuario es insuficiente para discernir qué recursos necesita (por ejemplo, tipo de recurso, ubicación)."
+          : "You are a helpful healthcare assistant for Medi-Cal beneficiaries, and your job is to suggest Medi-Cal resources to the user. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system. Ask clarifying questions if the user input is insufficient for you to discern which resources the user needs (e.g., resource type, location).";
 
       if (newUserMessageCount === 2) {
-        systemPrompt = `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
+        systemPrompt =
+          `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
   {
     "id": "ymca_palo_alto",
     "name": "Palo Alto Family YMCA",
@@ -1056,7 +1142,10 @@ export default function ChatScreen() {
     "phone": "650-856-9622",
     "email": "membersupport@ymcasv.org",
     "hours": "Mon: 6:15am-9pm\\nTue: 6:15am-9pm\\nWed: 6:15am-9pm\\nThu: CLOSED\\nFri: 6:15am-1pm\\nSat: 8am-4pm\\nSun: 9am-4pm"
-    "description": "Put your reasoning here, and keep it short (i.e., under 20 words)."]`;
+    "description": "Put your reasoning here, and keep it short (i.e., under 20 words)."]` +
+          (language === "es"
+            ? "\n\nPor favor, genera tu respuesta en español."
+            : "");
       }
 
       const completion = await openai.chat.completions.create({
@@ -1080,7 +1169,9 @@ export default function ChatScreen() {
         setShownResources(parsedResources);
         console.log(aiResponse);
         aiResponse =
-          "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
+          language === "es"
+            ? "He reunido algunos recursos de Medi-Cal que podrían ser útiles. Puedes revisarlos en la ventana de sugerencias. Si hay algo más con lo que te gustaría recibir apoyo, estoy aquí para ti."
+            : "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
         Keyboard.dismiss();
         setShowAIResources(true);
       }
@@ -1230,12 +1321,12 @@ export default function ChatScreen() {
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
-              <Text style={styles.title}>AI Assistant</Text>
+              <Text style={styles.title}>{t.aiAssistant}</Text>
             </View>
           </View>
 
           <View style={styles.sessionSelection}>
-            <Text style={styles.sectionTitle}>Start a new session</Text>
+            <Text style={styles.sectionTitle}>{t.startNewSession}</Text>
             <View style={styles.newSessionButtons}>
               <TouchableOpacity
                 style={styles.sessionTypeButton}
@@ -1265,7 +1356,9 @@ export default function ChatScreen() {
 
             {sessions.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Resume Previous Session</Text>
+                <Text style={styles.sectionTitle}>
+                  {t.resumePreviousSession}
+                </Text>
                 <ScrollView
                   style={styles.sessionsList}
                   showsVerticalScrollIndicator={false}
@@ -1361,14 +1454,14 @@ export default function ChatScreen() {
                   resizeMode="contain"
                 />
                 <View>
-                  <Text style={styles.title}>AI Assistant</Text>
+                  <Text style={styles.title}>{t.aiAssistant}</Text>
                   <View style={styles.modeIndicator}>
                     <Ionicons
                       name="chatbubbles"
                       size={isTablet ? 24 : 14}
                       color={Theme.colors.primaryAlt}
                     />
-                    <Text style={styles.modeText}>Text Chat</Text>
+                    <Text style={styles.modeText}>{t.textChat}</Text>
                   </View>
                 </View>
               </View>
@@ -1383,11 +1476,7 @@ export default function ChatScreen() {
             >
               {messages.length === 0 && (
                 <View style={styles.welcomeContainer}>
-                  <Text style={styles.welcomeText}>
-                    Hello! I'm your Medi-Pal AI assistant, Dr. Al. I specialize
-                    in helping residents find Medi-Cal resources. How can I help
-                    you with your healthcare needs today?
-                  </Text>
+                  <Text style={styles.welcomeText}>{t.welcomeMessage}</Text>
                 </View>
               )}
               {messages.map((message) => (
@@ -1457,7 +1546,7 @@ export default function ChatScreen() {
           >
             <TextInput
               style={styles.input}
-              placeholder="Ask me anything about resources..."
+              placeholder={t.askPlaceholder}
               placeholderTextColor={Theme.colors.textLight}
               value={inputText}
               onChangeText={setInputText}
@@ -1540,14 +1629,14 @@ export default function ChatScreen() {
                 resizeMode="contain"
               />
               <View>
-                <Text style={styles.title}>AI Assistant</Text>
+                <Text style={styles.title}>{t.aiAssistant}</Text>
                 <View style={styles.modeIndicator}>
                   <Fontisto
                     name="doctor"
                     size={14}
                     color={Theme.colors.primaryAlt}
                   />
-                  <Text style={styles.modeText}>Avatar Call</Text>
+                  <Text style={styles.modeText}>{t.avatarChat}</Text>
                 </View>
               </View>
             </View>
@@ -1634,7 +1723,7 @@ export default function ChatScreen() {
               {/* Call Status */}
               <View style={styles.callStatus}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Connected</Text>
+                <Text style={styles.statusText}>{t.connected}</Text>
               </View>
 
               <TouchableOpacity
@@ -1657,10 +1746,10 @@ export default function ChatScreen() {
                   size={isTablet ? 30 : 20}
                   color={Theme.colors.primaryAlt}
                 />
-                <Text style={styles.captionsTitle}>Live Conversation</Text>
+                <Text style={styles.captionsTitle}>{t.liveConversation}</Text>
                 <View style={styles.captionsStatus}>
                   <View style={styles.captionsStatusDot} />
-                  <Text style={styles.captionsStatusText}>Live</Text>
+                  <Text style={styles.captionsStatusText}>{t.live}</Text>
                 </View>
               </View>
 
@@ -1681,7 +1770,7 @@ export default function ChatScreen() {
                       color={Theme.colors.textLight}
                     />
                     <Text style={styles.emptyCaptionsText}>
-                      Start speaking to begin conversation
+                      {t.startSpeaking}
                     </Text>
                   </View>
                 ) : (
@@ -1767,7 +1856,7 @@ export default function ChatScreen() {
                   },
                 ]}
               >
-                {speaker ? "Speaker On" : "Speaker Off"}
+                {speaker ? t.speakerOn : t.speakerOff}
               </Text>
             </TouchableOpacity>
 
@@ -1798,10 +1887,10 @@ export default function ChatScreen() {
                 ]}
               >
                 {isProcessingMessage
-                  ? "Processing..."
+                  ? t.processing
                   : isRecording
-                  ? "Listening..."
-                  : "Hold to Talk"}
+                  ? t.listening
+                  : t.holdToTalk}
               </Text>
             </TouchableOpacity>
 
@@ -1820,7 +1909,7 @@ export default function ChatScreen() {
                   styles.dangerControlButtonText,
                 ]}
               >
-                End Call
+                {t.endCall}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1835,6 +1924,7 @@ export default function ChatScreen() {
             setShowPopUp={setChooseAvatarModal}
             avatar={avatar}
             setAvatar={setAvatar}
+            selectedLanguage={language}
           />
         )}
 
@@ -1851,6 +1941,7 @@ export default function ChatScreen() {
             mode={"tips_checklist"}
             from_video={true}
             setShowPopUp={setShowTipsModal}
+            selectedLanguage={language}
             proceed={() => {}}
           />
         )}

@@ -28,8 +28,8 @@ const { width, height } = Dimensions.get("window");
 
 // Define language options
 const languageOptions = [
-  { id: "en", name: "English", flag: "🇺🇸" },
-  { id: "es", name: "Español", flag: "🇪🇸" },
+  { id: "en" as "en" | "es", name: "English", flag: "🇺🇸" },
+  { id: "es" as "en" | "es", name: "Español", flag: "🇪🇸" },
 ];
 
 // Translation object
@@ -105,7 +105,7 @@ export default function SelectionModal({
   avatar,
   setAvatar,
   proceed,
-  selectedLanguage = "en", // Default to "en" if undefined
+  selectedLanguage, // = "en", // Default to "en" if undefined
   setSelectedLanguage,
 }: {
   mode: "tips_checklist" | "choose_avatar" | "select_language";
@@ -116,10 +116,12 @@ export default function SelectionModal({
     React.SetStateAction<"dr-al" | "dr-lora" | "bert" | "lexi">
   >;
   proceed?: () => void;
-  selectedLanguage?: string;
-  setSelectedLanguage?: React.Dispatch<React.SetStateAction<string>>;
+  selectedLanguage?: "en" | "es";
+  setSelectedLanguage?: (lang: "en" | "es") => void;
 }) {
+  console.log(selectedLanguage);
   const video_origin = from_video || false;
+  // const { language, setLanguage } = useLanguage();
 
   // Get the current language or default to "en"
   const currentLanguage = selectedLanguage || "en";

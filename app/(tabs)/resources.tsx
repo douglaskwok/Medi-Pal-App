@@ -31,6 +31,7 @@ import { AdvancedFilterPopup } from "../../components/AdvancedFilterPopup";
 // import type { DirectionsLeg, DirectionsStep } from "@types/google.maps";
 import SelectionModal from "../../components/selectionModal";
 import AreYouSurePopup from "../../components/AreYouSurePopup";
+import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
@@ -108,8 +109,116 @@ export function getFirstWord(text: string): string {
   const words = text.trim().split(/\s+/);
   return words[0].toLowerCase() || "";
 }
+const translations = {
+  en: {
+    resources: "Resources",
+    searchPlaceholder: "Search for resources...",
+    nearbyResources: "Nearby Resources",
+    savedResources: "Saved Resources",
+    eligibility: "You are eligible for this service",
+    startRoute: "Start Route",
+    imHere: "I'm here!",
+    noSavedResources: "No saved resources",
+    loadingDirections: "Loading directions...",
+    calculatingRoute: "Calculating the best route",
+    loadingResource: "Loading resource...",
+    funFact:
+      "Medi-Pal has a database of thousands of free Medi-Cal resources in California.",
+    savedSuccessfully: "Saved Successfully",
+    deletedSuccessfully: "Deleted Successfully",
+    endRouteConfirm: "End Route?",
+    endRouteMessage: "Are you sure you want to end the current route?",
+    cancel: "Cancel",
+    endRoute: "End Route",
+    yourLocation: "Your Location",
+    locationDescription: "550 Lasuen Mall, Stanford, CA 94305",
+    autocompleteInstructions: "Type to search for places...",
+    distanceUnit: "mi",
+    hours: "h",
+    minutes: "m",
+    delete: "Delete",
+    add: "Add",
+    close: "Close",
+    filter: "Filter",
+    location: "Location",
+    phone: "Phone",
+    email: "Email",
+    hoursTitle: "Hours",
+    save: "Save",
+    unsave: "Unsave",
+    saveResource: "Save Resource",
+    unsaveResource: "Unsave Resource",
+    getDirections: "Get Directions",
+    currentRoute: "Current Route",
+    clearSearch: "Clear Search",
+    viewDetails: "View Details",
+    expand: "Expand",
+    collapse: "Collapse",
+    retry: "Retry",
+    errorLoading: "Error loading resources",
+    tryAgain: "Try Again",
+    networkError: "Network Error",
+    checkConnection: "Please check your internet connection",
+
+    startRouteButton: "Start Route",
+  },
+  es: {
+    resources: "Recursos",
+    searchPlaceholder: "Buscar recursos...",
+    nearbyResources: "Recursos Cercanos",
+    savedResources: "Recursos Guardados",
+    eligibility: "Eres elegible para este servicio",
+    startRoute: "Comenzar Ruta",
+    imHere: "¡Estoy aquí!",
+    noSavedResources: "No hay recursos guardados",
+    loadingDirections: "Cargando indicaciones...",
+    calculatingRoute: "Calculando la mejor ruta",
+    loadingResource: "Cargando recurso...",
+    funFact:
+      "Medi-Pal tiene una base de datos de miles de recursos gratuitos de Medi-Cal en California.",
+    savedSuccessfully: "Guardado Exitosamente",
+    deletedSuccessfully: "Eliminado Exitosamente",
+    endRouteConfirm: "¿Terminar Ruta?",
+    endRouteMessage: "¿Estás seguro de que quieres terminar la ruta actual?",
+    cancel: "Cancelar",
+    endRoute: "Terminar Ruta",
+    yourLocation: "Tu Ubicación",
+    locationDescription: "550 Lasuen Mall, Stanford, CA 94305",
+    autocompleteInstructions: "Escribe para buscar lugares...",
+    distanceUnit: "millas",
+    hours: "h",
+    minutes: "m",
+    delete: "Eliminar",
+    add: "Añadir",
+    close: "Cerrar",
+    filter: "Filtrar",
+    location: "Ubicación",
+    phone: "Teléfono",
+    email: "Correo Electrónico",
+    hoursTitle: "Horario",
+    save: "Guardar",
+    unsave: "Quitar",
+    saveResource: "Guardar Recurso",
+    unsaveResource: "Quitar Recurso",
+    getDirections: "Obtener Indicaciones",
+    currentRoute: "Ruta Actual",
+    clearSearch: "Limpiar Búsqueda",
+    viewDetails: "Ver Detalles",
+    expand: "Expandir",
+    collapse: "Colapsar",
+    retry: "Reintentar",
+    errorLoading: "Error al cargar recursos",
+    tryAgain: "Intentar Nuevamente",
+    networkError: "Error de Red",
+    checkConnection: "Por favor verifica tu conexión a internet",
+    startRouteButton: "Comenzar Ruta",
+  },
+};
 
 export default function ResourcesScreen() {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -860,7 +969,7 @@ export default function ResourcesScreen() {
               style={styles.startRouteButton}
               onPress={handleStartRoute}
             >
-              <Text style={styles.startRouteText}>Start Route</Text>
+              <Text style={styles.startRouteText}>{t.startRoute}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -876,9 +985,7 @@ export default function ResourcesScreen() {
               size={isTablet ? 26 : 20}
               color={Theme.colors.success}
             />
-            <Text style={styles.eligibilityText}>
-              You are eligible for this service
-            </Text>
+            <Text style={styles.eligibilityText}>{t.eligibility}</Text>
           </View>
           <View style={styles.detailRow}>
             <Ionicons
@@ -973,7 +1080,7 @@ export default function ResourcesScreen() {
             onPress={handleImHere}
           >
             <Text style={[styles.routeControlText, styles.imHereText]}>
-              I'm here!
+              {t.imHere}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1022,7 +1129,7 @@ export default function ResourcesScreen() {
                 style={styles.headerLogo}
                 resizeMode="contain"
               />
-              <Text style={styles.title}>Resources</Text>
+              <Text style={styles.title}>{t.resources}</Text>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -1036,7 +1143,7 @@ export default function ResourcesScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search for resources..."
+              placeholder={t.searchPlaceholder}
               placeholderTextColor={Theme.colors.textLight}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -1273,7 +1380,9 @@ export default function ResourcesScreen() {
                   style={styles.startRouteButton}
                   onPress={handleStartRoute}
                 >
-                  <Text style={styles.startRouteText}>Start Route</Text>
+                  <Text style={styles.startRouteText}>
+                    {t.startRouteButton}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1395,7 +1504,7 @@ export default function ResourcesScreen() {
                       activeTab === "nearby" && styles.tabTextActive,
                     ]}
                   >
-                    Nearby Resources
+                    {t.nearbyResources}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1411,7 +1520,7 @@ export default function ResourcesScreen() {
                       activeTab === "saved" && styles.tabTextActive,
                     ]}
                   >
-                    Saved Resources
+                    {t.savedResources}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1549,6 +1658,7 @@ export default function ResourcesScreen() {
           mode={"tips_checklist"}
           setShowPopUp={setShowTipsModal}
           proceed={handleStartRouteAfterTips}
+          selectedLanguage={language}
         ></SelectionModal>
       )}
       <CustomTabBar />

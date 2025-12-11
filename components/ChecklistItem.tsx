@@ -10,8 +10,31 @@ import {
 import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import { format, isToday, isTomorrow } from "date-fns";
+import { useLanguage } from "../constants/LanguageContext";
+import { de } from "date-fns/locale";
+
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+const translations = {
+  en: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    description: "Description",
+    start: "Start",
+    end: "End",
+    edit: "Edit",
+  },
+  es: {
+    today: "Hoy",
+    tomorrow: "Mañana",
+    description: "Descripción",
+    start: "Inicio",
+    end: "Fin",
+    edit: "Editar",
+  },
+};
+
 interface ChecklistItemProps {
   id: string;
   title: string;
@@ -37,6 +60,9 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
   onExpand,
   onEdit,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const heightAnim = React.useRef(new Animated.Value(expanded ? 1 : 0)).current;
 
@@ -107,9 +133,9 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
             {startDate && (
               <Text style={styles.dateText}>
                 {isToday(new Date(startDate))
-                  ? "Today"
+                  ? t.today
                   : isTomorrow(new Date(startDate))
-                  ? "Tomorrow"
+                  ? t.tomorrow
                   : format(new Date(startDate), "MMM d")}
               </Text>
             )}
@@ -144,13 +170,13 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
         >
           {description && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Description:</Text>
+              <Text style={styles.detailLabel}>{t.description}:</Text>
               <Text style={styles.detailText}>{description}</Text>
             </View>
           )}
           {startDate && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Start:</Text>
+              <Text style={styles.detailLabel}>{t.start}:</Text>
               <Text style={styles.detailText}>
                 {format(new Date(startDate), "MMM d, yyyy h:mm a")}
               </Text>
@@ -158,7 +184,7 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
           )}
           {endDate && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>End:</Text>
+              <Text style={styles.detailLabel}>{t.end}:</Text>
               <Text style={styles.detailText}>
                 {format(new Date(endDate), "MMM d, yyyy h:mm a")}
               </Text>
@@ -174,7 +200,7 @@ export const ChecklistItem: React.FC<ChecklistItemProps> = ({
                 size={16}
                 color={Theme.colors.primaryDark}
               />
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText}>{t.edit}</Text>
             </TouchableOpacity>
           )}
         </Animated.View>

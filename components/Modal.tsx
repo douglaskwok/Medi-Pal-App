@@ -9,6 +9,18 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { Theme } from "../constants/Theme";
+import { useLanguage } from "../constants/LanguageContext";
+
+const translations = {
+  en: {
+    markAsDone: "Mark as Done",
+    cancel: "Cancel",
+  },
+  es: {
+    markAsDone: "Completar",
+    cancel: "Cancelar",
+  },
+};
 
 interface CustomModalProps {
   visible: boolean;
@@ -31,6 +43,14 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   cancelText = "Cancel",
   destructive = false,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
+
+  const finalConfirmText =
+    confirmText === "Mark as Done" ? t.markAsDone : confirmText;
+  const finalCancelText = cancelText === "Cancel" ? t.cancel : cancelText;
+
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
@@ -98,7 +118,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   onPress={onClose}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                  <Text style={styles.cancelButtonText}>{finalCancelText}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -109,7 +129,9 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   onPress={onConfirm}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.confirmButtonText}>{confirmText}</Text>
+                  <Text style={styles.confirmButtonText}>
+                    {finalConfirmText}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>

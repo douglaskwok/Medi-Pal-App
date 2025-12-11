@@ -11,8 +11,23 @@ import {
 import { Theme } from "../constants/Theme";
 import { ImageSourcePropType } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LanguageProvider, useLanguage } from "../constants/LanguageContext";
+
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+const translations = {
+  en: {
+    save: "Save",
+    isSaved: "Is Saved",
+    takeMeThere: "Take Me There!",
+  },
+  es: {
+    save: "Guardar",
+    isSaved: "Ya Guardado",
+    takeMeThere: "¡Llévame Allá!",
+  },
+};
 
 interface ResourceCardProps {
   id: string;
@@ -51,6 +66,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   hours = null,
   isSaved = false,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -125,7 +143,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             onPress={saveResource}
           >
             <Text style={styles.saveButtonText}>
-              {isSaved ? "Is Saved" : "Save"}
+              {isSaved ? t.isSaved : t.save}
             </Text>
           </TouchableOpacity>
 
@@ -133,7 +151,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             style={[styles.button, styles.takeMeButton]}
             onPress={onPress}
           >
-            <Text style={styles.takeMeButtonText}>Take Me There!</Text>
+            <Text style={styles.takeMeButtonText}>{t.takeMeThere}</Text>
           </TouchableOpacity>
         </View>
       )}

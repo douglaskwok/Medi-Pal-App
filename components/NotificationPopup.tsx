@@ -16,9 +16,27 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
+import { useLanguage } from "../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+const translations = {
+  en: {
+    verified: "Medi-Pal Verified: Nearby Resource",
+    youAreEligible: "You are eligible for this service",
+    saveResource: "Save Resource",
+    resourceIsSaved: "Resource is saved!",
+    takeMeThere: "Take Me There!",
+  },
+  es: {
+    verified: "Medi-Pal Verificado: Recurso Cercano",
+    youAreEligible: "Eres elegible para este servicio",
+    saveResource: "Guardar Recurso",
+    resourceIsSaved: "¡Recurso guardado!",
+    takeMeThere: "¡Llévame allá!",
+  },
+};
 
 interface NotificationPopupProps {
   visible: boolean;
@@ -35,6 +53,9 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   onTakeMeThere,
   onSaveSuccess,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isSaved, setIsSaved] = useState(false);
@@ -253,9 +274,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                   color="blue"
                 />
               </View>
-              <Text style={styles.category}>
-                Medi-Pal Verified: Nearby Resource
-              </Text>
+              <Text style={styles.category}>{t.verified}</Text>
             </View>
 
             <TouchableOpacity
@@ -279,9 +298,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
               size={isTablet ? 24 : 20}
               color={Theme.colors.success}
             />
-            <Text style={styles.eligibilityText}>
-              You are eligible for this service
-            </Text>
+            <Text style={styles.eligibilityText}>{t.youAreEligible}</Text>
           </View>
 
           <View style={styles.detailRow}>
@@ -318,7 +335,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             >
               {/* <FontAwesome name="bookmark-o" size={24} color="black" /> */}
               <Text style={styles.saveButtonText}>
-                {isSaved ? "Resource is saved!" : "Save Resource"}
+                {isSaved ? t.resourceIsSaved : t.saveResource}
               </Text>
             </TouchableOpacity>
 
@@ -326,7 +343,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
               style={[styles.button, styles.takeMeButton]}
               onPress={handleTakeMeThere}
             >
-              <Text style={styles.takeMeButtonText}>Take Me There!</Text>
+              <Text style={styles.takeMeButtonText}>{t.takeMeThere}</Text>
             </TouchableOpacity>
           </View>
         </View>

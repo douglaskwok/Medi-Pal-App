@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { Theme } from "../../constants/Theme";
 import React from "react";
+import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
 
@@ -37,9 +38,10 @@ interface CustomTabBarProps {
 }
 
 export function CustomTabBar({
-  language = "en",
+  // language = "en",
   opacity = 1,
 }: CustomTabBarProps) {
+  const { language } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -155,18 +157,20 @@ export function CustomTabBar({
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { display: "none" },
-      }}
-    >
-      <Tabs.Screen name="home" />
-      <Tabs.Screen name="resources" />
-      <Tabs.Screen name="chat" />
-      <Tabs.Screen name="checklist" />
-      <Tabs.Screen name="profile" />
-    </Tabs>
+    <LanguageProvider>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: "none" },
+        }}
+      >
+        <Tabs.Screen name="home" />
+        <Tabs.Screen name="resources" />
+        <Tabs.Screen name="chat" />
+        <Tabs.Screen name="checklist" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+    </LanguageProvider>
   );
 }
 

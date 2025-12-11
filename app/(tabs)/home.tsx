@@ -22,6 +22,7 @@ import { CustomModal } from "../../components/Modal";
 import { dummyChecklistItems, dummyResources } from "../../constants/DummyData";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
+
 import {
   format,
   startOfWeek,
@@ -34,10 +35,38 @@ import {
 import { CustomTabBar } from "./_layout";
 // remove later
 import { NotificationPopup } from "../../components/NotificationPopup";
+import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+const translations = {
+  en: {
+    welcome: "Welcome",
+    searchPlaceholder: "Ask AI anything...",
+    calendarTitle: "My Calendar",
+    resourcesTitle: "Nearby Resources",
+    discoverMore: "Discover More",
+    confirmModalTitle: "Mark as Done?",
+    savedSuccessfully: "Saved Successfully",
+    weekDays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    markCompleteMessage: (title: string) =>
+      `Are you sure you want to mark "${title}" as completed?`,
+  },
+  es: {
+    welcome: "¡Bienvenido",
+    searchPlaceholder: "Pregunta a la IA algo...",
+    calendarTitle: "Mi Calendario",
+    resourcesTitle: "Recursos Cercanos",
+    discoverMore: "Descubrir Más",
+    confirmModalTitle: "¿Marcar como Completado?",
+    savedSuccessfully: "Guardado Exitosamente",
+    weekDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+    markCompleteMessage: (title: string) =>
+      `¿Estás seguro de que quieres marcar "${title}" como completado?`,
+  },
+};
 export default function HomeScreen() {
+  const { language } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -55,6 +84,9 @@ export default function HomeScreen() {
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
 
+  // Get translations based on selected language
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   useEffect(() => {
     loadUserData();
     Animated.timing(fadeAnim, {
@@ -168,7 +200,10 @@ export default function HomeScreen() {
               />
               <View>
                 <Text style={styles.headerTitle}>Medi-Pal</Text>
-                <Text style={styles.headerSubtitle}>Welcome {userName}!</Text>
+                <Text style={styles.headerSubtitle}>
+                  {t.welcome} {userName}
+                  {language === "en" && "!"}
+                </Text>
               </View>
             </View>
           </View>
@@ -183,7 +218,7 @@ export default function HomeScreen() {
                 />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Ask AI anything..."
+                  placeholder={t.searchPlaceholder}
                   placeholderTextColor={Theme.colors.textLight}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -224,7 +259,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={[styles.calendarSection, isTablet && { marginTop: 32 }]}>
-            <Text style={styles.sectionTitle}>My Calendar</Text>
+            <Text style={styles.sectionTitle}>{t.calendarTitle}</Text>
             <View style={styles.calendarHeader}>
               <TouchableOpacity
                 onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
@@ -269,7 +304,8 @@ export default function HomeScreen() {
                         isSelected && { color: Theme.colors.backgroundLight },
                       ]}
                     >
-                      {format(day, "EEE")}
+                      {t.weekDays[day.getDay()]}{" "}
+                      {/* This uses your translation */}
                     </Text>
                     <Text
                       style={[
@@ -330,7 +366,7 @@ export default function HomeScreen() {
           <View
             style={[styles.resourcesSection, isTablet && { marginTop: 32 }]}
           >
-            <Text style={styles.sectionTitle}>Nearby Resources</Text>
+            <Text style={styles.sectionTitle}>{t.resourcesTitle}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -353,7 +389,7 @@ export default function HomeScreen() {
               style={styles.discoverMoreButton}
               onPress={() => router.push("/(tabs)/resources")}
             >
-              <Text style={styles.discoverMore}>Discover More</Text>
+              <Text style={styles.discoverMore}>{t.discoverMore}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -365,12 +401,13 @@ export default function HomeScreen() {
             setSelectedItemId(null);
           }}
           onConfirm={handleConfirmModal}
-          title="Mark as Done?"
+          title={t.confirmModalTitle}
           message={
             selectedItemId
-              ? `Are you sure you want to mark "${
-                  checklistItems.find((i) => i.id === selectedItemId)?.title
-                }" as completed?`
+              ? t.markCompleteMessage(
+                  checklistItems.find((i) => i.id === selectedItemId)?.title ||
+                    ""
+                )
               : undefined
           }
         />
@@ -454,7 +491,7 @@ export default function HomeScreen() {
                   marginTop: Theme.spacing.md,
                 }}
               >
-                {"Saved Successfully"}
+                {t.savedSuccessfully}
               </Text>
             </Animated.View>
           </Animated.View>

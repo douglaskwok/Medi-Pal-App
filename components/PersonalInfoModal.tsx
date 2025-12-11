@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Animated,
   TouchableWithoutFeedback,
-} from 'react-native';
-import { Theme } from '../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { Theme } from "../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
 
 interface PersonalInfoModalProps {
   visible: boolean;
@@ -37,25 +37,25 @@ export const PersonalInfoModal: React.FC<PersonalInfoModalProps> = ({
   initialData,
   email,
 }) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [age, setAge] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [age, setAge] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     if (visible) {
       if (initialData) {
-        setFirstName(initialData.firstName || '');
-        setLastName(initialData.lastName || '');
-        setAge(initialData.age || '');
-        setPhoneNumber(initialData.phoneNumber || '');
+        setFirstName(initialData.firstName || "");
+        setLastName(initialData.lastName || "");
+        setAge(initialData.age || "");
+        setPhoneNumber(initialData.phoneNumber || "");
       } else {
-        setFirstName('');
-        setLastName('');
-        setAge('');
-        setPhoneNumber('');
+        setFirstName("");
+        setLastName("");
+        setAge("");
+        setPhoneNumber("");
       }
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -160,8 +160,12 @@ export const PersonalInfoModal: React.FC<PersonalInfoModalProps> = ({
                   placeholderTextColor={Theme.colors.textLight}
                   value={age}
                   onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
-                    if (numericValue === '' || (parseInt(numericValue) >= 0 && parseInt(numericValue) <= 150)) {
+                    const numericValue = text.replace(/[^0-9]/g, "");
+                    if (
+                      numericValue === "" ||
+                      (parseInt(numericValue) >= 0 &&
+                        parseInt(numericValue) <= 150)
+                    ) {
                       setAge(numericValue);
                     }
                   }}
@@ -178,7 +182,7 @@ export const PersonalInfoModal: React.FC<PersonalInfoModalProps> = ({
                   placeholderTextColor={Theme.colors.textLight}
                   value={phoneNumber}
                   onChangeText={(text) => {
-                    const cleaned = text.replace(/[^0-9-() ]/g, '');
+                    const cleaned = text.replace(/[^0-9-() ]/g, "");
                     setPhoneNumber(cleaned);
                   }}
                   keyboardType="phone-pad"
@@ -206,7 +210,8 @@ export const PersonalInfoModal: React.FC<PersonalInfoModalProps> = ({
                   style={[
                     styles.button,
                     styles.saveButton,
-                    (!firstName.trim() || !lastName.trim()) && styles.saveButtonDisabled,
+                    (!firstName.trim() || !lastName.trim()) &&
+                      styles.saveButtonDisabled,
                   ]}
                   onPress={handleSave}
                   activeOpacity={0.7}
@@ -226,16 +231,16 @@ export const PersonalInfoModal: React.FC<PersonalInfoModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Theme.spacing.lg,
   },
   modalContainer: {
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     ...Theme.shadows.lg,
   },
@@ -244,7 +249,7 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.semibold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.xl,
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputGroup: {
     marginBottom: Theme.spacing.md,
@@ -273,7 +278,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Theme.colors.borderLight,
     minHeight: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   emailText: {
     fontSize: 16,
@@ -287,7 +292,7 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.xs,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Theme.spacing.md,
     marginTop: Theme.spacing.md,
   },
@@ -295,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Theme.spacing.md,
     borderRadius: Theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -319,4 +324,3 @@ const styles = StyleSheet.create({
     color: Theme.colors.backgroundLight,
   },
 });
-

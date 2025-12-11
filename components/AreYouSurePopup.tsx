@@ -22,8 +22,30 @@ import { ResourceCard } from "../components/ResourceCard";
 import { Ionicons } from "@expo/vector-icons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { AdvancedFilterPopup } from "../components/AdvancedFilterPopup";
+import { useLanguage } from "../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
+
+const translations = {
+  en: {
+    endRoute: "End Route?",
+    endCall: "End Call?",
+    areYouSureRoute: "Are you sure you want to end the current route?",
+    areYouSureCall: "Are you sure you want to end the current call?",
+    cancel: "Cancel",
+    confirmEndRoute: "End Route",
+    confirmEndCall: "End Call",
+  },
+  es: {
+    endRoute: "¿Terminar Ruta?",
+    endCall: "¿Terminar Llamada?",
+    areYouSureRoute: "¿Estás seguro de que quieres terminar la ruta actual?",
+    areYouSureCall: "¿Estás seguro de que quieres terminar la llamada actual?",
+    cancel: "Cancelar",
+    confirmEndRoute: "Terminar",
+    confirmEndCall: "Terminar",
+  },
+};
 
 export default function AreYouSurePopup({
   mode,
@@ -34,29 +56,31 @@ export default function AreYouSurePopup({
   setShowPopUp: React.Dispatch<React.SetStateAction<boolean>>;
   proceed?: () => void;
 }) {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContainer}>
         <Text style={styles.modalTitle}>
-          {mode === "end_route" ? "End Route?" : "End Call?"}
+          {mode === "end_route" ? t.endRoute : t.endCall}
         </Text>
         <Text style={styles.modalMessage}>
-          Are you sure you want to end the current{" "}
-          {mode === "end_route" ? "route" : "call"}?
+          {mode === "end_route" ? t.areYouSureRoute : t.areYouSureCall}
         </Text>
         <View style={styles.modalButtons}>
           <TouchableOpacity
             style={[styles.modalButton, styles.modalCancelButton]}
             onPress={() => setShowPopUp(false)}
           >
-            <Text style={styles.modalCancelText}>Cancel</Text>
+            <Text style={styles.modalCancelText}>{t.cancel}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.modalConfirmButton]}
             onPress={proceed}
           >
             <Text style={styles.modalConfirmText}>
-              End {mode === "end_route" ? "Route" : "Call"}
+              {mode === "end_route" ? t.confirmEndRoute : t.confirmEndCall}
             </Text>
           </TouchableOpacity>
         </View>

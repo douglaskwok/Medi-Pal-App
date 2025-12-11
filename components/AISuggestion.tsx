@@ -17,9 +17,26 @@ import { ResourceCard } from "./ResourceCard";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { ImageSourcePropType } from "react-native";
+import { useLanguage } from "../constants/LanguageContext";
 
 const { height, width } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+const translations = {
+  en: {
+    suggestedResources: "Suggested Resources",
+    resourceDescription: "Based on your healthcare needs",
+    verifiedSuggestions: "Verified Suggestions from Dr Al",
+    hereAreSome: "Here are some Medi-Cal resources that we recommend:",
+  },
+  es: {
+    suggestedResources: "Recursos Sugeridos",
+    resourceDescription: "Basado en tus necesidades de salud",
+    verifiedSuggestions: "Sugerencias Verificadas del Dr Al",
+    hereAreSome: "Aquí hay algunos recursos de Medi-Cal que recomendamos:",
+  },
+};
+
 interface ResourceData {
   id: string;
   name: string;
@@ -54,6 +71,9 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
   onTakeMeThere,
   onSaveSuccess,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -342,9 +362,7 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
                   color="blue"
                 />
               </View>
-              <Text style={styles.category}>
-                Verified Suggestions from Dr Al
-              </Text>
+              <Text style={styles.category}>{t.verifiedSuggestions}</Text>
             </View>
 
             <TouchableOpacity
@@ -359,10 +377,8 @@ export const AISuggestion: React.FC<NotificationPopupProps> = ({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.title}>Suggested Resources</Text>
-          <Text style={styles.subtitle}>
-            Here are some Medi-Cal resources that we recommend:
-          </Text>
+          <Text style={styles.title}>{t.suggestedResources}</Text>
+          <Text style={styles.subtitle}>{t.hereAreSome}</Text>
 
           {/* Resource Carousel */}
           <ScrollView

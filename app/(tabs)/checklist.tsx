@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { isToday, isPast, isFuture, isThisWeek, isThisMonth } from "date-fns";
 import { CustomTabBar } from "./_layout";
 import { supabase } from "../../lib/supabase";
+import { useLanguage } from "../../constants/LanguageContext";
 
 interface ChecklistItemType {
   id: string;
@@ -34,7 +35,35 @@ interface ChecklistItemType {
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
 
+const translations = {
+  en: {
+    checklistTitle: "My Checklist",
+    today: "Today",
+    week: "This Week",
+    month: "Future",
+    noItems: "No checklist items for this period",
+    markAsDone: "Mark as Done?",
+    noChecklistItems: "No checklist items for this period",
+    confirmMarkMessage: (title: string) =>
+      `Are you sure you want to mark "${title}" as completed?`,
+  },
+  es: {
+    checklistTitle: "Lista",
+    today: "Hoy",
+    week: "Esta Semana",
+    month: "Futuro",
+    noItems: "No hay elementos en la lista para este período",
+    markAsDone: "¿Completar?",
+    noChecklistItems: "No hay elementos en la lista para este período",
+    confirmMarkMessage: (title: string) =>
+      `¿Estás seguro de que quieres marcar "${title}" como completado?`,
+  },
+};
+
 export default function ChecklistScreen() {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const insets = useSafeAreaInsets();
   const [checklistItems, setChecklistItems] = useState<ChecklistItemType[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -294,7 +323,7 @@ export default function ChecklistScreen() {
               style={styles.headerLogo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>My Checklist</Text>
+            <Text style={styles.title}>{t.checklistTitle}</Text>
           </View>
           <TouchableOpacity
             style={styles.addButton}
@@ -325,7 +354,7 @@ export default function ChecklistScreen() {
                   selectedPeriod === "today" && styles.periodButtonTextActive,
                 ]}
               >
-                Today
+                {t.today}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -341,7 +370,7 @@ export default function ChecklistScreen() {
                   selectedPeriod === "week" && styles.periodButtonTextActive,
                 ]}
               >
-                This Week
+                {t.week}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -357,7 +386,7 @@ export default function ChecklistScreen() {
                   selectedPeriod === "month" && styles.periodButtonTextActive,
                 ]}
               >
-                Future
+                {t.month}
               </Text>
             </TouchableOpacity>
           </View>
@@ -392,9 +421,7 @@ export default function ChecklistScreen() {
                 size={64}
                 color={Theme.colors.textSecondary}
               />
-              <Text style={styles.emptyText}>
-                No checklist items for this period
-              </Text>
+              <Text style={styles.emptyText}>{t.noChecklistItems}</Text>
             </View>
           )}
         </ScrollView>
@@ -406,12 +433,12 @@ export default function ChecklistScreen() {
           setSelectedItemId(null);
         }}
         onConfirm={handleConfirmModal}
-        title="Mark as Done?"
+        title={t.markAsDone}
         message={
           selectedItemId
-            ? `Are you sure you want to mark "${
-                checklistItems.find((i) => i.id === selectedItemId)?.title
-              }" as completed?`
+            ? t.confirmMarkMessage(
+                checklistItems.find((i) => i.id === selectedItemId)?.title || ""
+              )
             : undefined
         }
       />

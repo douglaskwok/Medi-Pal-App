@@ -11,9 +11,70 @@ import {
 import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import { useLanguage } from "../constants/LanguageContext";
 
 const { height, width } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+const translations = {
+  en: {
+    advancedFilters: "Advanced Filters",
+    mediCalEligibility: "Medi-Cal Eligibility",
+    showOnlyMediCal: "Show only Medi-Cal eligible resources",
+    natureOfResource: "Nature of Resource",
+    availability: "Availability",
+    selectDaysWhenNeeded: "Select days when you need the resource to be open",
+    distanceRadius: "Distance Radius",
+    clearAll: "Clear All",
+    applyFilters: "Apply Filters",
+    all: "All",
+    dentist: "Dentist",
+    gym: "Gym",
+    clinic: "Clinic",
+    hospital: "Hospital",
+    pharmacy: "Pharmacy",
+    mentalHealth: "Mental Health",
+    nutrition: "Nutrition",
+    visionCare: "Vision Care",
+    specialist: "Specialist",
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
+  },
+  es: {
+    advancedFilters: "Filtros Avanzados",
+    mediCalEligibility: "Elegibilidad de Medi-Cal",
+    showOnlyMediCal: "Mostrar solo recursos elegibles para Medi-Cal",
+    natureOfResource: "Naturaleza del Recurso",
+    availability: "Disponibilidad",
+    selectDaysWhenNeeded:
+      "Selecciona los días cuando necesites que el recurso esté abierto",
+    distanceRadius: "Radio de Distancia",
+    clearAll: "Limpiar Todo",
+    applyFilters: "Aplicar Filtros",
+    all: "Todo",
+    dentist: "Dentista",
+    gym: "Gimnasio",
+    clinic: "Clínica",
+    hospital: "Hospital",
+    pharmacy: "Farmacia",
+    mentalHealth: "Salud Mental",
+    nutrition: "Nutrición",
+    visionCare: "Cuidado de la Visión",
+    specialist: "Especialista",
+    monday: "Lunes",
+    tuesday: "Martes",
+    wednesday: "Miércoles",
+    thursday: "Jueves",
+    friday: "Viernes",
+    saturday: "Sábado",
+    sunday: "Domingo",
+  },
+};
 
 interface AdvancedFilterPopupProps {
   visible: boolean;
@@ -35,6 +96,9 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
   onDismiss,
   onApplyFilters,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   // Filter state
   const [mediCalEligible, setMediCalEligible] = useState(true);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["All"]);
@@ -61,6 +125,35 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
     "Vision Care",
     "Specialist",
   ];
+
+  const getTranslatedType = (type: string): string => {
+    const typeMap: { [key: string]: keyof typeof t } = {
+      All: "all",
+      Dentist: "dentist",
+      Gym: "gym",
+      Clinic: "clinic",
+      Hospital: "hospital",
+      Pharmacy: "pharmacy",
+      "Mental Health": "mentalHealth",
+      Nutrition: "nutrition",
+      "Vision Care": "visionCare",
+      Specialist: "specialist",
+    };
+    return t[typeMap[type]] || type;
+  };
+
+  const getTranslatedDay = (day: string): string => {
+    const dayMap: { [key: string]: keyof typeof t } = {
+      Monday: "monday",
+      Tuesday: "tuesday",
+      Wednesday: "wednesday",
+      Thursday: "thursday",
+      Friday: "friday",
+      Saturday: "saturday",
+      Sunday: "sunday",
+    };
+    return t[dayMap[day]] || day;
+  };
 
   const daysOfWeek = [
     "Monday",
@@ -133,7 +226,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
     <View style={styles.container}>
       <View style={[styles.content, { maxHeight: height * 0.85 }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>Advanced Filters</Text>
+          <Text style={styles.title}>{t.advancedFilters}</Text>
           <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={Theme.colors.text} />
           </TouchableOpacity>
@@ -145,11 +238,9 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
         >
           {/* Medi-Cal Eligibility Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Medi-Cal Eligibility</Text>
+            <Text style={styles.sectionTitle}>{t.mediCalEligibility}</Text>
             <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>
-                Show only Medi-Cal eligible resources
-              </Text>
+              <Text style={styles.switchLabel}>{t.showOnlyMediCal}</Text>
               <Switch
                 value={mediCalEligible}
                 onValueChange={setMediCalEligible}
@@ -164,7 +255,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
 
           {/* Resource Type Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nature of Resource</Text>
+            <Text style={styles.sectionTitle}>{t.natureOfResource}</Text>
             <View style={styles.chipContainer}>
               {resourceTypes.map((type) => (
                 <TouchableOpacity
@@ -181,7 +272,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
                       selectedTypes.includes(type) && styles.chipTextSelected,
                     ]}
                   >
-                    {type}
+                    {getTranslatedType(type)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -190,10 +281,8 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
 
           {/* Availability Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Availability</Text>
-            <Text style={styles.sectionSubtitle}>
-              Select days when you need the resource to be open
-            </Text>
+            <Text style={styles.sectionTitle}>{t.availability}</Text>
+            <Text style={styles.sectionSubtitle}>{t.selectDaysWhenNeeded}</Text>
             <View style={styles.availabilityContainer}>
               {daysOfWeek.map((day) => (
                 <TouchableOpacity
@@ -210,7 +299,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
                       availability[day] && styles.dayChipTextSelected,
                     ]}
                   >
-                    {day.slice(0, 3)}
+                    {getTranslatedDay(day).slice(0, 3)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -219,7 +308,7 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
 
           {/* Radius Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Distance Radius</Text>
+            <Text style={styles.sectionTitle}>{t.distanceRadius}</Text>
             <View style={styles.radiusContainer}>
               <Text style={styles.radiusValue}>{radius} miles</Text>
               <Slider
@@ -248,13 +337,13 @@ export const AdvancedFilterPopup: React.FC<AdvancedFilterPopupProps> = ({
             style={[styles.button, styles.clearButton]}
             onPress={handleClearFilters}
           >
-            <Text style={styles.clearButtonText}>Clear All</Text>
+            <Text style={styles.clearButtonText}>{t.clearAll}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.applyButton]}
             onPress={handleApplyFilters}
           >
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
+            <Text style={styles.applyButtonText}>{t.applyFilters}</Text>
           </TouchableOpacity>
         </View>
       </View>

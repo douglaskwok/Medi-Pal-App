@@ -21,6 +21,13 @@ import { CustomTabBar } from "./_layout";
 import { NotificationPopup } from "../../components/NotificationPopup";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import SelectionModal from "../../components/selectionModal";
+import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
+type Language = "en" | "es";
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+}
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
 
@@ -88,6 +95,7 @@ const translations = {
 };
 
 export default function ProfileScreen() {
+  const { language, setLanguage } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
@@ -108,13 +116,12 @@ export default function ProfileScreen() {
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
+  // const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
 
   // Get translations based on selected language
   const t =
-    translations[selectedLanguage as keyof typeof translations] ||
-    translations.en;
+    translations[language as keyof typeof translations] || translations.en;
 
   React.useEffect(() => {
     loadUserData();
@@ -615,12 +622,12 @@ export default function ProfileScreen() {
         <SelectionModal
           mode={"select_language"}
           setShowPopUp={setShowLanguageSettings}
-          selectedLanguage={selectedLanguage}
-          setSelectedLanguage={setSelectedLanguage}
+          selectedLanguage={language}
+          setSelectedLanguage={setLanguage}
         />
       )}
       <CustomTabBar
-        language={selectedLanguage}
+        language={language}
         opacity={notificationVisible ? 0.4 : 1}
       />
     </SafeAreaView>

@@ -15,8 +15,38 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Theme } from "../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
+import { useLanguage } from "../constants/LanguageContext";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+const translations = {
+  en: {
+    editItem: "Edit Item",
+    addItem: "Add Item",
+    title: "Title",
+    description: "Description",
+    optional: "Optional",
+    start: "Start",
+    end: "End",
+    enterTitle: "Enter title",
+    cancel: "Cancel",
+    save: "Save",
+    add: "Add",
+  },
+  es: {
+    editItem: "Editar Elemento",
+    addItem: "Agregar Elemento",
+    title: "Título",
+    description: "Descripción",
+    optional: "Opcional",
+    start: "Inicio",
+    end: "Fin",
+    enterTitle: "Ingresa el título",
+    cancel: "Cancelar",
+    save: "Guardar",
+    add: "Agregar",
+  },
+};
 
 interface ChecklistItemModalProps {
   visible: boolean;
@@ -42,6 +72,9 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
   onSave,
   editingItem,
 }) => {
+  const { language } = useLanguage();
+  const t =
+    translations[language as keyof typeof translations] || translations.en;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date());
@@ -220,14 +253,14 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
             >
               <View style={styles.content}>
                 <Text style={styles.title}>
-                  {editingItem ? "Edit Item" : "Add Item"}
+                  {editingItem ? t.editItem : t.addItem}
                 </Text>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Title *</Text>
+                  <Text style={styles.label}>{t.title} *</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter title"
+                    placeholder={t.enterTitle}
                     placeholderTextColor={Theme.colors.textLight}
                     value={title}
                     onChangeText={setTitle}
@@ -236,10 +269,10 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Description</Text>
+                  <Text style={styles.label}>{t.description}</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
-                    placeholder="Optional"
+                    placeholder={t.optional}
                     placeholderTextColor={Theme.colors.textLight}
                     value={description}
                     onChangeText={setDescription}
@@ -252,7 +285,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
 
                 <View style={styles.dateTimeRow}>
                   <View style={styles.dateTimeGroup}>
-                    <Text style={styles.label}>Start *</Text>
+                    <Text style={styles.label}>{t.start} *</Text>
                     <TouchableOpacity
                       style={styles.dateButton}
                       onPress={openStartPicker}
@@ -315,7 +348,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                   </View>
 
                   <View style={styles.dateTimeGroup}>
-                    <Text style={styles.label}>End *</Text>
+                    <Text style={styles.label}>{t.end} *</Text>
                     <TouchableOpacity
                       style={styles.dateButton}
                       onPress={openEndPicker}
@@ -384,7 +417,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                     onPress={onClose}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>{t.cancel}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -397,7 +430,7 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                     disabled={!title.trim()}
                   >
                     <Text style={styles.saveButtonText}>
-                      {editingItem ? "Save" : "Add"}
+                      {editingItem ? t.save : t.add}
                     </Text>
                   </TouchableOpacity>
                 </View>
