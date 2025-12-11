@@ -43,6 +43,14 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   const opacity = useRef(new Animated.Value(0)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current; // Add for overlay
   const pan = useRef(new Animated.ValueXY()).current;
+  const yRef = useRef(0);
+
+  useEffect(() => {
+    const id = pan.y.addListener(({ value }) => {
+      yRef.current = value; // store current value
+    });
+    return () => pan.y.removeListener(id);
+  }, []);
 
   const autoDismissTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -51,7 +59,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
       onPanResponderGrant: () => {
-        pan.setOffset({ x: 0, y: pan.y._value });
+        pan.setOffset({ x: 0, y: yRef.current });
       },
       onPanResponderMove: Animated.event([null, { dy: pan.y }], {
         useNativeDriver: false,

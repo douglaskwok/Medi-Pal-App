@@ -28,6 +28,7 @@ import { supabase } from "../../lib/supabase";
 import { useLocalSearchParams } from "expo-router";
 import { AdvancedFilterPopup } from "../../components/AdvancedFilterPopup";
 
+// import type { DirectionsLeg, DirectionsStep } from "@types/google.maps";
 import SelectionModal from "../../components/selectionModal";
 import AreYouSurePopup from "../../components/AreYouSurePopup";
 
@@ -52,11 +53,18 @@ interface RouteCoordinate {
 }
 
 interface DirectionStep {
-  distance: { text: string; value: number };
-  duration: { text: string; value: number };
-  html_instructions: string;
+  distance?: { text: string; value: number };
+  duration?: { text: string; value: number };
+  html_instructions?: string;
   maneuver?: string;
 }
+
+// interface StepData {
+//   distance: { text: string; value: number };
+//   duration: { text: string; value: number };
+//   html_instructions: string;
+//   maneuver?: string;
+// }
 
 interface SavedResource {
   id: string;
@@ -594,17 +602,19 @@ export default function ResourcesScreen() {
         const steps: DirectionStep[] = [];
         let totalDist = 0;
         let totalDur = 0;
-        route.legs.forEach((leg: any) => {
-          totalDist += leg.distance.value;
-          totalDur += leg.duration.value;
+        route.legs.forEach((leg: google.maps.DirectionsLeg) => {
+          totalDist += leg?.distance?.value || 0;
+          totalDur += leg?.duration?.value || 0;
           if (leg.steps) {
-            leg.steps.forEach((step: any) => {
+            leg.steps.forEach((step: DirectionStep) => {
+              // if (step.distance && step.duration && step.instructions) {
               steps.push({
                 distance: step.distance,
                 duration: step.duration,
                 html_instructions: step.html_instructions,
                 maneuver: step.maneuver,
               });
+              // }
             });
           }
         });
@@ -963,18 +973,22 @@ export default function ResourcesScreen() {
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.stepsList}>
-          {directionSteps.map((step, index) => (
+          {directionSteps.map((step: DirectionStep, index: number) => (
             <View key={index} style={styles.directionStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>{index + 1}</Text>
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepInstruction}>
-                  {stripHtmlTags(step.html_instructions)}
+                  {stripHtmlTags(step?.html_instructions || "")}
                 </Text>
                 <View style={styles.stepMeta}>
-                  <Text style={styles.stepDistance}>{step.distance.text}</Text>
-                  <Text style={styles.stepDuration}>{step.duration.text}</Text>
+                  <Text style={styles.stepDistance}>
+                    {step?.distance?.text || "N/A"}
+                  </Text>
+                  <Text style={styles.stepDuration}>
+                    {step?.duration?.text || "N/A"}
+                  </Text>
                 </View>
               </View>
             </View>

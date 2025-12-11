@@ -8,6 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { Theme } from "../constants/Theme";
+import { ImageSourcePropType } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface ResourceCardProps {
@@ -17,7 +18,7 @@ interface ResourceCardProps {
   distance: string;
   address: string;
   rating: number;
-  image: any;
+  image: ImageSourcePropType;
   onPress: () => void;
   show_action_buttons?: boolean;
   saveResource?: () => void;

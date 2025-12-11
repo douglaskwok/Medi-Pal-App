@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,19 +10,25 @@ import {
   ScrollView,
   Animated,
   Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Theme } from '../../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Theme } from "../../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../lib/supabase";
+import type { AuthError } from "@supabase/supabase-js";
+// interface AuthError {
+//   message: string;
+//   status?: number;
+//   name: string;
+// }
 
 export default function SignInScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,7 +47,7 @@ export default function SignInScreen() {
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
-      toValue: activeTab === 'signin' ? 0 : 1,
+      toValue: activeTab === "signin" ? 0 : 1,
       useNativeDriver: true,
       tension: 100,
       friction: 8,
@@ -52,7 +58,7 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
@@ -60,18 +66,20 @@ export default function SignInScreen() {
     setError(null);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (signInError) throw signInError;
 
       if (data.user) {
-        router.replace('/(tabs)/home');
+        router.replace("/(tabs)/home");
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+    } catch (err) {
+      const error = err as AuthError;
+      setError(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }
@@ -79,17 +87,17 @@ export default function SignInScreen() {
 
   const handleSignUp = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -111,10 +119,11 @@ export default function SignInScreen() {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        router.replace('/(tabs)/home');
+        router.replace("/(tabs)/home");
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+    } catch (err) {
+      const error = err as AuthError;
+      setError(error.message || "Failed to sign up");
     } finally {
       setLoading(false);
     }
@@ -122,231 +131,255 @@ export default function SignInScreen() {
 
   const handleForgotPassword = () => {
     // TODO: Implement forgot password
-    setError('Forgot password feature coming soon');
+    setError("Forgot password feature coming soon");
   };
 
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <Animated.View
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [
-                  {
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [20, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/icon.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              <Text style={styles.logoText}>Medi-Pal</Text>
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/icon.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.logoText}>Medi-Pal</Text>
+          </View>
+
+          {/* White Card */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              {activeTab === "signin" ? "Welcome back" : "Create your account"}
+            </Text>
+
+            {/* Tab Switcher */}
+            <View
+              style={styles.tabContainer}
+              onLayout={(e) => {
+                const containerWidth = e.nativeEvent.layout.width;
+                const tabWidth = (containerWidth - 6) / 2; // Subtract padding (3px each side)
+                setTabWidth(tabWidth);
+              }}
+            >
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => setActiveTab("signin")}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "signin" && styles.tabTextActive,
+                  ]}
+                >
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => setActiveTab("signup")}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "signup" && styles.tabTextActive,
+                  ]}
+                >
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+              {tabWidth > 0 && (
+                <Animated.View
+                  style={[
+                    styles.tabContainerInner,
+                    {
+                      width: tabWidth,
+                      transform: [
+                        {
+                          translateX: slideAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, tabWidth],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.slider} />
+                </Animated.View>
+              )}
             </View>
 
-            {/* White Card */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {activeTab === 'signin' ? 'Welcome back' : 'Create your account'}
-              </Text>
-
-              {/* Tab Switcher */}
-              <View 
-                style={styles.tabContainer}
-                onLayout={(e) => {
-                  const containerWidth = e.nativeEvent.layout.width;
-                  const tabWidth = (containerWidth - 6) / 2; // Subtract padding (3px each side)
-                  setTabWidth(tabWidth);
-                }}
-              >
-                <TouchableOpacity
-                  style={styles.tab}
-                  onPress={() => setActiveTab('signin')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabText, activeTab === 'signin' && styles.tabTextActive]}>
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.tab}
-                  onPress={() => setActiveTab('signup')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabText, activeTab === 'signup' && styles.tabTextActive]}>
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
-                {tabWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.tabContainerInner,
-                      {
-                        width: tabWidth,
-                        transform: [
-                          {
-                            translateX: slideAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0, tabWidth],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <View style={styles.slider} />
-                  </Animated.View>
-                )}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
               </View>
+            )}
 
-              {error && (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
+            {/* Form */}
+            <View style={styles.form}>
+              {activeTab === "signup" && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your name"
+                    placeholderTextColor={Theme.colors.textLight}
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                  />
                 </View>
               )}
 
-              {/* Form */}
-              <View style={styles.form}>
-                {activeTab === 'signup' && (
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your name"
-                      placeholderTextColor={Theme.colors.textLight}
-                      value={name}
-                      onChangeText={setName}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor={Theme.colors.textLight}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordWrapper}>
                   <TextInput
-                    style={styles.input}
-                    placeholder="Enter your email"
+                    style={styles.passwordInput}
+                    placeholder="Enter your password"
                     placeholderTextColor={Theme.colors.textLight}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
-                    autoComplete="email"
+                    autoComplete="password"
                   />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color="#000000"
+                    />
+                  </TouchableOpacity>
                 </View>
+              </View>
 
+              {activeTab === "signup" && (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
+                  <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.passwordWrapper}>
                     <TextInput
                       style={styles.passwordInput}
-                      placeholder="Enter your password"
+                      placeholder="Confirm your password"
                       placeholderTextColor={Theme.colors.textLight}
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showConfirmPassword}
                       autoCapitalize="none"
                       autoComplete="password"
                     />
                     <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       style={styles.eyeIcon}
                     >
                       <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name={
+                          showConfirmPassword
+                            ? "eye-off-outline"
+                            : "eye-outline"
+                        }
                         size={20}
                         color="#000000"
                       />
                     </TouchableOpacity>
                   </View>
                 </View>
+              )}
 
-                {activeTab === 'signup' && (
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Confirm Password</Text>
-                    <View style={styles.passwordWrapper}>
-                      <TextInput
-                        style={styles.passwordInput}
-                        placeholder="Confirm your password"
-                        placeholderTextColor={Theme.colors.textLight}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry={!showConfirmPassword}
-                        autoCapitalize="none"
-                        autoComplete="password"
-                      />
-                      <TouchableOpacity
-                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                        style={styles.eyeIcon}
-                      >
-                        <Ionicons
-                          name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                          size={20}
-                          color="#000000"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {activeTab === 'signin' && (
-                  <TouchableOpacity
-                    onPress={handleForgotPassword}
-                    style={styles.forgotPassword}
-                  >
-                    <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-                  </TouchableOpacity>
-                )}
-
+              {activeTab === "signin" && (
                 <TouchableOpacity
-                  style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                  onPress={activeTab === 'signin' ? handleSignIn : handleSignUp}
-                  activeOpacity={0.8}
-                  disabled={loading}
+                  onPress={handleForgotPassword}
+                  style={styles.forgotPassword}
                 >
-                  <Text style={styles.submitButtonText}>
-                    {loading 
-                      ? (activeTab === 'signin' ? 'Signing In...' : 'Creating Account...')
-                      : (activeTab === 'signin' ? 'Sign In' : 'Create Account')
-                    }
+                  <Text style={styles.forgotPasswordText}>
+                    Forgot password?
                   </Text>
                 </TouchableOpacity>
-              </View>
-            </View>
+              )}
 
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                By continuing, you agree to our{' '}
-                <Text
-                  style={styles.footerLink}
-                  onPress={() => router.push('/(auth)/terms')}
-                >
-                  Terms of Service
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={activeTab === "signin" ? handleSignIn : handleSignUp}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={styles.submitButtonText}>
+                  {loading
+                    ? activeTab === "signin"
+                      ? "Signing In..."
+                      : "Creating Account..."
+                    : activeTab === "signin"
+                    ? "Sign In"
+                    : "Create Account"}
                 </Text>
-                {' '}and{' '}
-                <Text
-                  style={styles.footerLink}
-                  onPress={() => router.push('/(auth)/privacy')}
-                >
-                  Privacy Policy
-                </Text>
-              </Text>
+              </TouchableOpacity>
             </View>
-          </Animated.View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              By continuing, you agree to our{" "}
+              <Text
+                style={styles.footerLink}
+                onPress={() => router.push("/(auth)/terms")}
+              >
+                Terms of Service
+              </Text>{" "}
+              and{" "}
+              <Text
+                style={styles.footerLink}
+                onPress={() => router.push("/(auth)/privacy")}
+              >
+                Privacy Policy
+              </Text>
+            </Text>
+          </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -356,23 +389,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: Theme.spacing.lg,
     paddingVertical: Theme.spacing.lg,
   },
   keyboardView: {
     flex: 1,
-    width: '100%',
-    justifyContent: 'center',
+    width: "100%",
+    justifyContent: "center",
   },
   content: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Theme.spacing.md,
   },
   logo: {
@@ -385,7 +418,7 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     letterSpacing: 0.5,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   card: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -399,36 +432,36 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.bold,
     color: Theme.colors.text,
     marginBottom: Theme.spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     padding: 3,
     marginBottom: Theme.spacing.sm,
-    position: 'relative',
+    position: "relative",
   },
   tab: {
     flex: 1,
     paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: Theme.borderRadius.sm,
     minHeight: 36,
     zIndex: 2,
   },
   tabContainerInner: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 3,
     left: 3,
     height: 36,
     borderRadius: Theme.borderRadius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   slider: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     backgroundColor: Theme.colors.backgroundLight,
     borderRadius: Theme.borderRadius.sm,
     borderWidth: 1,
@@ -467,8 +500,8 @@ const styles = StyleSheet.create({
     height: 44,
   },
   passwordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     borderWidth: 1,
@@ -485,12 +518,12 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: Theme.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     height: 44,
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: -Theme.spacing.sm,
     marginBottom: Theme.spacing.sm,
   },
@@ -503,10 +536,10 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primaryDark,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Theme.spacing.sm,
     height: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   submitButtonText: {
     fontSize: 14,
@@ -517,8 +550,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: Theme.spacing.lg,
   },
   dividerLine: {
@@ -530,12 +563,12 @@ const styles = StyleSheet.create({
     marginHorizontal: Theme.spacing.md,
     fontSize: 14,
     fontFamily: Theme.fonts.regular,
-    color: '#000000',
+    color: "#000000",
   },
   googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.md,
@@ -547,9 +580,9 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#4285F4',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
   },
   googleIcon: {
     fontSize: 14,
@@ -559,21 +592,21 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontFamily: Theme.fonts.medium,
-    color: '#000000',
+    color: "#000000",
   },
   errorContainer: {
-    backgroundColor: Theme.colors.error + '10',
+    backgroundColor: Theme.colors.error + "10",
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
     borderWidth: 1,
-    borderColor: Theme.colors.error + '30',
+    borderColor: Theme.colors.error + "30",
   },
   errorText: {
     fontSize: 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.error,
-    textAlign: 'center',
+    textAlign: "center",
   },
   footer: {
     paddingHorizontal: Theme.spacing.md,
@@ -582,15 +615,14 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     fontFamily: Theme.fonts.regular,
-    color: '#000000',
-    textAlign: 'center',
+    color: "#000000",
+    textAlign: "center",
     lineHeight: 18,
   },
   footerLink: {
-    color: '#000000',
+    color: "#000000",
     fontFamily: Theme.fonts.medium,
-    textDecorationLine: 'underline',
-    fontWeight: 'bold',
+    textDecorationLine: "underline",
+    fontWeight: "bold",
   },
 });
-

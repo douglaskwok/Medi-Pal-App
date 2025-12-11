@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,20 +10,21 @@ import {
   ScrollView,
   Animated,
   Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Theme } from '../../constants/Theme';
-import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { GradientBackground } from '../../components/GradientBackground';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Theme } from "../../constants/Theme";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../lib/supabase";
+import { GradientBackground } from "../../components/GradientBackground";
+import type { AuthError } from "@supabase/supabase-js";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signup');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signup");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function SignUpScreen() {
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
-      toValue: activeTab === 'signin' ? 0 : 1,
+      toValue: activeTab === "signin" ? 0 : 1,
       useNativeDriver: true,
       tension: 100,
       friction: 8,
@@ -50,24 +51,24 @@ export default function SignUpScreen() {
   }, [activeTab]);
 
   React.useEffect(() => {
-    if (activeTab === 'signin') {
-      router.replace('/(auth)/signin');
+    if (activeTab === "signin") {
+      router.replace("/(auth)/signin");
     }
   }, [activeTab]);
 
   const handleSignUp = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -89,10 +90,11 @@ export default function SignUpScreen() {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        router.replace('/(tabs)/home');
+        router.replace("/(tabs)/home");
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+    } catch (err) {
+      const error = err as AuthError;
+      setError(error.message || "Failed to sign up");
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,7 @@ export default function SignUpScreen() {
   return (
     <GradientBackground>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <View style={styles.container}>
@@ -124,7 +126,7 @@ export default function SignUpScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require('../../assets/icon.png')}
+                source={require("../../assets/icon.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -136,30 +138,42 @@ export default function SignUpScreen() {
               <Text style={styles.cardTitle}>Create your account</Text>
 
               {/* Tab Switcher */}
-              <View 
+              <View
                 style={styles.tabContainer}
                 onLayout={(e) => setTabWidth(e.nativeEvent.layout.width)}
               >
                 <TouchableOpacity
                   style={styles.tab}
-                  onPress={() => router.push('/(auth)/signin')}
+                  onPress={() => router.push("/(auth)/signin")}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.tabText, activeTab === 'signin' && styles.tabTextActive]}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "signin" && styles.tabTextActive,
+                    ]}
+                  >
                     Sign In
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.tab}
-                  onPress={() => setActiveTab('signup')}
+                  onPress={() => setActiveTab("signup")}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.tabText, activeTab === 'signup' && styles.tabTextActive]}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "signup" && styles.tabTextActive,
+                    ]}
+                  >
                     Sign Up
                   </Text>
                 </TouchableOpacity>
                 {tabWidth > 0 && (
-                  <View style={[styles.tabContainerInner, { width: tabWidth / 2 }]}>
+                  <View
+                    style={[styles.tabContainerInner, { width: tabWidth / 2 }]}
+                  >
                     <Animated.View
                       style={[
                         styles.slider,
@@ -231,7 +245,7 @@ export default function SignUpScreen() {
                       style={styles.eyeIcon}
                     >
                       <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
                         size={20}
                         color="#000000"
                       />
@@ -253,11 +267,17 @@ export default function SignUpScreen() {
                       autoComplete="password"
                     />
                     <TouchableOpacity
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       style={styles.eyeIcon}
                     >
                       <Ionicons
-                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name={
+                          showConfirmPassword
+                            ? "eye-off-outline"
+                            : "eye-outline"
+                        }
                         size={20}
                         color="#000000"
                       />
@@ -266,13 +286,16 @@ export default function SignUpScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                  style={[
+                    styles.submitButton,
+                    loading && styles.submitButtonDisabled,
+                  ]}
                   onPress={handleSignUp}
                   activeOpacity={0.8}
                   disabled={loading}
                 >
                   <Text style={styles.submitButtonText}>
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    {loading ? "Creating Account..." : "Create Account"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -281,17 +304,17 @@ export default function SignUpScreen() {
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                By continuing, you agree to our{' '}
+                By continuing, you agree to our{" "}
                 <Text
                   style={styles.footerLink}
-                  onPress={() => router.push('/(auth)/terms')}
+                  onPress={() => router.push("/(auth)/terms")}
                 >
                   Terms of Service
-                </Text>
-                {' '}and{' '}
+                </Text>{" "}
+                and{" "}
                 <Text
                   style={styles.footerLink}
-                  onPress={() => router.push('/(auth)/privacy')}
+                  onPress={() => router.push("/(auth)/privacy")}
                 >
                   Privacy Policy
                 </Text>
@@ -307,7 +330,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: Theme.spacing.lg,
   },
   keyboardView: {
@@ -317,7 +340,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Theme.spacing.lg,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Theme.spacing.lg,
   },
   logo: {
@@ -328,9 +351,9 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontFamily: Theme.fonts.bold,
-    color: '#000000',
+    color: "#000000",
     letterSpacing: 0.5,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   card: {
     backgroundColor: Theme.colors.backgroundLight,
@@ -342,48 +365,48 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 24,
     fontFamily: Theme.fonts.bold,
-    color: '#000000',
+    color: "#000000",
     marginBottom: Theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     padding: 3,
     marginBottom: Theme.spacing.sm,
-    position: 'relative',
+    position: "relative",
   },
   tab: {
     flex: 1,
     paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: Theme.borderRadius.sm,
     minHeight: 36,
     zIndex: 2,
   },
   tabContainerInner: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 3,
     left: 3,
     height: 36,
     borderRadius: Theme.borderRadius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   slider: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     backgroundColor: Theme.colors.primary,
     borderRadius: Theme.borderRadius.sm,
   },
   tabText: {
     fontSize: 12,
     fontFamily: Theme.fonts.medium,
-    color: '#000000',
+    color: "#000000",
   },
   tabTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontFamily: Theme.fonts.semibold,
   },
   form: {
@@ -395,7 +418,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: Theme.fonts.medium,
-    color: '#000000',
+    color: "#000000",
     marginBottom: Theme.spacing.sm,
   },
   input: {
@@ -404,13 +427,13 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.md,
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
-    color: '#000000',
+    color: "#000000",
     borderWidth: 1,
     borderColor: Theme.colors.borderLight,
   },
   passwordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.borderRadius.md,
     borderWidth: 1,
@@ -421,7 +444,7 @@ const styles = StyleSheet.create({
     padding: Theme.spacing.md,
     fontSize: 16,
     fontFamily: Theme.fonts.regular,
-    color: '#000000',
+    color: "#000000",
   },
   eyeIcon: {
     padding: Theme.spacing.md,
@@ -430,7 +453,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primary,
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Theme.spacing.md,
   },
   submitButtonText: {
@@ -442,18 +465,18 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   errorContainer: {
-    backgroundColor: Theme.colors.error + '10',
+    backgroundColor: Theme.colors.error + "10",
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.sm,
     marginBottom: Theme.spacing.md,
     borderWidth: 1,
-    borderColor: Theme.colors.error + '30',
+    borderColor: Theme.colors.error + "30",
   },
   errorText: {
     fontSize: 14,
     fontFamily: Theme.fonts.regular,
     color: Theme.colors.error,
-    textAlign: 'center',
+    textAlign: "center",
   },
   footer: {
     paddingHorizontal: Theme.spacing.md,
@@ -462,15 +485,14 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     fontFamily: Theme.fonts.regular,
-    color: '#000000',
-    textAlign: 'center',
+    color: "#000000",
+    textAlign: "center",
     lineHeight: 18,
   },
   footerLink: {
-    color: '#000000',
+    color: "#000000",
     fontFamily: Theme.fonts.medium,
-    textDecorationLine: 'underline',
-    fontWeight: 'bold',
+    textDecorationLine: "underline",
+    fontWeight: "bold",
   },
 });
-

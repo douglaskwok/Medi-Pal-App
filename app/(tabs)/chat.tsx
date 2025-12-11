@@ -69,6 +69,11 @@ interface Resource {
   hours: string;
   description: string;
 }
+interface SoundWaveIconProps {
+  isActive: boolean;
+  size?: number;
+  color?: string;
+}
 
 const openai = new OpenAI({
   apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || "",
@@ -673,7 +678,11 @@ export default function ChatScreen() {
     }
   };
 
-  const SoundWaveIcon = ({ isActive, size = 24, color = "#fff" }) => {
+  const SoundWaveIcon = ({
+    isActive,
+    size = 24,
+    color = "#fff",
+  }: SoundWaveIconProps) => {
     const waveAnimations = useRef([
       new Animated.Value(1),
       new Animated.Value(1),
@@ -928,7 +937,11 @@ export default function ChatScreen() {
     const lastMessage = messages[messages.length - 1];
 
     // If the last message is from assistant, speak it
-    if (lastMessage && lastMessage.role === "assistant") {
+    if (
+      lastMessage &&
+      lastMessage.role === "assistant" &&
+      currentView === "avatar-chat"
+    ) {
       speak(lastMessage.content);
     }
   }, [messages]); // Trigger whenever messages change
@@ -1015,7 +1028,10 @@ export default function ChatScreen() {
 
     try {
       const conversationHistory = messages.map((msg) => ({
-        role: msg.role === "user" ? "user" : "assistant",
+        role:
+          msg.role === "user"
+            ? "user"
+            : ("assistant" as "user" | "assistant" | "system"),
         content: msg.content,
       }));
 

@@ -120,53 +120,53 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
     return format(date, "MMM d, yyyy h:mm a");
   };
 
-  const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowStartPicker(false);
-    }
-    if (selectedDate) {
-      if (pickerMode === "date") {
-        const newDate = new Date(selectedDate);
-        newDate.setHours(startDate.getHours());
-        newDate.setMinutes(startDate.getMinutes());
-        setStartDate(newDate);
-        if (Platform.OS === "android") {
-          setPickerMode("time");
-          setTimeout(() => setShowStartPicker(true), 100);
-        }
-      } else {
-        const newDate = new Date(startDate);
-        newDate.setHours(selectedDate.getHours());
-        newDate.setMinutes(selectedDate.getMinutes());
-        setStartDate(newDate);
-        setPickerMode("date");
-      }
-    }
-  };
+  // const handleStartDateChange = (event: any, selectedDate?: Date) => {
+  //   if (Platform.OS === "android") {
+  //     setShowStartPicker(false);
+  //   }
+  //   if (selectedDate) {
+  //     if (pickerMode === "date") {
+  //       const newDate = new Date(selectedDate);
+  //       newDate.setHours(startDate.getHours());
+  //       newDate.setMinutes(startDate.getMinutes());
+  //       setStartDate(newDate);
+  //       if (Platform.OS === "android") {
+  //         setPickerMode("time");
+  //         setTimeout(() => setShowStartPicker(true), 100);
+  //       }
+  //     } else {
+  //       const newDate = new Date(startDate);
+  //       newDate.setHours(selectedDate.getHours());
+  //       newDate.setMinutes(selectedDate.getMinutes());
+  //       setStartDate(newDate);
+  //       setPickerMode("date");
+  //     }
+  //   }
+  // };
 
-  const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowEndPicker(false);
-    }
-    if (selectedDate) {
-      if (pickerMode === "date") {
-        const newDate = new Date(selectedDate);
-        newDate.setHours(endDate.getHours());
-        newDate.setMinutes(endDate.getMinutes());
-        setEndDate(newDate);
-        if (Platform.OS === "android") {
-          setPickerMode("time");
-          setTimeout(() => setShowEndPicker(true), 100);
-        }
-      } else {
-        const newDate = new Date(endDate);
-        newDate.setHours(selectedDate.getHours());
-        newDate.setMinutes(selectedDate.getMinutes());
-        setEndDate(newDate);
-        setPickerMode("date");
-      }
-    }
-  };
+  // const handleEndDateChange = (event: any, selectedDate?: Date) => {
+  //   if (Platform.OS === "android") {
+  //     setShowEndPicker(false);
+  //   }
+  //   if (selectedDate) {
+  //     if (pickerMode === "date") {
+  //       const newDate = new Date(selectedDate);
+  //       newDate.setHours(endDate.getHours());
+  //       newDate.setMinutes(endDate.getMinutes());
+  //       setEndDate(newDate);
+  //       if (Platform.OS === "android") {
+  //         setPickerMode("time");
+  //         setTimeout(() => setShowEndPicker(true), 100);
+  //       }
+  //     } else {
+  //       const newDate = new Date(endDate);
+  //       newDate.setHours(selectedDate.getHours());
+  //       newDate.setMinutes(selectedDate.getMinutes());
+  //       setEndDate(newDate);
+  //       setPickerMode("date");
+  //     }
+  //   }
+  // };
 
   const openStartPicker = () => {
     setPickerMode("date");
