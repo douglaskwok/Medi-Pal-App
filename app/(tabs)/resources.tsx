@@ -279,6 +279,8 @@ export default function ResourcesScreen() {
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const containerRef = useRef(null);
+  // console.log(selectedSavedResource);
+  // console.log(selectedDestination?.address);
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -684,7 +686,12 @@ export default function ResourcesScreen() {
 
   const getDirections = async (
     origin: { latitude: number; longitude: number },
-    destination: { latitude: number; longitude: number; name: string }
+    destination: {
+      latitude: number;
+      longitude: number;
+      name: string;
+      address?: string;
+    }
   ) => {
     if (!GOOGLE_MAPS_API_KEY) {
       Alert.alert("Error", "Google Maps API key not configured.");
@@ -807,12 +814,14 @@ export default function ResourcesScreen() {
   const handleSavedResourceSelect = async (resource: SavedResource) => {
     setSelectedSavedResource(resource);
     setSelectedResourceForDirections(null);
-    setSelectedDestination({
+    const newDestination = {
       latitude: resource.latitude,
       longitude: resource.longitude,
       name: resource.name,
       address: resource.address,
-    });
+    };
+    setSelectedDestination(newDestination);
+
     setRouteStarted(false);
     setShowDetails(false);
     setShowSaveOption(false);
@@ -820,8 +829,12 @@ export default function ResourcesScreen() {
       latitude: resource.latitude,
       longitude: resource.longitude,
       name: resource.name,
+      address: resource.address,
     });
+    // console.log(resource.address);
+    // console.log(selectedDestination);
   };
+  // console.log(selectedDestination);
   const resetTipsChecklist = () => {
     setTipsChecklist(
       prepTipsChecklist.map((item) => ({ ...item, completed: false }))
@@ -1427,9 +1440,7 @@ export default function ResourcesScreen() {
                   size={isTablet ? 26 : 20}
                   color={Theme.colors.success}
                 />
-                <Text style={styles.eligibilityText}>
-                  You are eligible for this service
-                </Text>
+                <Text style={styles.eligibilityText}>{t.eligibility}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Ionicons
