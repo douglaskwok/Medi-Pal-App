@@ -647,46 +647,63 @@ export default function ChatScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.initialQuery]);
-  useEffect(() => {
-    if (currentView === "avatar-chat" && messages.length > 0) {
-      // Update the first message (greeting) with new avatar name
-      // Remove duplicates first
-      const uniqueMessages = Array.from(
-        new Map(messages.map((msg) => [msg.id, msg])).values()
-      );
+  // useEffect(() => {
+  //   if (currentView === "avatar-chat" && messages.length > 0) {
+  //     // Update the first message (greeting) with new avatar name
+  //     // Remove duplicates first
+  //     const uniqueMessages = Array.from(
+  //       new Map(messages.map((msg) => [msg.id, msg])).values()
+  //     );
 
-      // Update only the first assistant message (greeting)
-      if (uniqueMessages[0] && uniqueMessages[0].role === "assistant") {
-        const avatarName = getAvatarById(avatar).name;
-        const greeting =
-          language === "es"
-            ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
-            : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
+  //     // Update only the first assistant message (greeting)
+  //     if (uniqueMessages[0] && uniqueMessages[0].role === "assistant") {
+  //       const avatarName = getAvatarById(avatar).name;
+  //       let greeting;
 
-        // For conversationId 1 (Anxiety and sleep issues):
-        language === "es"
-          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿En qué puedo asistirte hoy?`
-          : `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I assist you today?`;
+  //       if (language === "es") {
+  //         switch (conversationId) {
+  //           case 0:
+  //             greeting = `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`;
+  //             break;
+  //           case 1:
+  //             greeting = `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿En qué puedo asistirte hoy?`;
+  //             break;
+  //           case 2:
+  //             greeting = `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Qué te preocupa hoy?`;
+  //             break;
+  //           case 3:
+  //             greeting = `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo te puedo apoyar hoy?`;
+  //             break;
+  //           default:
+  //             greeting = `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`;
+  //         }
+  //       } else {
+  //         switch (conversationId) {
+  //           case 0:
+  //             greeting = `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
+  //             break;
+  //           case 1:
+  //             greeting = `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I assist you today?`;
+  //             break;
+  //           case 2:
+  //             greeting = `Hello! I'm ${avatarName}, your AI healthcare assistant. What's on your mind today?`;
+  //             break;
+  //           case 3:
+  //             greeting = `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I support you today?`;
+  //             break;
+  //           default:
+  //             greeting = `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
+  //         }
+  //       }
+  //       uniqueMessages[0] = {
+  //         ...uniqueMessages[0],
+  //         content: greeting,
+  //       };
+  //     }
 
-        // For conversationId 2 (Exercise for beginners):
-        language === "es"
-          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Qué te preocupa hoy?`
-          : `Hello! I'm ${avatarName}, your AI healthcare assistant. What's on your mind today?`;
-
-        // For conversationId 3 (Diabetes management):
-        language === "es"
-          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo te puedo apoyar hoy?`
-          : `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I support you today?`;
-
-        uniqueMessages[0] = {
-          ...uniqueMessages[0],
-          content: greeting,
-        };
-      }
-
-      setMessages(uniqueMessages);
-    }
-  }, [avatar, currentView, messages.length]);
+  //     setMessages(uniqueMessages);
+  //   }
+  // }, [avatar, currentView, messages.length]);
 
   useEffect(() => {
     if (currentView === "avatar-chat" && isVideoReady) {
@@ -1371,6 +1388,7 @@ export default function ChatScreen() {
   }, []);
   useEffect(() => {
     // Get the last message
+
     const lastMessage = messages[messages.length - 1];
 
     // If the last message is from assistant, speak it
@@ -1379,7 +1397,9 @@ export default function ChatScreen() {
       lastMessage.role === "assistant" &&
       currentView === "avatar-chat"
     ) {
-      speak(lastMessage.content);
+      setTimeout(() => {
+        speak(lastMessage.content);
+      }, 500);
     }
   }, [messages]); // Trigger whenever messages change
   const speak = (thingToSay: string) => {
