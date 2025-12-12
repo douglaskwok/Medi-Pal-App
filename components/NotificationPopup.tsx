@@ -17,6 +17,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useLanguage } from "../constants/LanguageContext";
+import { fr } from "date-fns/locale";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
@@ -28,6 +29,7 @@ const translations = {
     saveResource: "Save Resource",
     resourceIsSaved: "Resource is saved!",
     takeMeThere: "Take Me There!",
+    freeGym: "Free Gym Membership at Palo Alto Family YMCA",
   },
   es: {
     verified: "Medi-Pal Verificado: Recurso Cercano",
@@ -35,6 +37,7 @@ const translations = {
     saveResource: "Guardar Recurso",
     resourceIsSaved: "¡Recurso guardado!",
     takeMeThere: "¡Llévame allá!",
+    freeGym: "Miembro de Gimnasio Gratuito en YMCA de Familia de Palo Alto",
   },
 };
 
@@ -289,9 +292,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.title}>
-            Free Gym Membership at Palo Alto Family YMCA
-          </Text>
+          <Text style={styles.title}>{t.freeGym}</Text>
           <View style={[styles.eligibilityRow]}>
             <Ionicons
               name="checkmark-circle"

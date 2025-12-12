@@ -194,8 +194,21 @@ export default function ChatScreen() {
   const VOICE_CONFIGS = {
     "dr-al":
       language === "en"
-        ? { language: "en-GB", pitch: 1.0, rate: 1.0 }
-        : { language: "es-US", pitch: 0.0, rate: 0.9 },
+        ? {
+            language: "en-GB",
+            pitch: Platform.OS === "ios" ? 1.0 : 0.0,
+            rate: 1.0,
+            ...(Platform.OS === "android" && {
+              voice: "en-gb-x-gbb-local",
+              pitch: 0,
+            }),
+          }
+        : {
+            language: Platform.OS === "android" ? "es-MX" : "es-US",
+            pitch: 0.0,
+            rate: 0.9,
+            ...(Platform.OS === "android" && { voice: "es-es-x-eem-local" }),
+          },
     "dr-lora":
       language === "en"
         ? { language: "en-ZA", pitch: 0.8, rate: 1.0 }
@@ -206,8 +219,18 @@ export default function ChatScreen() {
         : { language: "es-ES", pitch: 1.2, rate: 1.0 },
     bert:
       language === "en"
-        ? { language: "en-GB", pitch: 2, rate: 1.1 }
-        : { language: "es-US", pitch: 0.2, rate: 1.0 },
+        ? {
+            language: "en-GB",
+            pitch: Platform.OS === "ios" ? 2.0 : 0.0,
+            rate: 1.1,
+            ...(Platform.OS === "android" && { voice: "en-gb-x-gbb-local" }),
+          }
+        : {
+            language: Platform.OS === "android" ? "es-ES" : "es-US",
+            pitch: Platform.OS === "android" ? 0.5 : 0.2,
+            rate: 1.0,
+            ...(Platform.OS === "android" && { voice: "es-us-x-esm-local" }),
+          },
   };
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -1531,7 +1554,7 @@ export default function ChatScreen() {
               {
                 bottom: Platform.select({
                   ios: isTablet ? 80 : 40,
-                  android: isKeyboardEverShown ? 10 : 90,
+                  android: isKeyboardEverShown ? 30 : 100,
                 }),
               },
               isKeyboardVisible && {
@@ -2390,7 +2413,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Theme.colors.border,
     paddingBottom: isTablet ? 90 : 50,
-    height: isTablet ? height * 0.16 : height * 0.15,
+    height: isTablet
+      ? height * 0.16
+      : Platform.OS === "android"
+      ? height * 0.18
+      : height * 0.15,
+
+    marginBottom: Platform.OS === "android" ? Theme.spacing.lg : 0,
   },
   controlButton: {
     alignItems: "center",

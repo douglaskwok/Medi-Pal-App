@@ -360,7 +360,7 @@ export default function ResourcesScreen() {
     getLocation();
     loadSavedResources();
   }, []);
-  console.log(userLocation);
+  // console.log(userLocation);
   useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
@@ -1071,7 +1071,13 @@ export default function ResourcesScreen() {
           </View>
         </View>
         <ScrollView
-          style={styles.detailsContent}
+          style={[
+            styles.detailsContent,
+            Platform.OS === "android" && {
+              minHeight: height * 0.28,
+              maxHeight: height * 0.28,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <View
@@ -2002,6 +2008,8 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.5,
     minHeight: height * 0.4,
     ...Theme.shadows.lg,
+    // borderColor: "red",
+    // borderWidth: 2,
   },
   detailsHeader: {
     flexDirection: "row",
@@ -2025,7 +2033,10 @@ const styles = StyleSheet.create({
   detailsContent: {
     paddingHorizontal: Theme.spacing.lg,
     paddingTop: Theme.spacing.md,
-    maxHeight: height * 0.25,
+    maxHeight: height * 0.25, // : height * 0.5,
+    // minHeight: height * 0.25,
+    // borderColor: "red",
+    // borderWidth: 2,
   },
   detailRow: {
     flexDirection: "row",

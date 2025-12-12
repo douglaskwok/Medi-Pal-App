@@ -577,19 +577,27 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.backgroundLight,
     borderWidth: 1,
     borderColor: Theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalConfirmButton: {
     backgroundColor: Theme.colors.error,
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalCancelText: {
     fontSize: 16,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.text,
+    textAlign: "center",
+    textAlignVertical: "center",
   },
   modalConfirmText: {
     fontSize: 16,
     fontFamily: Theme.fonts.medium,
     color: Theme.colors.backgroundLight,
+    textAlign: "center",
+    textAlignVertical: "center",
   },
   avatarsContainer: {
     flexDirection: "column",
