@@ -315,6 +315,13 @@ export default function ChatScreen() {
     }
   };
 
+  // Generate unique message IDs
+  let messageIdCounter = 0;
+  const generateUniqueMessageId = () => {
+    messageIdCounter += 1;
+    return `msg_${Date.now()}_${messageIdCounter}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   // Replace the dummy messages array with a function that returns messages based on index
   // Update the generateDummyMessages function with proper typing:
   // Also update the generateDummyMessages function to use the current avatar
@@ -343,31 +350,31 @@ export default function ChatScreen() {
 
     return [
       {
-        id: "1",
+        id: generateUniqueMessageId(),
         content: messages[0],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 300000),
       },
       {
-        id: "2",
+        id: generateUniqueMessageId(),
         content: messages[1],
         role: "user" as const,
         timestamp: new Date(now.getTime() - 240000),
       },
       {
-        id: "3",
+        id: generateUniqueMessageId(),
         content: messages[2],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 180000),
       },
       {
-        id: "4",
+        id: generateUniqueMessageId(),
         content: messages[3],
         role: "user" as const,
         timestamp: new Date(now.getTime() - 120000),
       },
       {
-        id: "5",
+        id: generateUniqueMessageId(),
         content: messages[4],
         role: "assistant" as const,
         timestamp: new Date(now.getTime() - 60000),
@@ -415,9 +422,10 @@ export default function ChatScreen() {
           await loadSessions();
           // Wait a bit for the view to render, then send the message
           setTimeout(async () => {
-            // Create user message
+            // Create user message with unique ID
+            const userMessageId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const userMessage: Message = {
-              id: Date.now().toString(),
+              id: userMessageId,
               content: initialQuery,
               role: "user",
               timestamp: new Date(),
@@ -448,26 +456,36 @@ export default function ChatScreen() {
                 completion.choices[0]?.message?.content ||
                 "I apologize, but I could not generate a response. Please try again.";
 
+              const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
               const aiMessage: Message = {
-                id: (Date.now() + 1).toString(),
+                id: aiMessageId,
                 content: aiResponse,
                 role: "assistant",
                 timestamp: new Date(),
               };
 
-              setMessages((prev) => [...prev, aiMessage]);
+              setMessages((prev) => {
+                // Prevent duplicates by checking if message already exists
+                const exists = prev.some(msg => msg.id === aiMessageId);
+                return exists ? prev : [...prev, aiMessage];
+              });
               await saveMessage(sessionId, aiResponse, "assistant");
               setIsLoading(false);
             } catch (error) {
               console.error("Error calling OpenAI:", error);
+              const errorMessageId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
               const errorMessage: Message = {
-                id: (Date.now() + 1).toString(),
+                id: errorMessageId,
                 content:
                   "I apologize, but I encountered an error. Please check your internet connection and try again.",
                 role: "assistant",
                 timestamp: new Date(),
               };
-              setMessages((prev) => [...prev, errorMessage]);
+              setMessages((prev) => {
+                // Prevent duplicates
+                const exists = prev.some(msg => msg.id === errorMessageId);
+                return exists ? prev : [...prev, errorMessage];
+              });
               setIsLoading(false);
             }
           }, 500);
@@ -480,33 +498,28 @@ export default function ChatScreen() {
   useEffect(() => {
     if (currentView === "avatar-chat" && messages.length > 0) {
       // Update the first message (greeting) with new avatar name
-      const updatedMessages = [...messages];
+      // Remove duplicates first
+      const uniqueMessages = Array.from(
+        new Map(messages.map(msg => [msg.id, msg])).values()
+      );
 
       // Update only the first assistant message (greeting)
-      if (updatedMessages[0] && updatedMessages[0].role === "assistant") {
+      if (uniqueMessages[0] && uniqueMessages[0].role === "assistant") {
         const avatarName = getAvatarById(avatar).name;
         const greeting =
           language === "es"
             ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
             : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
 
-        updatedMessages[0] = {
-          ...updatedMessages[0],
+        uniqueMessages[0] = {
+          ...uniqueMessages[0],
           content: greeting,
         };
       }
 
-      // Update any other assistant messages that reference the avatar
-      updatedMessages.forEach((msg, index) => {
-        if (msg.role === "assistant" && index > 0) {
-          // You might want to update other messages that reference the avatar name
-          // For now, we're only updating the greeting
-        }
-      });
-
-      setMessages(updatedMessages);
+      setMessages(uniqueMessages);
     }
-  }, [avatar, currentView]);
+  }, [avatar, currentView, messages.length]);
 
   useEffect(() => {
     if (currentView === "avatar-chat" && isVideoReady) {
@@ -1072,12 +1085,19 @@ export default function ChatScreen() {
 
       if (error) throw error;
       if (data) {
-        const loadedMessages = data.map((msg) => ({
-          id: msg.id,
-          content: msg.content,
-          role: msg.role as "user" | "assistant" | "system",
-          timestamp: new Date(msg.created_at),
-        }));
+        // Remove duplicates by using a Map with id as key
+        const messageMap = new Map<string, Message>();
+        data.forEach((msg) => {
+          if (!messageMap.has(msg.id)) {
+            messageMap.set(msg.id, {
+              id: msg.id,
+              content: msg.content,
+              role: msg.role as "user" | "assistant" | "system",
+              timestamp: new Date(msg.created_at),
+            });
+          }
+        });
+        const loadedMessages = Array.from(messageMap.values());
         setMessages(loadedMessages);
         // Update user message count based on loaded messages
         const userCount = loadedMessages.filter((msg) => msg.role === "user").length;
@@ -1250,14 +1270,19 @@ export default function ChatScreen() {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
 
+    const userMessageId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: userMessageId,
       content: messageText,
       role: "user",
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      // Prevent duplicates
+      const exists = prev.some(msg => msg.id === userMessageId);
+      return exists ? prev : [...prev, userMessage];
+    });
     await saveMessage(currentSessionId, messageText, "user");
     setInputText("");
     setIsLoading(true);
@@ -1328,27 +1353,37 @@ export default function ChatScreen() {
         setShowAIResources(true);
       }
 
+      const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: aiMessageId,
         content: aiResponse,
         role: "assistant",
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => {
+        // Prevent duplicates
+        const exists = prev.some(msg => msg.id === aiMessageId);
+        return exists ? prev : [...prev, aiMessage];
+      });
       await saveMessage(currentSessionId, aiResponse, "assistant");
       // Ensure loading state is cleared immediately after message is added
       setIsLoading(false);
     } catch (error) {
       console.error("Error calling OpenAI:", error);
+      const errorMessageId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: errorMessageId,
         content:
           "I apologize, but I encountered an error. Please check your internet connection and try again.",
         role: "assistant",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        // Prevent duplicates
+        const exists = prev.some(msg => msg.id === errorMessageId);
+        return exists ? prev : [...prev, errorMessage];
+      });
       setIsLoading(false);
     }
   };
@@ -1398,7 +1433,11 @@ export default function ChatScreen() {
         setTimeout(() => {
           // Add the current message
           const newIndex = dummyMessagesIndex + 1;
-          setMessages((prev) => [...prev, nextMessage]);
+          setMessages((prev) => {
+            // Prevent duplicates by checking if message already exists
+            const exists = prev.some(msg => msg.id === nextMessage.id);
+            return exists ? prev : [...prev, nextMessage];
+          });
           setDummyMessagesIndex(newIndex);
 
           // Update video immediately after adding message
@@ -1419,7 +1458,11 @@ export default function ChatScreen() {
               const aiMessage = allDummyMessages[newIndex];
               const nextIndex = newIndex + 1;
 
-              setMessages((prev) => [...prev, aiMessage]);
+              setMessages((prev) => {
+                // Prevent duplicates by checking if message already exists
+                const exists = prev.some(msg => msg.id === aiMessage.id);
+                return exists ? prev : [...prev, aiMessage];
+              });
               setDummyMessagesIndex(nextIndex);
 
               // Update video again after AI message
@@ -1631,9 +1674,11 @@ export default function ChatScreen() {
                   <Text style={styles.welcomeText}>{t.welcomeMessage}</Text>
                 </View>
               )}
-              {messages.map((message) => (
+              {Array.from(
+                new Map(messages.map(msg => [msg.id, msg])).values()
+              ).map((message, index) => (
                 <View
-                  key={message.id}
+                  key={`${message.id}_${index}`}
                   style={[
                     styles.messageContainer,
                     message.role === "user"
@@ -1935,9 +1980,11 @@ export default function ChatScreen() {
                   </View>
                 ) : (
                   <>
-                    {messages.map((message) => (
+                    {Array.from(
+                      new Map(messages.map(msg => [msg.id, msg])).values()
+                    ).map((message, index) => (
                       <View
-                        key={message.id}
+                        key={`${message.id}_${index}`}
                         style={[
                           styles.captionItem,
                           message.role === "user"
