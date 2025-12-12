@@ -105,7 +105,7 @@ export default function HomeScreen() {
       // Show notification after 5 seconds
       const notificationTimer = setTimeout(() => {
         setNotificationVisible(true);
-      }, 5000);
+      }, 2000);
 
       return () => {
         clearTimeout(notificationTimer);
@@ -179,26 +179,49 @@ export default function HomeScreen() {
     }
   };
 
-  const handleToggleChecklist = (id: string) => {
+  const saveChecklistItem = async (item: any) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || !item.user_id) return;
+
+      const { error } = await supabase
+        .from("checklist_items")
+        .update({
+          completed: item.completed,
+        })
+        .eq("id", item.id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+    }
+  };
+
+  const handleToggleChecklist = async (id: string) => {
     const item = checklistItems.find((i) => i.id === id);
     if (item && !item.completed) {
       setSelectedItemId(id);
       setModalVisible(true);
     } else if (item && item.completed) {
-      setChecklistItems(
-        checklistItems.map((i) =>
-          i.id === id ? { ...i, completed: false } : i
-        )
+      const updatedItems = checklistItems.map((i) =>
+        i.id === id ? { ...i, completed: false } : i
       );
+      setChecklistItems(updatedItems);
+      await saveChecklistItem(updatedItems.find((i) => i.id === id)!);
     }
   };
 
-  const handleConfirmModal = () => {
+  const handleConfirmModal = async () => {
     if (selectedItemId) {
-      setChecklistItems(
-        checklistItems.map((i) =>
-          i.id === selectedItemId ? { ...i, completed: true } : i
-        )
+      const updatedItems = checklistItems.map((i) =>
+        i.id === selectedItemId ? { ...i, completed: true } : i
+      );
+      setChecklistItems(updatedItems);
+      await saveChecklistItem(
+        updatedItems.find((i) => i.id === selectedItemId)!
       );
       setModalVisible(false);
       setSelectedItemId(null);
