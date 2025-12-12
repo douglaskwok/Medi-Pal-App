@@ -107,6 +107,8 @@ export default function SelectionModal({
   proceed,
   selectedLanguage, // = "en", // Default to "en" if undefined
   setSelectedLanguage,
+  customChecklist,
+  onSaveChecklist,
 }: {
   mode: "tips_checklist" | "choose_avatar" | "select_language";
   from_video?: true;
@@ -118,6 +120,8 @@ export default function SelectionModal({
   proceed?: () => void;
   selectedLanguage?: "en" | "es";
   setSelectedLanguage?: (lang: "en" | "es") => void;
+  customChecklist?: Array<{ id: string; title: string; completed: boolean }>;
+  onSaveChecklist?: (items: Array<{ id: string; title: string; completed: boolean }>) => Promise<void>;
 }) {
   // console.log(selectedLanguage);
   const video_origin = from_video || false;
@@ -143,7 +147,12 @@ export default function SelectionModal({
     { id: "2", title: t.tip5, completed: false },
   ];
 
-  const chosenChecklist = video_origin ? adviceChecklist : prepTipsChecklist;
+  // Use custom checklist if provided, otherwise use default based on context
+  const chosenChecklist = customChecklist
+    ? customChecklist
+    : video_origin
+    ? adviceChecklist
+    : prepTipsChecklist;
   const [addedToChecklist, setAddedToChecklist] = useState(false);
   const [tipsChecklist, setTipsChecklist] = useState(chosenChecklist);
   const [selectedAvatar, setSelectedAvatar] = useState<
@@ -208,11 +217,19 @@ export default function SelectionModal({
     return video_origin ? t.exit : t.cancel;
   };
 
-  const handleConfirmPress = () => {
+  const handleConfirmPress = async () => {
     switch (mode) {
       case "tips_checklist":
         if (video_origin === true && addedToChecklist === false) {
           setAddedToChecklist(!addedToChecklist);
+          // Save checklist items when "Save to Checklist" is clicked
+          if (onSaveChecklist && tipsChecklist) {
+            try {
+              await onSaveChecklist(tipsChecklist);
+            } catch (error) {
+              console.error("Error saving checklist:", error);
+            }
+          }
         } else {
           // If already added to checklist or not from video, close popup
           setShowPopUp(false);

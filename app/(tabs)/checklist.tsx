@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,11 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
+import {
+  useSafeAreaInsets,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ChecklistItem } from "../../components/ChecklistItem";
 import { CustomModal } from "../../components/Modal";
@@ -85,6 +89,52 @@ export default function ChecklistScreen() {
     }).start();
     loadChecklistItems();
   }, []);
+
+  // In checklist.tsx, add this to listen for new items:
+  // useEffect(() => {
+  //   const setupSubscription = async () => {
+  //     const {
+  //       data: { user },
+  //     } = await supabase.auth.getUser();
+  //     if (!user) return;
+
+  //     const channel = supabase
+  //       .channel("checklist-changes")
+  //       .on(
+  //         "postgres_changes",
+  //         {
+  //           event: "INSERT",
+  //           schema: "public",
+  //           table: "checklist_items",
+  //           filter: `user_id=eq.${user.id}`,
+  //         },
+  //         (payload) => {
+  //           console.log("New checklist item added:", payload.new);
+  //           loadChecklistItems();
+  //         }
+  //       )
+  //       .subscribe();
+
+  //     return channel;
+  //   };
+
+  //   let channel: any;
+  //   setupSubscription().then((ch) => {
+  //     channel = ch;
+  //   });
+
+  //   return () => {
+  //     if (channel) {
+  //       supabase.removeChannel(channel);
+  //     }
+  //   };
+  // }, []);
+  useFocusEffect(
+    useCallback(() => {
+      console.log("Checklist screen focused, refreshing data...");
+      loadChecklistItems();
+    }, [])
+  );
 
   const loadChecklistItems = async () => {
     try {

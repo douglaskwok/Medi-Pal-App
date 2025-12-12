@@ -19,6 +19,7 @@ import {
   ResizeMode,
 } from "expo-av";
 import { useRouter, useLocalSearchParams } from "expo-router";
+
 import {
   useSafeAreaInsets,
   SafeAreaView,
@@ -39,6 +40,7 @@ import { Avatar, avatars } from "../../constants/Avatars";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import * as Speech from "expo-speech";
 import { useLanguage } from "../../constants/LanguageContext";
+import { Audio } from "expo-av";
 
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
@@ -192,7 +194,40 @@ export default function ChatScreen() {
   const { language } = useLanguage();
   const t =
     translations[language as keyof typeof translations] || translations.en;
-
+  const DEFAULT_CHECKLIST = [
+    {
+      id: "task_1",
+      title:
+        language === "es"
+          ? "Hacer un análisis de laboratorio básico"
+          : "Get a basic lab test",
+      completed: false,
+    },
+    {
+      id: "task_2",
+      title:
+        language === "es"
+          ? "Programar una consulta médica"
+          : "Schedule a doctor's appointment",
+      completed: false,
+    },
+    {
+      id: "task_3",
+      title:
+        language === "es"
+          ? "Investigar opciones de ejercicio local"
+          : "Research local exercise options",
+      completed: false,
+    },
+    {
+      id: "task_4",
+      title:
+        language === "es"
+          ? "Revisar la cobertura de Medi-Cal"
+          : "Review Medi-Cal coverage details",
+      completed: false,
+    },
+  ];
   const VOICE_CONFIGS = {
     "dr-al":
       language === "en"
@@ -267,9 +302,19 @@ export default function ChatScreen() {
     setIsKeyboardEverShown(true);
   }, [isKeyboardVisible]);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  // Audio recording
+  const [recordingObject, setRecordingObject] =
+    useState<Audio.Recording | null>(null);
+  // Checklist for avatar chat
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [generatedChecklist, setGeneratedChecklist] = useState<Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }> | null>(null);
   // Video State
   const [videoMode, setVideoMode] = useState<
-    "default" | "listening" | "transition" | "talking"
+    "default" | "listening" | "transition" | "talking" | "thinking"
   >("default");
   const [currentTransition, setCurrentTransition] = useState<
     "start" | "end" | null
@@ -286,9 +331,10 @@ export default function ChatScreen() {
   const talkingVideoRef = useRef<Video>(null);
   const listeningVideoRef = useRef<Video>(null);
   const transitionVideoRef = useRef<Video>(null);
+  const thinkingVideoRef = useRef<Video>(null);
   // Add state to track which video is currently visible
   const [activeVideo, setActiveVideo] = useState<
-    "default" | "talking" | "listening" | "transition"
+    "default" | "talking" | "listening" | "transition" | "thinking"
   >("default");
 
   //   // Audio:
@@ -315,6 +361,40 @@ export default function ChatScreen() {
     } catch (error) {
       console.warn("Failed to parse resources JSON:", error);
       return DEFAULT_RESOURCES;
+    }
+  };
+  const saveChecklistItemsToDatabase = async (
+    checklistItems: Array<{ id: string; title: string; completed: boolean }>
+  ) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Format items for database insertion
+      const itemsToInsert = checklistItems.map((item) => ({
+        user_id: user.id,
+        title: item.title,
+        description: "", // Add description if needed
+        start_date: new Date().toISOString(), // Set to current date or adjust as needed
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        completed: item.completed,
+      }));
+
+      // Insert into checklist_items table
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .insert(itemsToInsert)
+        .select();
+
+      if (error) throw error;
+
+      console.log("Checklist items saved to database:", data);
+      return data;
+    } catch (error) {
+      console.error("Error saving checklist items:", error);
+      throw error;
     }
   };
 
@@ -615,7 +695,7 @@ export default function ChatScreen() {
       const talkingVideoSource =
         avatarData.video_talking?.[0] || defaultVideoSource;
       const listeningVideoSource = avatarData.video_listening.loop[0];
-
+      const thinkingVideoSource = avatarData.video_thinking.loop[0];
       // Preload all three videos simultaneously
       const loadPromises = [];
 
@@ -661,6 +741,21 @@ export default function ChatScreen() {
           );
         } catch (err) {
           console.warn("Error loading listening video:", err);
+        }
+      }
+
+      // Load thinking video
+      if (thinkingVideoRef.current) {
+        try {
+          loadPromises.push(
+            thinkingVideoRef.current.loadAsync(
+              thinkingVideoSource,
+              { shouldPlay: false, isLooping: true },
+              false
+            )
+          );
+        } catch (err) {
+          console.warn("Error loading thinking video:", err);
         }
       }
 
@@ -734,6 +829,10 @@ export default function ChatScreen() {
             if (transitionVideoRef.current)
               unloadPromises.push(
                 transitionVideoRef.current.unloadAsync().catch(() => {})
+              );
+            if (thinkingVideoRef.current)
+              unloadPromises.push(
+                thinkingVideoRef.current.unloadAsync().catch(() => {})
               );
 
             await Promise.allSettled(unloadPromises);
@@ -852,16 +951,24 @@ export default function ChatScreen() {
     }
   };
 
+  const [isSwitchingVideo, setIsSwitchingVideo] = useState(false);
+
   const switchToTalking = async () => {
+    if (isSwitchingVideo || activeVideo === "talking") return;
+
+    setIsSwitchingVideo(true);
     try {
       console.log("Switching to talking mode");
 
       // Stop current video
       if (activeVideo === "default" && defaultVideoRef.current) {
-        await defaultVideoRef.current.pauseAsync();
+        await defaultVideoRef.current.stopAsync();
       }
       if (activeVideo === "listening" && listeningVideoRef.current) {
-        await listeningVideoRef.current.pauseAsync();
+        await listeningVideoRef.current.stopAsync();
+      }
+      if (activeVideo === "thinking" && thinkingVideoRef.current) {
+        await thinkingVideoRef.current.stopAsync();
       }
 
       // Start talking video
@@ -873,6 +980,8 @@ export default function ChatScreen() {
       }
     } catch (error) {
       console.error("Error switching to talking:", error);
+    } finally {
+      setIsSwitchingVideo(false);
     }
   };
 
@@ -923,11 +1032,46 @@ export default function ChatScreen() {
       console.error("Error switching to listening:", error);
     }
   };
+
+  const switchToThinking = async () => {
+    try {
+      console.log("Switching to thinking mode");
+
+      // Stop current video
+      if (activeVideo === "talking" && talkingVideoRef.current) {
+        await talkingVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "listening" && listeningVideoRef.current) {
+        await listeningVideoRef.current.pauseAsync();
+      }
+      if (activeVideo === "default" && defaultVideoRef.current) {
+        await defaultVideoRef.current.pauseAsync();
+      }
+
+      // Show thinking video while thinking
+      if (thinkingVideoRef.current) {
+        await thinkingVideoRef.current.setPositionAsync(0);
+        await thinkingVideoRef.current.playAsync();
+        setActiveVideo("thinking");
+        setVideoMode("thinking");
+      }
+    } catch (error) {
+      console.error("Error switching to thinking:", error);
+    }
+  };
   // Add this function to update the video based on conversation state
   // Add this function to update the video
   const updateVideoBasedOnConversation = async () => {
     if (isVideoReady && !currentTransition) {
       try {
+        // Handle thinking mode - show default video while waiting for response
+        if (videoMode === "thinking") {
+          if (activeVideo !== "thinking") {
+            await switchToThinking();
+          }
+          return;
+        }
+
         const shouldShowTalking = shouldShowTalkingVideo();
         const targetVideoType = shouldShowTalking ? "talking" : "default";
 
@@ -935,7 +1079,8 @@ export default function ChatScreen() {
         if (
           activeVideo !== targetVideoType &&
           activeVideo !== "listening" &&
-          activeVideo !== "transition"
+          activeVideo !== "transition" &&
+          activeVideo !== "thinking"
         ) {
           if (targetVideoType === "talking") {
             await switchToTalking();
@@ -1233,9 +1378,23 @@ export default function ChatScreen() {
   const speak = (thingToSay: string) => {
     // const thingToSay = "hello";
     Speech.stop();
+    // Show talking video when speech starts
+    if (currentView === "avatar-chat") {
+      setVideoMode("talking");
+    }
     Speech.speak(
       thingToSay,
-      VOICE_CONFIGS[avatar]
+      {
+        ...VOICE_CONFIGS[avatar],
+        // Set volume: 2x when speaker is on, muted when off
+        volume: speaker ? 1.0 : 0.3,
+        // onDone: () => {
+        //   // Switch back to default video when speech finishes
+        //   if (currentView === "avatar-chat") {
+        //     setVideoMode("default");
+        //   }
+        // },
+      }
       // dr al: 1,
       // bert: 1.5,
       // dr lora: language en, pitch 1.2
@@ -1262,9 +1421,15 @@ export default function ChatScreen() {
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setCurrentView("avatar-chat");
-      // Start with just the first assistant message
-      setMessages([generateDummyMessages()[0]]);
-      setDummyMessagesIndex(1); // This should trigger talking video
+      // Start with just the first assistant message (greeting)
+      const greeting = generateDummyMessages()[0];
+      setMessages([greeting]);
+
+      // Save the initial greeting to database
+      await saveMessage(sessionId, greeting.content, "assistant");
+
+      // Set the user message count to 0 since no user messages yet
+      setUserMessageCount(0);
 
       // Force video update after a short delay
       setTimeout(() => {
@@ -1313,6 +1478,13 @@ export default function ChatScreen() {
     await saveMessage(currentSessionId, messageText, "user");
     setInputText("");
     setIsLoading(true);
+
+    // Set avatar to thinking state while waiting for response
+    if (currentView === "avatar-chat") {
+      setVideoMode("thinking");
+      await switchToThinking().catch(() => {});
+    }
+
     const newUserMessageCount = userMessageCount + 1;
     setUserMessageCount(newUserMessageCount);
 
@@ -1330,7 +1502,86 @@ export default function ChatScreen() {
           ? "Eres un asistente de salud útil para beneficiarios de Medi-Cal, y tu trabajo es sugerir recursos de Medi-Cal al usuario. Proporciona orientación de salud clara, empática y precisa. Enfócate en ayudar a los usuarios a encontrar recursos, comprender sus necesidades de salud y navegar por el sistema de salud. Haz preguntas aclaratorias si la entrada del usuario es insuficiente para discernir qué recursos necesita (por ejemplo, tipo de recurso, ubicación)."
           : "You are a helpful healthcare assistant for Medi-Cal beneficiaries, and your job is to suggest Medi-Cal resources to the user. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system. Ask clarifying questions if the user input is insufficient for you to discern which resources the user needs (e.g., resource type, location).";
 
-      if (newUserMessageCount === 2) {
+      // Handle checklist generation for avatar chat at message count 2
+      if (newUserMessageCount === 2 && currentView === "avatar-chat") {
+        const checklistPrompt =
+          language === "es"
+            ? `Basándote en la conversación anterior, genera un JSON de una lista de tareas con 3-4 elementos que el usuario debe completar. Responde SOLO con un JSON válido en este formato exacto:
+[
+  {"id": "task_1", "title": "Descripción de la tarea", "completed": false},
+  {"id": "task_2", "title": "Descripción de la tarea", "completed": false}
+]
+No incluyas nada más en tu respuesta, solo el JSON.`
+            : `Based on the previous conversation, generate a JSON of a to-do list with 3-4 items the user should complete. Respond ONLY with valid JSON in this exact format:
+[
+  {"id": "task_1", "title": "Task description", "completed": false},
+  {"id": "task_2", "title": "Task description", "completed": false}
+]
+Include nothing else in your response, just the JSON.`;
+
+        try {
+          const checklistCompletion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: checklistPrompt },
+              ...conversationHistory,
+              { role: "user", content: messageText },
+            ],
+            max_tokens: 300,
+            temperature: 0.7,
+          });
+
+          const checklistJson =
+            checklistCompletion.choices[0]?.message?.content || "[]";
+          // const parsedChecklist = JSON.parse(checklistJson);
+
+          let parsedChecklist;
+          try {
+            parsedChecklist = JSON.parse(checklistJson);
+          } catch (parseError) {
+            console.warn(
+              "Failed to parse AI-generated checklist, using default:",
+              parseError
+            );
+            parsedChecklist = DEFAULT_CHECKLIST;
+          }
+
+          // Validate the parsed checklist
+          if (!Array.isArray(parsedChecklist) || parsedChecklist.length === 0) {
+            console.warn("AI generated invalid checklist, using default");
+            parsedChecklist = DEFAULT_CHECKLIST;
+          }
+
+          // Ensure each item has required properties
+          parsedChecklist = parsedChecklist.map((item, index) => ({
+            id: item.id || `task_${index + 1}`,
+            title:
+              item.title ||
+              DEFAULT_CHECKLIST[index]?.title ||
+              `Task ${index + 1}`,
+            completed: item.completed !== undefined ? item.completed : false,
+          }));
+
+          // Limit to 3-4 items
+          if (parsedChecklist.length > 4) {
+            parsedChecklist = parsedChecklist.slice(0, 4);
+          }
+
+          setGeneratedChecklist(parsedChecklist);
+          setTimeout(() => {
+            setShowChecklistModal(true);
+          }, 5000); // 5000ms = 5 seconds
+        } catch (error) {
+          console.warn("Error generating checklist:", error);
+          setGeneratedChecklist(DEFAULT_CHECKLIST);
+          setTimeout(() => {
+            setShowChecklistModal(true);
+          }, 5000); // 5000ms = 5 seconds
+        }
+      }
+
+      // Handle resource generation for text chat at message count 2
+      if (newUserMessageCount === 2 && currentView === "text-chat") {
         systemPrompt =
           `Do not answer the user's query. Based on the conversation, output a JSON of two Medi-Cal resources that you would suggest to this user - please do not say "Not available", and you can just make up the data, as it is used for hardcoding an app prototype. Please be specific in the hardcoded responses (e.g., do not say "various locations" or "by appointment only") Please give your response STRICTLY in this format: [
   {
@@ -1367,17 +1618,28 @@ export default function ChatScreen() {
         completion.choices[0]?.message?.content ||
         "I apologize, but I could not generate a response. Please try again.";
 
+      // Handle message count 2 responses differently for avatar vs text chat
       if (newUserMessageCount === 2) {
-        setAIResources(aiResponse);
-        const parsedResources = parseResources(aiResponse);
-        setShownResources(parsedResources);
-        console.log(aiResponse);
-        aiResponse =
-          language === "es"
-            ? "He reunido algunos recursos de Medi-Cal que podrían ser útiles. Puedes revisarlos en la ventana de sugerencias. Si hay algo más con lo que te gustaría recibir apoyo, estoy aquí para ti."
-            : "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
-        Keyboard.dismiss();
-        setShowAIResources(true);
+        if (currentView === "avatar-chat") {
+          // For avatar chat, provide a checklist introduction message
+          aiResponse =
+            language === "es"
+              ? "Basándome en lo que me has compartido, he creado una lista de tareas personalizadas para ti. Revísalas en la ventana emergente."
+              : "Based on what you've shared, I've created a personalized to-do list for you. Check them out in the pop-up window.";
+          setVideoMode("talking");
+        } else {
+          // For text chat, provide resource suggestion message
+          setAIResources(aiResponse);
+          const parsedResources = parseResources(aiResponse);
+          setShownResources(parsedResources);
+          console.log(aiResponse);
+          aiResponse =
+            language === "es"
+              ? "He reunido algunos recursos de Medi-Cal que podrían ser útiles. Puedes revisarlos en la ventana de sugerencias. Si hay algo más con lo que te gustaría recibir apoyo, estoy aquí para ti."
+              : "I've gathered a few Medi-Cal resources that might be helpful. You can check them in the suggestion pop-up. If there's anything else you'd like support with, I'm here for you.";
+          Keyboard.dismiss();
+          setShowAIResources(true);
+        }
       }
 
       const aiMessageId = `ai_${Date.now()}_${Math.random()
@@ -1396,6 +1658,19 @@ export default function ChatScreen() {
         return exists ? prev : [...prev, aiMessage];
       });
       await saveMessage(currentSessionId, aiResponse, "assistant");
+      // Speak the response in avatar chat mode using avatar's voice
+      if (currentView === "avatar-chat") {
+        speak(aiResponse);
+        // if (speaker) {
+        //   speak(aiResponse);
+        // } else {
+        //   // If speaker is off, still show talking video briefly then switch to default
+        //   setVideoMode("talking");
+        //   setTimeout(() => {
+        //     setVideoMode("default");
+        //   }, 2000);
+        // }
+      }
       // Ensure loading state is cleared immediately after message is added
       setIsLoading(false);
     } catch (error) {
@@ -1415,6 +1690,10 @@ export default function ChatScreen() {
         const exists = prev.some((msg) => msg.id === errorMessageId);
         return exists ? prev : [...prev, errorMessage];
       });
+      // Switch avatar back to default on error
+      if (currentView === "avatar-chat") {
+        setVideoMode("default");
+      }
       setIsLoading(false);
     }
   };
@@ -1435,99 +1714,229 @@ export default function ChatScreen() {
     loadSessions();
   };
   const shouldShowTalkingVideo = () => {
-    const totalDummyMessages = generateDummyMessages().length;
-    // Show talking video until all dummy messages are loaded
-    return dummyMessagesIndex < totalDummyMessages;
+    // Show talking video if there's an assistant message that's not the greeting
+    // Or if we're in the middle of a conversation (more than just the greeting)
+    return (
+      messages.length > 1 && messages[messages.length - 1].role === "assistant"
+    );
   };
 
-  const handleMicPressIn = () => {
+  const handleMicPressIn = async () => {
     console.log("Mic pressed IN");
-    setIsRecording(true);
+    try {
+      // Request permissions and prepare recording
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        console.error("Audio permission denied");
+        return;
+      }
+
+      // Set up audio mode
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      // Create and start recording
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      await recording.startAsync();
+      setRecordingObject(recording);
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
   };
 
   const handleMicPressOut = async () => {
     console.log("Mic pressed OUT");
+    setIsRecording(false);
 
-    if (isRecording && !isProcessingMessage) {
+    if (!recordingObject || !isRecording) return;
+
+    try {
       setIsProcessingMessage(true);
 
-      // Get all dummy messages
-      const allDummyMessages = generateDummyMessages();
-
-      // Check if we have more messages to show
-      if (dummyMessagesIndex < allDummyMessages.length) {
-        // Get the next message to show
-        const nextMessage = allDummyMessages[dummyMessagesIndex];
-        const isUserMessage = nextMessage.role === "user";
-
-        // Add a small processing delay
-        setTimeout(() => {
-          // Add the current message
-          const newIndex = dummyMessagesIndex + 1;
-          setMessages((prev) => {
-            // Prevent duplicates by checking if message already exists
-            const exists = prev.some((msg) => msg.id === nextMessage.id);
-            return exists ? prev : [...prev, nextMessage];
-          });
-          setDummyMessagesIndex(newIndex);
-
-          // Update video immediately after adding message
-          updateVideoBasedOnConversation();
-
-          // Check if this was the last message
-          const isLastMessage = newIndex >= allDummyMessages.length;
-
-          if (isLastMessage) {
-            // Show tips modal when all messages are shown
-            setTimeout(() => {
-              setShowTipsModal(true);
-            }, 2000);
-            setIsProcessingMessage(false);
-          } else if (isUserMessage) {
-            // If it was a user message, automatically add the AI response after delay
-            setTimeout(() => {
-              const aiMessage = allDummyMessages[newIndex];
-              const nextIndex = newIndex + 1;
-
-              setMessages((prev) => {
-                // Prevent duplicates by checking if message already exists
-                const exists = prev.some((msg) => msg.id === aiMessage.id);
-                return exists ? prev : [...prev, aiMessage];
-              });
-              setDummyMessagesIndex(nextIndex);
-
-              // Update video again after AI message
-              updateVideoBasedOnConversation();
-
-              // Check if AI message was the last one
-              const isAILastMessage = nextIndex >= allDummyMessages.length;
-
-              if (isAILastMessage) {
-                // Show tips modal when all messages are shown
-                setTimeout(() => {
-                  setShowTipsModal(true);
-                }, 2000);
-              }
-
-              setIsProcessingMessage(false);
-            }, 3000);
-          } else {
-            // If it was an AI message, we're done processing
-            setIsProcessingMessage(false);
-          }
-        }, 800);
-      } else {
-        // No more messages to show
-        setIsProcessingMessage(false);
+      // Show thinking video immediately when processing starts
+      if (currentView === "avatar-chat") {
+        setVideoMode("thinking");
+        await switchToThinking().catch(() => {});
       }
+
+      // Stop recording and get the audio URI
+      await recordingObject.stopAndUnloadAsync();
+      const recordingUri = recordingObject.getURI();
+      setRecordingObject(null);
+
+      if (!recordingUri) {
+        console.error("No recording URI");
+        setIsProcessingMessage(false);
+        // Switch back to default if no audio
+        if (currentView === "avatar-chat") {
+          setVideoMode("default");
+          await switchToDefault().catch(() => {});
+        }
+        return;
+      }
+
+      console.log("Recording saved to:", recordingUri);
+
+      // Transcribe audio using OpenAI Whisper API with file-based FormData
+      const formData = new FormData();
+
+      // Read file and create FormData entry
+      const audioFile = {
+        uri: recordingUri,
+        type: "audio/m4a",
+        name: "audio.m4a",
+      };
+
+      formData.append("file", audioFile as any);
+      formData.append("model", "whisper-1");
+      formData.append("language", language === "es" ? "es" : "en");
+
+      console.log("Sending transcription request with API key...");
+
+      // Create a timeout promise that rejects after 10 seconds
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error("Transcription request timed out after 10 seconds")
+            ),
+          10000
+        )
+      );
+
+      // Race between the actual request and the timeout
+      const transcriptionResponse = (await Promise.race([
+        fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`,
+          },
+          body: formData,
+        }),
+        timeoutPromise,
+      ])) as Response;
+
+      console.log(
+        "Transcription response status:",
+        transcriptionResponse.status
+      );
+
+      if (!transcriptionResponse.ok) {
+        const errorText = await transcriptionResponse.text();
+        console.error("Transcription error response:", errorText);
+
+        // Keep showing thinking video while we handle the error
+        if (currentView === "avatar-chat") {
+          setVideoMode("default");
+        }
+
+        throw new Error(
+          `Transcription failed with status ${transcriptionResponse.status}: ${errorText}`
+        );
+      }
+
+      const transcriptionData = await transcriptionResponse.json();
+      const transcribedText = transcriptionData.text;
+
+      console.log("Transcribed text:", transcribedText);
+
+      if (transcribedText.trim()) {
+        // Send the transcribed text as a message and wait for it to complete
+        await handleSend(transcribedText);
+      } else {
+        // Empty transcription - show "didn't get you" message
+        // Keep thinking video while we process this
+        if (currentView === "avatar-chat") {
+          setVideoMode("default");
+        }
+        await handleSend(language === "es" ? "no entendí" : "didn't get that");
+      }
+
+      setIsProcessingMessage(false);
+    } catch (error) {
+      console.warn("Error processing audio:", error);
+
+      // Keep showing thinking video while we handle the error
+      if (currentView === "avatar-chat") {
+        setVideoMode("default");
+      }
+
+      // Show "sorry I didn't get you" message on any error
+      const errorMessage =
+        language === "es"
+          ? "Disculpa, no entendí lo que dijiste. ¿Puedes intentar de nuevo?"
+          : "Sorry, I didn't get that. Can you try again?";
+
+      // Add error message to chat
+      if (currentSessionId) {
+        const errorMessageId = `error_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        const aiErrorMessage: Message = {
+          id: errorMessageId,
+          content: errorMessage,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => {
+          const exists = prev.some((msg) => msg.id === errorMessageId);
+          return exists ? prev : [...prev, aiErrorMessage];
+        });
+        await saveMessage(currentSessionId, errorMessage, "assistant");
+
+        // Show the error message with avatar's voice
+        if (currentView === "avatar-chat") {
+          speak(errorMessage);
+          setVideoMode("default");
+          // if (speaker) {
+          //   speak(errorMessage);
+          //   // Switch to talking video when speaking
+          //   setVideoMode("talking");
+          // } else {
+          //   setVideoMode("talking");
+          //   setTimeout(() => {
+          //     setVideoMode("default");
+          //   }, 2000);
+          // }
+        }
+      }
+
+      setIsProcessingMessage(false);
+    }
+  };
+  // console.log(height);
+
+  const handleEndCall = async () => {
+    // Stop all speech
+    Speech.stop();
+
+    // Stop video
+    if (videoRef.current) await videoRef.current.stopAsync();
+
+    // Stop recording if active
+    if (recordingObject) {
+      try {
+        await recordingObject.stopAndUnloadAsync();
+      } catch (error) {
+        console.error("Error stopping recording:", error);
+      }
+      setRecordingObject(null);
     }
 
+    // Clear all processing states
     setIsRecording(false);
-  };
-  console.log(height);
+    setIsProcessingMessage(false);
+    setIsLoading(false);
+    setVideoMode("default");
 
-  const handleEndCall = () => {
-    if (videoRef.current) videoRef.current.stopAsync();
+    // Exit session
     handleExitSession();
   };
 
@@ -1938,6 +2347,22 @@ export default function ChatScreen() {
                   volume={0}
                 />
 
+                <Video
+                  ref={thinkingVideoRef}
+                  style={[
+                    styles.video,
+                    activeVideo !== "thinking" && styles.hiddenVideo,
+                  ]}
+                  shouldPlay={activeVideo === "thinking"}
+                  isLooping={true} // This ensures it loops
+                  resizeMode={ResizeMode.CONTAIN}
+                  isMuted={true}
+                  volume={0}
+                  onError={(error) =>
+                    console.error("Thinking video error:", error)
+                  }
+                />
+
                 {/* Transition Video (loaded on demand) */}
                 <Video
                   ref={transitionVideoRef}
@@ -2104,9 +2529,7 @@ export default function ChatScreen() {
                 styles.controlButton,
                 styles.primaryControlButton,
                 isRecording && styles.recordingControlButton,
-                (isProcessingMessage ||
-                  dummyMessagesIndex >= generateDummyMessages().length) &&
-                  styles.disabledControlButton,
+                isProcessingMessage && styles.disabledControlButton,
               ]}
               onPressIn={handleMicPressIn}
               onPressOut={handleMicPressOut}
@@ -2183,6 +2606,30 @@ export default function ChatScreen() {
             proceed={() => {
               setShowTipsModal(false);
             }}
+          />
+        )}
+
+        {showChecklistModal && generatedChecklist && (
+          <SelectionModal
+            mode={"tips_checklist"}
+            from_video={true}
+            setShowPopUp={setShowChecklistModal}
+            selectedLanguage={language}
+            proceed={() => {
+              // save checklist items
+              // Save checklist items when user proceeds
+              saveChecklistItemsToDatabase(generatedChecklist)
+                .then(() => {
+                  console.log("Checklist items saved successfully");
+                  // Optionally show a success message
+                })
+                .catch((error) => {
+                  console.error("Failed to save checklist items:", error);
+                  // Optionally show an error message
+                });
+              // setShowChecklistModal(false);
+            }}
+            customChecklist={generatedChecklist}
           />
         )}
       </SafeAreaView>
