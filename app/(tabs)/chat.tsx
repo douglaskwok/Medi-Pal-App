@@ -41,11 +41,13 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import * as Speech from "expo-speech";
 import { useLanguage } from "../../constants/LanguageContext";
 import { Audio } from "expo-av";
-
+import * as Device from "expo-device";
 // bug: NEED SUPABASE TO STORE GENERATED POPUPS TOO!! --> already addressed.
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+const isAndroidSimulator =
+  Platform.OS === "android" && Device.isDevice === false;
 
 interface Message {
   id: string;
@@ -194,6 +196,24 @@ export default function ChatScreen() {
   const { language } = useLanguage();
   const t =
     translations[language as keyof typeof translations] || translations.en;
+  const ANDROID_SIM_DEFAULT_CHECKLIST = [
+    {
+      id: "task_1",
+      title:
+        language === "es"
+          ? "Hacer un análisis de laboratorio básico"
+          : "Programa una prueba de laboratorio gratuita en Ravenswood Family Health Center en East Palo Alto.",
+      completed: false,
+    },
+    {
+      id: "task_2",
+      title:
+        language === "es"
+          ? "Camina en las caminadoras del Gimnasio YMCA de Palo Alto cada semana."
+          : "Walk on treadmills at Palo Alto YMCA Gym every week.",
+      completed: false,
+    },
+  ];
   const DEFAULT_CHECKLIST = [
     {
       id: "task_1",
@@ -1371,6 +1391,8 @@ export default function ChatScreen() {
       lastMessage &&
       lastMessage.role === "assistant" &&
       currentView === "avatar-chat"
+      // &&
+      // messages.length >= 0
     ) {
       speak(lastMessage.content);
     }
@@ -1378,6 +1400,7 @@ export default function ChatScreen() {
   const speak = (thingToSay: string) => {
     // const thingToSay = "hello";
     Speech.stop();
+    const isSpeaking = Speech.isSpeakingAsync();
     // Show talking video when speech starts
     if (currentView === "avatar-chat") {
       setVideoMode("talking");
@@ -1394,7 +1417,18 @@ export default function ChatScreen() {
         //     setVideoMode("default");
         //   }
         // },
+        onDone: () => {
+          console.log("Speech finished");
+          // Switch back to default video when speech finishes
+        },
+        onStopped: () => {
+          console.log("Speech stopped");
+        },
+        onError: (error) => {
+          console.error("Speech error:", error);
+        },
       }
+
       // dr al: 1,
       // bert: 1.5,
       // dr lora: language en, pitch 1.2
@@ -1417,6 +1451,26 @@ export default function ChatScreen() {
 
   // Replace the handleStartVoiceSession function:
   const handleStartVoiceSession = async () => {
+    if (!isAndroidSimulator) {
+      try {
+        const permission = await Audio.requestPermissionsAsync();
+        if (!permission.granted) {
+          console.error("Audio permission denied");
+
+          // You might want to show an alert to the user here
+          // or prevent entering avatar chat if permission is denied
+          alert(
+            language === "es"
+              ? "Se necesita permiso de audio para usar la función de avatar. Por favor, otorga permiso en la configuración."
+              : "Audio permission is required to use the avatar feature. Please grant permission in settings."
+          );
+          return; // Exit if permission is denied
+        }
+      } catch (error) {
+        console.error("Error requesting audio permission:", error);
+        return; // Exit if there's an error
+      }
+    }
     const sessionId = await createSession("voice");
     if (sessionId) {
       setCurrentSessionId(sessionId);
@@ -1723,13 +1777,19 @@ Include nothing else in your response, just the JSON.`;
 
   const handleMicPressIn = async () => {
     console.log("Mic pressed IN");
+    // const isAndroidSimulator =
+    //   Platform.OS === "android" && Device.isDevice === false;
+    if (isAndroidSimulator) {
+      setIsRecording(true);
+      return;
+    }
     try {
       // Request permissions and prepare recording
-      const permission = await Audio.requestPermissionsAsync();
-      if (!permission.granted) {
-        console.error("Audio permission denied");
-        return;
-      }
+      // const permission = await Audio.requestPermissionsAsync();
+      // if (!permission.granted) {
+      //   console.error("Audio permission denied");
+      //   return;
+      // }
 
       // Set up audio mode
       await Audio.setAudioModeAsync({
@@ -1738,13 +1798,17 @@ Include nothing else in your response, just the JSON.`;
       });
 
       // Create and start recording
+      // if (Platform.OS === "android") {
+      // } else {
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
       await recording.startAsync();
+
       setRecordingObject(recording);
       setIsRecording(true);
+      // }
     } catch (error) {
       console.warn("Error starting recording:", error);
     }
@@ -1753,8 +1817,22 @@ Include nothing else in your response, just the JSON.`;
   const handleMicPressOut = async () => {
     console.log("Mic pressed OUT");
     setIsRecording(false);
-
-    if (!recordingObject || !isRecording) return;
+    // const isAndroidSimulator =
+    //   Platform.OS === "android" && Device.isDevice === false;
+    // Different checks for simulator vs real device
+    if (isAndroidSimulator) {
+      // On simulator, we don't have recordingObject, so only check isRecording
+      if (!isRecording) {
+        console.log("Not recording on simulator");
+        return;
+      }
+    } else {
+      // On real device, check both recordingObject and isRecording
+      if (!recordingObject || !isRecording) {
+        console.log("No recording object or not recording on real device");
+        return;
+      }
+    }
 
     try {
       setIsProcessingMessage(true);
@@ -1766,99 +1844,176 @@ Include nothing else in your response, just the JSON.`;
       }
 
       // Stop recording and get the audio URI
-      await recordingObject.stopAndUnloadAsync();
-      const recordingUri = recordingObject.getURI();
-      setRecordingObject(null);
+      // if Platform.OS === "android") {}else{
 
-      if (!recordingUri) {
-        console.error("No recording URI");
-        setIsProcessingMessage(false);
-        // Switch back to default if no audio
-        if (currentView === "avatar-chat") {
-          setVideoMode("default");
-          await switchToDefault().catch(() => {});
+      if (isAndroidSimulator) {
+        console.log("Android Simulator detected - using dummy user input");
+        setIsRecording(false);
+        if (isRecording && !isProcessingMessage) {
+          // Get all dummy messages
+          const allDummyMessages = generateDummyMessages();
+
+          // Check if we have more messages to show
+          if (dummyMessagesIndex < allDummyMessages.length) {
+            // Get the next message to show
+            const nextMessage = allDummyMessages[dummyMessagesIndex];
+            const isUserMessage = nextMessage.role === "user";
+
+            // Add a small processing delay
+            setTimeout(() => {
+              // Add the current message
+              const newIndex = dummyMessagesIndex + 1;
+              setMessages((prev) => {
+                // Prevent duplicates by checking if message already exists
+                const exists = prev.some((msg) => msg.id === nextMessage.id);
+                return exists ? prev : [...prev, nextMessage];
+              });
+              setDummyMessagesIndex(newIndex);
+              updateVideoBasedOnConversation();
+              // Check if this was the last message
+              const isLastMessage = newIndex >= allDummyMessages.length;
+
+              if (isLastMessage) {
+                // Show tips modal when all messages are shown
+                // setGeneratedChecklist(ANDROID_SIM_DEFAULT_CHECKLIST);
+                setTimeout(() => {
+                  // setShowTipsModal(true);
+                  setShowChecklistModal(true);
+                }, 5000);
+                setIsProcessingMessage(false);
+              } else if (isUserMessage) {
+                // If it was a user message, automatically add the AI response after delay
+                setTimeout(() => {
+                  const aiMessage = allDummyMessages[newIndex];
+                  const nextIndex = newIndex + 1;
+                  setMessages((prev) => {
+                    // Prevent duplicates by checking if message already exists
+                    const exists = prev.some((msg) => msg.id === aiMessage.id);
+                    return exists ? prev : [...prev, aiMessage];
+                  });
+                  setDummyMessagesIndex(nextIndex);
+                  // Update video again after AI message
+                  updateVideoBasedOnConversation();
+                  // Check if AI message was the last one
+                  const isAILastMessage = nextIndex >= allDummyMessages.length;
+                  setGeneratedChecklist(ANDROID_SIM_DEFAULT_CHECKLIST);
+                  if (isAILastMessage) {
+                    // Show tips modal when all messages are shown
+                    setTimeout(() => {
+                      setShowChecklistModal(true);
+                    }, 5000);
+                  }
+                  setIsProcessingMessage(false);
+                }, 3000);
+              } else {
+                // If it was an AI message, we're done processing
+                setIsProcessingMessage(false);
+              }
+            }, 800);
+          } else {
+            // No more messages to show
+            setIsProcessingMessage(false);
+          }
         }
-        return;
-      }
+      } else if (recordingObject) {
+        // FOR iOS: Keep your original voice transcription logic
+        console.log("iOS detected - using actual voice transcription");
+        await recordingObject.stopAndUnloadAsync();
+        const recordingUri = recordingObject.getURI();
+        setRecordingObject(null);
 
-      console.log("Recording saved to:", recordingUri);
-
-      // Transcribe audio using OpenAI Whisper API with file-based FormData
-      const formData = new FormData();
-
-      // Read file and create FormData entry
-      const audioFile = {
-        uri: recordingUri,
-        type: "audio/m4a",
-        name: "audio.m4a",
-      };
-
-      formData.append("file", audioFile as any);
-      formData.append("model", "whisper-1");
-      formData.append("language", language === "es" ? "es" : "en");
-
-      console.log("Sending transcription request with API key...");
-
-      // Create a timeout promise that rejects after 10 seconds
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error("Transcription request timed out after 10 seconds")
-            ),
-          10000
-        )
-      );
-
-      // Race between the actual request and the timeout
-      const transcriptionResponse = (await Promise.race([
-        fetch("https://api.openai.com/v1/audio/transcriptions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`,
-          },
-          body: formData,
-        }),
-        timeoutPromise,
-      ])) as Response;
-
-      console.log(
-        "Transcription response status:",
-        transcriptionResponse.status
-      );
-
-      if (!transcriptionResponse.ok) {
-        const errorText = await transcriptionResponse.text();
-        console.error("Transcription error response:", errorText);
-
-        // Keep showing thinking video while we handle the error
-        if (currentView === "avatar-chat") {
-          setVideoMode("default");
+        if (!recordingUri) {
+          console.error("No recording URI");
+          setIsProcessingMessage(false);
+          // Switch back to default if no audio
+          if (currentView === "avatar-chat") {
+            setVideoMode("default");
+            await switchToDefault().catch(() => {});
+          }
+          return;
         }
 
-        throw new Error(
-          `Transcription failed with status ${transcriptionResponse.status}: ${errorText}`
+        console.log("Recording saved to:", recordingUri);
+
+        // Transcribe audio using OpenAI Whisper API with file-based FormData
+        const formData = new FormData();
+
+        // Read file and create FormData entry
+        const audioFile = {
+          uri: recordingUri,
+          type: "audio/m4a",
+          name: "audio.m4a",
+        };
+
+        formData.append("file", audioFile as any);
+        formData.append("model", "whisper-1");
+        formData.append("language", language === "es" ? "es" : "en");
+
+        console.log("Sending transcription request with API key...");
+
+        // Create a timeout promise that rejects after 10 seconds
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error("Transcription request timed out after 10 seconds")
+              ),
+            10000
+          )
         );
-      }
 
-      const transcriptionData = await transcriptionResponse.json();
-      const transcribedText = transcriptionData.text;
+        // Race between the actual request and the timeout
+        const transcriptionResponse = (await Promise.race([
+          fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`,
+            },
+            body: formData,
+          }),
+          timeoutPromise,
+        ])) as Response;
 
-      console.log("Transcribed text:", transcribedText);
+        console.log(
+          "Transcription response status:",
+          transcriptionResponse.status
+        );
 
-      if (transcribedText.trim()) {
-        // Send the transcribed text as a message and wait for it to complete
-        await handleSend(transcribedText);
-      } else {
-        // Empty transcription - show "didn't get you" message
-        // Keep thinking video while we process this
-        if (currentView === "avatar-chat") {
-          setVideoMode("default");
+        if (!transcriptionResponse.ok) {
+          const errorText = await transcriptionResponse.text();
+          console.error("Transcription error response:", errorText);
+
+          // Keep showing thinking video while we handle the error
+          if (currentView === "avatar-chat") {
+            setVideoMode("default");
+          }
+
+          throw new Error(
+            `Transcription failed with status ${transcriptionResponse.status}: ${errorText}`
+          );
         }
-        await handleSend(language === "es" ? "no entendí" : "didn't get that");
-      }
 
-      setIsProcessingMessage(false);
+        const transcriptionData = await transcriptionResponse.json();
+        const transcribedText = transcriptionData.text;
+
+        console.log("Transcribed text:", transcribedText);
+
+        if (transcribedText.trim()) {
+          // Send the transcribed text as a message and wait for it to complete
+          await handleSend(transcribedText);
+        } else {
+          // Empty transcription - show "didn't get you" message
+          // Keep thinking video while we process this
+          if (currentView === "avatar-chat") {
+            setVideoMode("default");
+          }
+          await handleSend(
+            language === "es" ? "no entendí" : "didn't get that"
+          );
+        }
+
+        setIsProcessingMessage(false);
+      }
     } catch (error) {
       console.warn("Error processing audio:", error);
 
@@ -2347,21 +2502,23 @@ Include nothing else in your response, just the JSON.`;
                   volume={0}
                 />
 
-                <Video
-                  ref={thinkingVideoRef}
-                  style={[
-                    styles.video,
-                    activeVideo !== "thinking" && styles.hiddenVideo,
-                  ]}
-                  shouldPlay={activeVideo === "thinking"}
-                  isLooping={true} // This ensures it loops
-                  resizeMode={ResizeMode.CONTAIN}
-                  isMuted={true}
-                  volume={0}
-                  onError={(error) =>
-                    console.error("Thinking video error:", error)
-                  }
-                />
+                {!isAndroidSimulator && (
+                  <Video
+                    ref={thinkingVideoRef}
+                    style={[
+                      styles.video,
+                      activeVideo !== "thinking" && styles.hiddenVideo,
+                    ]}
+                    shouldPlay={activeVideo === "thinking"}
+                    isLooping={true} // This ensures it loops
+                    resizeMode={ResizeMode.CONTAIN}
+                    isMuted={true}
+                    volume={0}
+                    onError={(error) =>
+                      console.error("Thinking video error:", error)
+                    }
+                  />
+                )}
 
                 {/* Transition Video (loaded on demand) */}
                 <Video
@@ -2597,7 +2754,7 @@ Include nothing else in your response, just the JSON.`;
           />
         )}
 
-        {showTipsModal && (
+        {/* {showTipsModal && (
           <SelectionModal
             mode={"tips_checklist"}
             from_video={true}
@@ -2607,7 +2764,7 @@ Include nothing else in your response, just the JSON.`;
               setShowTipsModal(false);
             }}
           />
-        )}
+        )} */}
 
         {showChecklistModal && generatedChecklist && (
           <SelectionModal
