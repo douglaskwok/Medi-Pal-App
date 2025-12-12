@@ -663,6 +663,21 @@ export default function ChatScreen() {
             ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
             : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
 
+        // For conversationId 1 (Anxiety and sleep issues):
+        language === "es"
+          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿En qué puedo asistirte hoy?`
+          : `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I assist you today?`;
+
+        // For conversationId 2 (Exercise for beginners):
+        language === "es"
+          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Qué te preocupa hoy?`
+          : `Hello! I'm ${avatarName}, your AI healthcare assistant. What's on your mind today?`;
+
+        // For conversationId 3 (Diabetes management):
+        language === "es"
+          ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo te puedo apoyar hoy?`
+          : `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I support you today?`;
+
         uniqueMessages[0] = {
           ...uniqueMessages[0],
           content: greeting,
