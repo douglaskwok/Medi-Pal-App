@@ -448,7 +448,7 @@ export default function HomeScreen() {
           </View>
 
           <View
-            style={[styles.resourcesSection, isTablet && { marginTop: 32 }]}
+            style={[styles.resourcesSection, isTablet && { marginTop: 16 }]}
           >
             <Text style={styles.sectionTitle}>{t.resourcesTitle}</Text>
             <ScrollView
