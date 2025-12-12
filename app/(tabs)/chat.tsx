@@ -1746,7 +1746,7 @@ Include nothing else in your response, just the JSON.`;
       setRecordingObject(recording);
       setIsRecording(true);
     } catch (error) {
-      console.error("Error starting recording:", error);
+      console.warn("Error starting recording:", error);
     }
   };
 
