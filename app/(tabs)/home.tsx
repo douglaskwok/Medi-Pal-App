@@ -271,7 +271,7 @@ export default function HomeScreen() {
             styles.content,
             {
               opacity: fadeAnim,
-              paddingBottom: insets.bottom + 80,
+              // paddingBottom: insets.bottom + 80,
             },
           ]}
         >
@@ -341,141 +341,147 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={[styles.calendarSection, isTablet && { marginTop: 32 }]}>
-            <Text style={styles.sectionTitle}>{t.calendarTitle}</Text>
-            <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={isTablet ? 36 : 24}
-                  color={Theme.colors.text}
-                />
-              </TouchableOpacity>
-              <Text style={styles.calendarMonth}>
-                {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={isTablet ? 36 : 24}
-                  color={Theme.colors.text}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.calendarGrid}>
-              {daysInWeek.map((day) => {
-                const dayItems = getItemsForDate(day);
-                const isSelected = isSameDay(day, selectedDate);
-                const isToday = isSameDay(day, new Date());
-                return (
-                  <TouchableOpacity
-                    key={day.toISOString()}
-                    style={[
-                      styles.calendarDay,
-                      isSelected && styles.calendarDaySelected,
-                      isToday && !isSelected && styles.calendarDayToday,
-                    ]}
-                    onPress={() => setSelectedDate(day)}
-                  >
-                    <Text
+          <ScrollView
+            style={{ height: "100%", marginBottom: isTablet ? 80 : 40 }}
+          >
+            <View
+              style={[styles.calendarSection, isTablet && { marginTop: 32 }]}
+            >
+              <Text style={styles.sectionTitle}>{t.calendarTitle}</Text>
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity
+                  onPress={() => setCurrentWeek(subWeeks(currentWeek, 1))}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={isTablet ? 36 : 24}
+                    color={Theme.colors.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.calendarMonth}>
+                  {format(weekStart, "MMM d")} -{" "}
+                  {format(weekEnd, "MMM d, yyyy")}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setCurrentWeek(addWeeks(currentWeek, 1))}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={isTablet ? 36 : 24}
+                    color={Theme.colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.calendarGrid}>
+                {daysInWeek.map((day) => {
+                  const dayItems = getItemsForDate(day);
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isToday = isSameDay(day, new Date());
+                  return (
+                    <TouchableOpacity
+                      key={day.toISOString()}
                       style={[
-                        styles.calendarDayName,
-                        isSelected && { color: Theme.colors.backgroundLight },
+                        styles.calendarDay,
+                        isSelected && styles.calendarDaySelected,
+                        isToday && !isSelected && styles.calendarDayToday,
                       ]}
+                      onPress={() => setSelectedDate(day)}
                     >
-                      {t.weekDays[day.getDay()]}{" "}
-                      {/* This uses your translation */}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.calendarDayText,
-                        isSelected && styles.calendarDayTextSelected,
-                      ]}
-                    >
-                      {format(day, "d")}
-                    </Text>
-                    {dayItems.length > 0 && (
-                      <View
+                      <Text
                         style={[
-                          styles.calendarDot,
-                          isSelected && styles.calendarDotSelected,
+                          styles.calendarDayName,
+                          isSelected && { color: Theme.colors.backgroundLight },
                         ]}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            {filteredChecklistItems.length > 0 && (
-              <View style={styles.eventsList}>
-                {filteredChecklistItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.eventItem}
-                    onPress={() => handleToggleChecklist(item.id)}
-                  >
-                    <View
-                      style={[
-                        styles.eventCheckbox,
-                        item.completed && styles.eventCheckboxCompleted,
-                      ]}
-                    >
-                      {item.completed && (
-                        <Ionicons
-                          name="checkmark"
-                          size={12}
-                          color={Theme.colors.backgroundLight}
+                      >
+                        {t.weekDays[day.getDay()]}{" "}
+                        {/* This uses your translation */}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.calendarDayText,
+                          isSelected && styles.calendarDayTextSelected,
+                        ]}
+                      >
+                        {format(day, "d")}
+                      </Text>
+                      {dayItems.length > 0 && (
+                        <View
+                          style={[
+                            styles.calendarDot,
+                            isSelected && styles.calendarDotSelected,
+                          ]}
                         />
                       )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.eventText,
-                        item.completed && styles.eventTextCompleted,
-                      ]}
-                    >
-                      {item.title}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            )}
-          </View>
+              {filteredChecklistItems.length > 0 && (
+                <View style={styles.eventsList}>
+                  {filteredChecklistItems.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.eventItem}
+                      onPress={() => handleToggleChecklist(item.id)}
+                    >
+                      <View
+                        style={[
+                          styles.eventCheckbox,
+                          item.completed && styles.eventCheckboxCompleted,
+                        ]}
+                      >
+                        {item.completed && (
+                          <Ionicons
+                            name="checkmark"
+                            size={12}
+                            color={Theme.colors.backgroundLight}
+                          />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.eventText,
+                          item.completed && styles.eventTextCompleted,
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
-          <View
-            style={[styles.resourcesSection, isTablet && { marginTop: 16 }]}
-          >
-            <Text style={styles.sectionTitle}>{t.resourcesTitle}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.resourcesScroll}
+            <View
+              style={[styles.resourcesSection, isTablet && { marginTop: 16 }]}
             >
-              {dummyResources.map((resource) => (
-                <ResourceCard
-                  key={resource.id}
-                  {...resource}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(tabs)/resources",
-                      params: { resourceId: resource.id },
-                    })
-                  }
-                />
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.discoverMoreButton}
-              onPress={() => router.push("/(tabs)/resources")}
-            >
-              <Text style={styles.discoverMore}>{t.discoverMore}</Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={styles.sectionTitle}>{t.resourcesTitle}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.resourcesScroll}
+              >
+                {dummyResources.map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    {...resource}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/resources",
+                        params: { resourceId: resource.id },
+                      })
+                    }
+                  />
+                ))}
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.discoverMoreButton}
+                onPress={() => router.push("/(tabs)/resources")}
+              >
+                <Text style={styles.discoverMore}>{t.discoverMore}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </Animated.View>
         {/* </ScrollView> */}
         <CustomModal
