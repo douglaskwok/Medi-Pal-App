@@ -107,6 +107,7 @@ export default function SelectionModal({
   proceed,
   selectedLanguage, // = "en", // Default to "en" if undefined
   setSelectedLanguage,
+  checklistText,
 }: {
   mode: "tips_checklist" | "choose_avatar" | "select_language";
   from_video?: true;
@@ -118,6 +119,7 @@ export default function SelectionModal({
   proceed?: () => void;
   selectedLanguage?: "en" | "es";
   setSelectedLanguage?: (lang: "en" | "es") => void;
+  checklistText?: string[];
 }) {
   // console.log(selectedLanguage);
   const video_origin = from_video || false;
@@ -139,8 +141,16 @@ export default function SelectionModal({
   ];
 
   const adviceChecklist = [
-    { id: "1", title: t.tip4, completed: false },
-    { id: "2", title: t.tip5, completed: false },
+    {
+      id: "1",
+      title: checklistText ? checklistText[0] : t.tip4,
+      completed: false,
+    },
+    {
+      id: "2",
+      title: checklistText ? checklistText[1] : t.tip5,
+      completed: false,
+    },
   ];
 
   const chosenChecklist = video_origin ? adviceChecklist : prepTipsChecklist;

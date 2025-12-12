@@ -187,30 +187,93 @@ const DEFAULT_RESOURCES: Resource[] = [
       "Clinic offering free health screenings, vaccinations, and wellness checkups.",
   },
 ];
-
+type ConversationId = 0 | 1 | 2 | 3;
 // const { width, height } = Dimensions.get("window");
 export default function ChatScreen() {
   const { language } = useLanguage();
   const t =
     translations[language as keyof typeof translations] || translations.en;
-  const DEFAULT_CHECKLIST = [
-    {
-      id: "task_1",
-      title:
-        language === "es"
-          ? "Programa una prueba de laboratorio gratuita en Ravenswood Family Health Center en East Palo Alto."
-          : "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
-      completed: false,
-    },
-    {
-      id: "task_2",
-      title:
-        language === "es"
-          ? "Camina en las caminadoras del Gimnasio YMCA de Palo Alto cada semana."
-          : "Walk on treadmills at Palo Alto YMCA Gym every week.",
-      completed: false,
-    },
-  ];
+
+  const generateChecklist = (id: ConversationId) => {
+    let isSpanish = language === "es";
+
+    switch (id) {
+      case 0: // Heart disease concern
+        return [
+          {
+            id: "task_1",
+            title: isSpanish
+              ? "Programa una prueba de laboratorio gratuita en Ravenswood Family Health Center en East Palo Alto."
+              : "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
+            completed: false,
+          },
+          {
+            id: "task_2",
+            title: isSpanish
+              ? "Camina en las caminadoras del Gimnasio YMCA de Palo Alto cada semana."
+              : "Walk on treadmills at Palo Alto YMCA Gym every week.",
+            completed: false,
+          },
+        ];
+
+      case 1: // Anxiety and sleep issues
+        return [
+          {
+            id: "task_1",
+            title: isSpanish
+              ? "Programa una cita con un consejero de salud mental cubierto por Medi-Cal."
+              : "Schedule an appointment with a mental health counselor covered by Medi-Cal.",
+            completed: false,
+          },
+          {
+            id: "task_2",
+            title: isSpanish
+              ? "Descarga y prueba una aplicación de meditación gratuita antes de dormir."
+              : "Download and try a free meditation app before bedtime.",
+            completed: false,
+          },
+        ];
+
+      case 2: // Exercise for beginners
+        return [
+          {
+            id: "task_1",
+            title: isSpanish
+              ? "Comienza con caminatas ligeras en el parque local tres veces por semana."
+              : "Start with light walks at the local park three times a week.",
+            completed: false,
+          },
+          {
+            id: "task_2",
+            title: isSpanish
+              ? "Asiste a clases de yoga gratuitas en el centro comunitario."
+              : "Attend free yoga classes at the community center.",
+            completed: false,
+          },
+        ];
+
+      case 3: // Diabetes management
+        return [
+          {
+            id: "task_1",
+            title: isSpanish
+              ? "Programa una cita con un nutricionista para un plan de alimentación."
+              : "Schedule an appointment with a nutritionist for a meal plan.",
+            completed: false,
+          },
+          {
+            id: "task_2",
+            title: isSpanish
+              ? "Asiste a grupos de apoyo para diabetes los martes en el hospital local."
+              : "Attend diabetes support groups on Tuesdays at the local hospital.",
+            completed: false,
+          },
+        ];
+
+      default:
+        return [];
+    }
+  };
 
   const VOICE_CONFIGS = {
     "dr-al":
@@ -294,6 +357,8 @@ export default function ChatScreen() {
     "start" | "end" | null
   >(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [conversationId, setConversationId] = useState<ConversationId>(0);
+  console.log(conversationId);
 
   // Refs
   const scrollViewRef = useRef<ScrollView>(null);
@@ -349,27 +414,80 @@ export default function ChatScreen() {
   // Replace the dummy messages array with a function that returns messages based on index
   // Update the generateDummyMessages function with proper typing:
   // Also update the generateDummyMessages function to use the current avatar
-  const generateDummyMessages = (): Message[] => {
+  // let id = Math.floor(Math.random() * 4) as ConversationId;
+  const generateDummyMessages = (id: ConversationId): Message[] => {
     const now = new Date();
     const avatarName = getAvatarById(avatar).name;
 
     let messages;
     if (language === "es") {
-      messages = [
-        `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`,
-        "Hola, un par de mis familiares recientemente han sufrido enfermedades cardíacas, y estoy muy preocupado de que esto me pueda pasar a mí. ¿Qué debo hacer?",
-        "Esa es una preocupación muy sabia y proactiva. El historial familiar es un factor de riesgo importante. Entiendo que estás en Medi-Cal, ¿te gustaría que cree una lista de tareas para ti?",
-        "Claro",
-        "Vale. Primero, haz un análisis de laboratorio gratuito para verificar cualquier riesgo de enfermedad cardíaca. También es importante hacer algo de ejercicio, y puedes caminar en una de las caminadoras en tu YMCA cercana todos los domingos por la tarde.",
-      ];
+      if (id === 0) {
+        messages = [
+          `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`,
+          "Hola, un par de mis familiares recientemente han sufrido enfermedades cardíacas, y estoy muy preocupado de que esto me pueda pasar a mí. ¿Qué debo hacer?",
+          "Esa es una preocupación muy sabia y proactiva. El historial familiar es un factor de riesgo importante. Entiendo que estás en Medi-Cal, ¿te gustaría que cree una lista de tareas para ti?",
+          "Claro",
+          "Vale. Primero, haz un análisis de laboratorio gratuito para verificar cualquier riesgo de enfermedad cardíaca. También es importante hacer algo de ejercicio, y puedes caminar en una de las caminadoras en tu YMCA cercana todos los domingos por la tarde.",
+        ];
+      } else if (id === 1) {
+        messages = [
+          `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿En qué puedo asistirte hoy?`,
+          "Hola, he estado experimentando mucha ansiedad últimamente y me cuesta dormir. ¿Tienes algún consejo?",
+          "Entiendo, la ansiedad puede afectar significativamente la calidad de vida y el sueño. Como tienes Medi-Cal, ¿te gustaría que exploremos algunos recursos disponibles para ti?",
+          "Sí, por favor",
+          "Vale. Primero, te recomendaría programar una cita con un consejero de salud mental cubierto por tu plan. También hay aplicaciones de meditación gratuitas que podrías probar antes de dormir.",
+        ];
+      } else if (id === 2) {
+        messages = [
+          `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Qué te preocupa hoy?`,
+          "Hola, quiero empezar a hacer ejercicio pero no sé por dónde comenzar. ¿Tienes alguna recomendación para alguien que es principiante?",
+          "¡Excelente decisión! Empezar una rutina de ejercicio es muy beneficioso para la salud. Dado que estás en Medi-Cal, ¿quieres que te ayude a encontrar opciones accesibles?",
+          "Sí, sería perfecto",
+          "Genial. Te sugiero comenzar con caminatas ligeras en el parque local tres veces por semana. También puedes acceder a clases de yoga gratuitas en el centro comunitario que aceptan Medi-Cal.",
+        ];
+      } else {
+        messages = [
+          `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo te puedo apoyar hoy?`,
+          "Hola, me diagnosticaron diabetes tipo 2 recientemente y me siento abrumado. ¿Por dónde debería empezar?",
+          "Entiendo que esto puede ser abrumador, pero estás dando el primer paso importante. Con Medi-Cal, tienes acceso a varios recursos. ¿Te gustaría un plan paso a paso?",
+          "Claro, necesito orientación",
+          "Perfecto. Primero, programa una cita con un nutricionista para un plan de alimentación. También hay grupos de apoyo para diabetes los martes en el hospital local que son gratuitos con Medi-Cal.",
+        ];
+      }
     } else {
-      messages = [
-        `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`,
-        "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
-        "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
-        "Sure",
-        "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
-      ];
+      if (id === 0) {
+        messages = [
+          `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`,
+          "Hi, a couple of my relatives have recently suffered from heart diseases, and I'm really worried that this might happen to me. What should I do?",
+          "That's a very wise and proactive concern. Family history is an important risk factor. I understand that you are on Medi-Cal, would you like me to create a to-do list for you?",
+          "Sure",
+          "Ok. First, get a free lab test to check for any risks of heart disease. It's also important to get some exercise, and you can go for a walk at one of the treadmills in your nearby YMCA every Sunday afternoon.",
+        ];
+      } else if (id === 1) {
+        messages = [
+          `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I assist you today?`,
+          "Hi, I've been experiencing a lot of anxiety lately and having trouble sleeping. Do you have any advice?",
+          "I understand, anxiety can significantly impact quality of life and sleep. Since you're on Medi-Cal, would you like me to explore some available resources for you?",
+          "Yes, please",
+          "Okay. First, I'd recommend scheduling an appointment with a mental health counselor covered by your plan. There are also free meditation apps you could try before bedtime.",
+        ];
+      } else if (id === 2) {
+        messages = [
+          `Hello! I'm ${avatarName}, your AI healthcare assistant. What's on your mind today?`,
+          "Hi, I want to start exercising but don't know where to begin. Do you have any recommendations for someone who's a complete beginner?",
+          "That's a great decision! Starting an exercise routine is very beneficial for health. Since you're on Medi-Cal, would you like me to help you find accessible options?",
+          "Yes, that would be perfect",
+          "Great. I suggest starting with light walks at the local park three times a week. You can also access free yoga classes at the community center that accept Medi-Cal.",
+        ];
+      } else {
+        messages = [
+          `Hello! I'm ${avatarName}, your AI healthcare assistant. How can I support you today?`,
+          "Hi, I was recently diagnosed with type 2 diabetes and I'm feeling overwhelmed. Where should I start?",
+          "I understand this can be overwhelming, but you're taking the important first step. With Medi-Cal, you have access to several resources. Would you like a step-by-step plan?",
+          "Yes, I need guidance",
+          "Perfect. First, schedule an appointment with a nutritionist for a meal plan. There are also diabetes support groups on Tuesdays at the local hospital that are free with Medi-Cal.",
+        ];
+      }
     }
 
     return [
@@ -1278,11 +1396,13 @@ export default function ChatScreen() {
   // Replace the handleStartVoiceSession function:
   const handleStartVoiceSession = async () => {
     const sessionId = await createSession("voice");
+    const newConversationId = Math.floor(Math.random() * 4) as ConversationId;
+    setConversationId(newConversationId);
     if (sessionId) {
       setCurrentSessionId(sessionId);
       setCurrentView("avatar-chat");
       // Start with just the first assistant message
-      setMessages([generateDummyMessages()[0]]);
+      setMessages([generateDummyMessages(newConversationId)[0]]);
       setDummyMessagesIndex(1); // This should trigger talking video
 
       // Force video update after a short delay
@@ -1304,7 +1424,7 @@ export default function ChatScreen() {
     const loadedMessages = await loadMessages(sessionId);
 
     if (type === "voice" && loadedMessages.length === 0) {
-      const dummyMessages = generateDummyMessages();
+      const dummyMessages = generateDummyMessages(conversationId);
       setMessages(dummyMessages);
     }
   };
@@ -1454,7 +1574,7 @@ export default function ChatScreen() {
     loadSessions();
   };
   const shouldShowTalkingVideo = () => {
-    const totalDummyMessages = generateDummyMessages().length;
+    const totalDummyMessages = generateDummyMessages(conversationId).length;
     // Show talking video until all dummy messages are loaded
     return dummyMessagesIndex < totalDummyMessages;
   };
@@ -1471,7 +1591,7 @@ export default function ChatScreen() {
       setIsProcessingMessage(true);
 
       // Get all dummy messages
-      const allDummyMessages = generateDummyMessages();
+      const allDummyMessages = generateDummyMessages(conversationId);
 
       // Check if we have more messages to show
       if (dummyMessagesIndex < allDummyMessages.length) {
@@ -2157,7 +2277,8 @@ export default function ChatScreen() {
                 styles.primaryControlButton,
                 isRecording && styles.recordingControlButton,
                 (isProcessingMessage ||
-                  dummyMessagesIndex >= generateDummyMessages().length) &&
+                  dummyMessagesIndex >=
+                    generateDummyMessages(conversationId).length) &&
                   styles.disabledControlButton,
               ]}
               onPressIn={handleMicPressIn}
@@ -2233,7 +2354,7 @@ export default function ChatScreen() {
             setShowPopUp={setShowTipsModal}
             selectedLanguage={language}
             proceed={() => {
-              saveChecklistItemsToDatabase(DEFAULT_CHECKLIST)
+              saveChecklistItemsToDatabase(generateChecklist(conversationId))
                 .then(() => {
                   console.log("Checklist items saved successfully");
                   // Optionally show a success message
@@ -2244,6 +2365,9 @@ export default function ChatScreen() {
                 });
               // setShowTipsModal(false);
             }}
+            checklistText={generateChecklist(conversationId).map(
+              (item) => item.title
+            )}
           />
         )}
       </SafeAreaView>
