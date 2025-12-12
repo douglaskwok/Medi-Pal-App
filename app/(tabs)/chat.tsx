@@ -315,11 +315,11 @@ export default function ChatScreen() {
     }
   };
 
-  // Generate unique message IDs
-  let messageIdCounter = 0;
+  // Generate unique message IDs using ref to maintain counter
+  const messageIdCounterRef = useRef(0);
   const generateUniqueMessageId = () => {
-    messageIdCounter += 1;
-    return `msg_${Date.now()}_${messageIdCounter}_${Math.random().toString(36).substr(2, 9)}`;
+    messageIdCounterRef.current += 1;
+    return `msg_${Date.now()}_${messageIdCounterRef.current}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
   // Replace the dummy messages array with a function that returns messages based on index
