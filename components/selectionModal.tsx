@@ -119,7 +119,7 @@ export default function SelectionModal({
   selectedLanguage?: "en" | "es";
   setSelectedLanguage?: (lang: "en" | "es") => void;
 }) {
-  console.log(selectedLanguage);
+  // console.log(selectedLanguage);
   const video_origin = from_video || false;
   // const { language, setLanguage } = useLanguage();
 
