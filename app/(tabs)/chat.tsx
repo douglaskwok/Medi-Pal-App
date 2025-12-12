@@ -579,92 +579,135 @@ export default function ChatScreen() {
       const avatarData = getAvatarById(avatar);
       setIsVideoReady(false);
 
+      // Wait a bit for video components to mount
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Get video sources
       const defaultVideoSource = avatarData.video_default.loop[0];
       const talkingVideoSource =
         avatarData.video_talking?.[0] || defaultVideoSource;
       const listeningVideoSource = avatarData.video_listening.loop[0];
 
-      console.log("Preloading all videos...");
-
       // Preload all three videos simultaneously
       const loadPromises = [];
 
       // Load default video
       if (defaultVideoRef.current) {
-        loadPromises.push(
-          defaultVideoRef.current.loadAsync(
-            defaultVideoSource,
-            { shouldPlay: false, isLooping: true },
-            false
-          )
-        );
+        try {
+          loadPromises.push(
+            defaultVideoRef.current.loadAsync(
+              defaultVideoSource,
+              { shouldPlay: false, isLooping: true },
+              false
+            )
+          );
+        } catch (err) {
+          console.warn("Error loading default video:", err);
+        }
       }
 
       // Load talking video
       if (talkingVideoRef.current && avatarData.video_talking) {
-        loadPromises.push(
-          talkingVideoRef.current.loadAsync(
-            talkingVideoSource,
-            { shouldPlay: false, isLooping: true },
-            false
-          )
-        );
+        try {
+          loadPromises.push(
+            talkingVideoRef.current.loadAsync(
+              talkingVideoSource,
+              { shouldPlay: false, isLooping: true },
+              false
+            )
+          );
+        } catch (err) {
+          console.warn("Error loading talking video:", err);
+        }
       }
 
       // Load listening video
       if (listeningVideoRef.current) {
-        loadPromises.push(
-          listeningVideoRef.current.loadAsync(
-            listeningVideoSource,
-            { shouldPlay: false, isLooping: true },
-            false
-          )
-        );
+        try {
+          loadPromises.push(
+            listeningVideoRef.current.loadAsync(
+              listeningVideoSource,
+              { shouldPlay: false, isLooping: true },
+              false
+            )
+          );
+        } catch (err) {
+          console.warn("Error loading listening video:", err);
+        }
       }
 
-      // Wait for all videos to load
-      await Promise.all(loadPromises);
+      // Wait for all videos to load (with error handling)
+      if (loadPromises.length > 0) {
+        await Promise.allSettled(loadPromises);
+      }
 
       // Start with appropriate video based on conversation state
       const initialVideoType = shouldShowTalkingVideo() ? "talking" : "default";
 
       if (initialVideoType === "talking" && talkingVideoRef.current) {
-        await talkingVideoRef.current.playAsync();
-        setActiveVideo("talking");
+        try {
+          await talkingVideoRef.current.playAsync();
+          setActiveVideo("talking");
+        } catch (err) {
+          console.warn("Error playing talking video:", err);
+          // Fallback to default video
+          if (defaultVideoRef.current) {
+            try {
+              await defaultVideoRef.current.playAsync();
+              setActiveVideo("default");
+            } catch (fallbackErr) {
+              console.warn("Error playing default video:", fallbackErr);
+            }
+          }
+        }
       } else if (defaultVideoRef.current) {
-        await defaultVideoRef.current.playAsync();
-        setActiveVideo("default");
+        try {
+          await defaultVideoRef.current.playAsync();
+          setActiveVideo("default");
+        } catch (err) {
+          console.warn("Error playing default video:", err);
+        }
       }
 
       setVideoMode(initialVideoType === "talking" ? "talking" : "default");
       setIsVideoReady(true);
-      console.log("All videos preloaded and ready");
     } catch (error) {
       console.error("Error preloading videos:", error);
+      // Set video ready even if there's an error to prevent blocking UI
+      setIsVideoReady(true);
     }
   };
 
   // Update the cleanup function
   useEffect(() => {
-    preloadVideos();
+    if (currentView === "avatar-chat") {
+      // Add a small delay to ensure video components are mounted
+      const timer = setTimeout(() => {
+        preloadVideos();
+      }, 200);
 
-    return () => {
-      const cleanup = async () => {
-        const unloadPromises = [];
-        if (defaultVideoRef.current)
-          unloadPromises.push(defaultVideoRef.current.unloadAsync());
-        if (talkingVideoRef.current)
-          unloadPromises.push(talkingVideoRef.current.unloadAsync());
-        if (listeningVideoRef.current)
-          unloadPromises.push(listeningVideoRef.current.unloadAsync());
-        if (transitionVideoRef.current)
-          unloadPromises.push(transitionVideoRef.current.unloadAsync());
+      return () => {
+        clearTimeout(timer);
+        const cleanup = async () => {
+          const unloadPromises = [];
+          try {
+            if (defaultVideoRef.current)
+              unloadPromises.push(defaultVideoRef.current.unloadAsync().catch(() => {}));
+            if (talkingVideoRef.current)
+              unloadPromises.push(talkingVideoRef.current.unloadAsync().catch(() => {}));
+            if (listeningVideoRef.current)
+              unloadPromises.push(listeningVideoRef.current.unloadAsync().catch(() => {}));
+            if (transitionVideoRef.current)
+              unloadPromises.push(transitionVideoRef.current.unloadAsync().catch(() => {}));
 
-        await Promise.all(unloadPromises);
+            await Promise.allSettled(unloadPromises);
+          } catch (error) {
+            // Silently handle cleanup errors
+          }
+        };
+        cleanup();
       };
-      cleanup();
-    };
+    }
   }, [avatar, currentView]);
   // Handle recording state changes
   // Update the useEffect for recording state changes:
@@ -1029,17 +1072,22 @@ export default function ChatScreen() {
 
       if (error) throw error;
       if (data) {
-        setMessages(
-          data.map((msg) => ({
-            id: msg.id,
-            content: msg.content,
-            role: msg.role as "user" | "assistant" | "system",
-            timestamp: new Date(msg.created_at),
-          }))
-        );
+        const loadedMessages = data.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.role as "user" | "assistant" | "system",
+          timestamp: new Date(msg.created_at),
+        }));
+        setMessages(loadedMessages);
+        // Update user message count based on loaded messages
+        const userCount = loadedMessages.filter((msg) => msg.role === "user").length;
+        setUserMessageCount(userCount);
+        return loadedMessages;
       }
+      return [];
     } catch (error) {
       console.error("Error loading messages:", error);
+      return [];
     }
   };
 
@@ -1189,11 +1237,9 @@ export default function ChatScreen() {
   ) => {
     setCurrentSessionId(sessionId);
     setCurrentView(type === "voice" ? "avatar-chat" : "text-chat");
-    await loadMessages(sessionId);
-    const userCount = messages.filter((msg) => msg.role === "user").length;
-    setUserMessageCount(userCount);
-
-    if (type === "voice" && messages.length === 0) {
+    const loadedMessages = await loadMessages(sessionId);
+    
+    if (type === "voice" && loadedMessages.length === 0) {
       const dummyMessages = generateDummyMessages();
       setMessages(dummyMessages);
     }
