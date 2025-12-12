@@ -396,7 +396,7 @@ export default function ChatScreen() {
 
   // Handle initial query from home page
   useEffect(() => {
-    if (params.initialQuery && typeof params.initialQuery === "string") {
+    if (params.initialQuery && typeof params.initialQuery === "string" && currentView === "session-select") {
       const initialQuery = params.initialQuery;
       // Create a new text session and send the message automatically
       const createAndSend = async () => {
@@ -413,10 +413,64 @@ export default function ChatScreen() {
           setIsKeyboardEverShown(false);
           setIsKeyboardVisible(false);
           await loadSessions();
-          // Automatically send the initial query after a short delay
-          setTimeout(() => {
-            handleSend(initialQuery);
-          }, 300);
+          // Wait a bit for the view to render, then send the message
+          setTimeout(async () => {
+            // Create user message
+            const userMessage: Message = {
+              id: Date.now().toString(),
+              content: initialQuery,
+              role: "user",
+              timestamp: new Date(),
+            };
+            setMessages([userMessage]);
+            await saveMessage(sessionId, initialQuery, "user");
+            setUserMessageCount(1);
+            setIsLoading(true);
+            
+            // Get AI response
+            try {
+              let systemPrompt =
+                language === "es"
+                  ? "Eres un asistente de salud útil para beneficiarios de Medi-Cal, y tu trabajo es sugerir recursos de Medi-Cal al usuario. Proporciona orientación de salud clara, empática y precisa. Enfócate en ayudar a los usuarios a encontrar recursos, comprender sus necesidades de salud y navegar por el sistema de salud. Haz preguntas aclaratorias si la entrada del usuario es insuficiente para discernir qué recursos necesita (por ejemplo, tipo de recurso, ubicación)."
+                  : "You are a helpful healthcare assistant for Medi-Cal beneficiaries, and your job is to suggest Medi-Cal resources to the user. Provide clear, empathetic, and accurate healthcare guidance. Focus on helping users find resources, understand their health needs, and navigate the healthcare system. Ask clarifying questions if the user input is insufficient for you to discern which resources the user needs (e.g., resource type, location).";
+
+              const completion = await openai.chat.completions.create({
+                model: "gpt-3.5-turbo",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: initialQuery },
+                ],
+                max_tokens: 500,
+                temperature: 0.7,
+              });
+
+              const aiResponse =
+                completion.choices[0]?.message?.content ||
+                "I apologize, but I could not generate a response. Please try again.";
+
+              const aiMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                content: aiResponse,
+                role: "assistant",
+                timestamp: new Date(),
+              };
+
+              setMessages((prev) => [...prev, aiMessage]);
+              await saveMessage(sessionId, aiResponse, "assistant");
+              setIsLoading(false);
+            } catch (error) {
+              console.error("Error calling OpenAI:", error);
+              const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                content:
+                  "I apologize, but I encountered an error. Please check your internet connection and try again.",
+                role: "assistant",
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, errorMessage]);
+              setIsLoading(false);
+            }
+          }, 500);
         }
       };
       createAndSend();
@@ -1485,7 +1539,6 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
-          key={currentSessionId || "new-session"} // Add key to force recreation
           keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
@@ -1605,8 +1658,16 @@ export default function ChatScreen() {
               onChangeText={setInputText}
               multiline
               maxLength={500}
-              onSubmitEditing={() => handleSend()}
+              onSubmitEditing={() => {
+                if (inputText.trim() && !isLoading) {
+                  handleSend();
+                }
+              }}
               returnKeyType="send"
+              blurOnSubmit={false}
+              editable={!isLoading}
+              keyboardType="default"
+              autoFocus={false}
             />
             <TouchableOpacity
               style={[

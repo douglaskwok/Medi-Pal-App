@@ -96,6 +96,25 @@ export default function HomeScreen() {
     }).start();
   }, []);
 
+  // Show notification every time the app/home screen is focused, after 5 seconds
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset notification state when screen is focused
+      setNotificationVisible(false);
+      
+      // Show notification after 5 seconds
+      const notificationTimer = setTimeout(() => {
+        setNotificationVisible(true);
+      }, 5000);
+
+      return () => {
+        clearTimeout(notificationTimer);
+        // Hide notification when leaving page
+        setNotificationVisible(false);
+      };
+    }, [])
+  );
+
   const loadChecklistItems = async () => {
     try {
       const {
@@ -130,21 +149,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Add this focus effect for notifications:
-  useFocusEffect(
-    React.useCallback(() => {
-      // Only show notification after 3-second delay
-      const notificationTimer = setTimeout(() => {
-        setNotificationVisible(true);
-      }, 2000);
-
-      return () => {
-        clearTimeout(notificationTimer);
-        // Hide notification when leaving page
-        setNotificationVisible(false);
-      };
-    }, [])
-  );
   const loadUserData = async () => {
     try {
       const {
@@ -166,6 +170,7 @@ export default function HomeScreen() {
     if (searchQuery.trim()) {
       const query = searchQuery.trim();
       setSearchQuery(""); // Clear the search field
+      Keyboard.dismiss(); // Dismiss keyboard before navigation
       // Navigate to chat and pass the query
       router.push({
         pathname: "/(tabs)/chat",
