@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
+import {
+  useSafeAreaInsets,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
 import { Theme } from "../../constants/Theme";
 import { dummyResources } from "../../constants/DummyData";
@@ -372,7 +376,12 @@ export default function ResourcesScreen() {
       keyboardDidHideListener.remove();
     };
   }, []);
-
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     console.log("Checklist screen focused, refreshing data...");
+  //     loadChecklistItems();
+  //   }, [])
+  // );
   useEffect(() => {
     // Handle navigation from home page or notification
     const handleNavigation = async () => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,11 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
+import {
+  useSafeAreaInsets,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ChecklistItem } from "../../components/ChecklistItem";
 import { CustomModal } from "../../components/Modal";
@@ -85,6 +89,12 @@ export default function ChecklistScreen() {
     }).start();
     loadChecklistItems();
   }, []);
+  useFocusEffect(
+    useCallback(() => {
+      console.log("Checklist screen focused, refreshing data...");
+      loadChecklistItems();
+    }, [])
+  );
 
   const loadChecklistItems = async () => {
     try {

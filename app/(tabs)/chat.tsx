@@ -187,11 +187,30 @@ const DEFAULT_RESOURCES: Resource[] = [
       "Clinic offering free health screenings, vaccinations, and wellness checkups.",
   },
 ];
+
 // const { width, height } = Dimensions.get("window");
 export default function ChatScreen() {
   const { language } = useLanguage();
   const t =
     translations[language as keyof typeof translations] || translations.en;
+  const DEFAULT_CHECKLIST = [
+    {
+      id: "task_1",
+      title:
+        language === "es"
+          ? "Programa una prueba de laboratorio gratuita en Ravenswood Family Health Center en East Palo Alto."
+          : "Schedule a free lab test at Ravenswood Family Health Center in East Palo Alto.",
+      completed: false,
+    },
+    {
+      id: "task_2",
+      title:
+        language === "es"
+          ? "Camina en las caminadoras del Gimnasio YMCA de Palo Alto cada semana."
+          : "Walk on treadmills at Palo Alto YMCA Gym every week.",
+      completed: false,
+    },
+  ];
 
   const VOICE_CONFIGS = {
     "dr-al":
@@ -1524,13 +1543,46 @@ export default function ChatScreen() {
 
     setIsRecording(false);
   };
-  console.log(height);
+  // console.log(height);
 
   const handleEndCall = () => {
     if (videoRef.current) videoRef.current.stopAsync();
     handleExitSession();
   };
+  const saveChecklistItemsToDatabase = async (
+    checklistItems: Array<{ id: string; title: string; completed: boolean }>
+  ) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
+      // Format items for database insertion
+      const itemsToInsert = checklistItems.map((item) => ({
+        user_id: user.id,
+        title: item.title,
+        description: "", // Add description if needed
+        start_date: new Date().toISOString(), // Set to current date or adjust as needed
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        completed: item.completed,
+      }));
+
+      // Insert into checklist_items table
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .insert(itemsToInsert)
+        .select();
+
+      if (error) throw error;
+
+      console.log("Checklist items saved to database:", data);
+      return data;
+    } catch (error) {
+      console.error("Error saving checklist items:", error);
+      throw error;
+    }
+  };
   // Session Selection View
   if (currentView === "session-select") {
     return (
@@ -2181,7 +2233,16 @@ export default function ChatScreen() {
             setShowPopUp={setShowTipsModal}
             selectedLanguage={language}
             proceed={() => {
-              setShowTipsModal(false);
+              saveChecklistItemsToDatabase(DEFAULT_CHECKLIST)
+                .then(() => {
+                  console.log("Checklist items saved successfully");
+                  // Optionally show a success message
+                })
+                .catch((error) => {
+                  console.error("Failed to save checklist items:", error);
+                  // Optionally show an error message
+                });
+              // setShowTipsModal(false);
             }}
           />
         )}
