@@ -5,11 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import { CustomTabBar } from "./_layout";

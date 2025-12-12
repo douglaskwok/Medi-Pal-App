@@ -213,6 +213,9 @@ export default function SelectionModal({
       case "tips_checklist":
         if (video_origin === true && addedToChecklist === false) {
           setAddedToChecklist(!addedToChecklist);
+        } else {
+          // If already added to checklist or not from video, close popup
+          setShowPopUp(false);
         }
         if (proceed) proceed();
         break;
@@ -436,7 +439,15 @@ export default function SelectionModal({
                   backgroundColor: Theme.colors.primary,
                 },
             ]}
-            onPress={handleConfirmPress}
+            onPress={() => {
+              handleConfirmPress();
+              // Close popup after save/exit
+              if (video_origin && addedToChecklist) {
+                setTimeout(() => {
+                  setShowPopUp(false);
+                }, 100);
+              }
+            }}
           >
             <Text style={styles.modalConfirmText}>
               {getConfirmButtonText()}

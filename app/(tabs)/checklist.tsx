@@ -4,13 +4,12 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Animated,
   Image,
   Dimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ChecklistItem } from "../../components/ChecklistItem";
 import { CustomModal } from "../../components/Modal";

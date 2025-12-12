@@ -138,6 +138,12 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
     if (!title.trim()) {
       return;
     }
+    // Validate that end date is not earlier than start date
+    if (endDate < startDate) {
+      // If end date is earlier, set it to start date
+      setEndDate(new Date(startDate));
+      return;
+    }
     onSave({
       title: title.trim(),
       description: description.trim(),
@@ -375,7 +381,9 @@ export const ChecklistItemModal: React.FC<ChecklistItemModalProps> = ({
                               setShowEndPicker(false);
                             }
                             if (selectedDate) {
-                              const newDate = new Date(selectedDate);
+                              // Ensure end date is not earlier than start date
+                              const minDate = new Date(startDate);
+                              const newDate = selectedDate < minDate ? new Date(minDate) : new Date(selectedDate);
                               newDate.setHours(endDate.getHours());
                               newDate.setMinutes(endDate.getMinutes());
                               setEndDate(newDate);

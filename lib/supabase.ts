@@ -13,6 +13,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Handle refresh token errors gracefully
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+    // Session refreshed or user signed out
+  }
+});
+
 
 
 

@@ -7,11 +7,10 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  SafeAreaView,
   Image,
   Dimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";

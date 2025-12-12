@@ -371,7 +371,8 @@ const styles = StyleSheet.create({
     paddingTop: Theme.spacing.lg,
     paddingBottom: Theme.spacing.xl,
     height: height * 0.7,
-    width: isTablet ? "80%" : "100%",
+    width: isTablet ? "80%" : "90%",
+    marginHorizontal: Theme.spacing.md,
   },
   header: {
     flexDirection: "row",

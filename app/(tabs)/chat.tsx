@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -20,7 +19,7 @@ import {
   ResizeMode,
 } from "expo-av";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import Fontisto from "@expo/vector-icons/Fontisto";
@@ -394,6 +393,36 @@ export default function ChatScreen() {
     }).start();
     loadSessions();
   }, []);
+
+  // Handle initial query from home page
+  useEffect(() => {
+    if (params.initialQuery && typeof params.initialQuery === "string") {
+      const initialQuery = params.initialQuery;
+      // Create a new text session and send the message automatically
+      const createAndSend = async () => {
+        const sessionId = await createSession("text");
+        if (sessionId) {
+          setCurrentSessionId(sessionId);
+          setCurrentView("text-chat");
+          setMessages([]);
+          setInputText("");
+          setUserMessageCount(0);
+          setAIResources(null);
+          setShownResources(null);
+          setShowAIResources(false);
+          setIsKeyboardEverShown(false);
+          setIsKeyboardVisible(false);
+          await loadSessions();
+          // Automatically send the initial query after a short delay
+          setTimeout(() => {
+            handleSend(initialQuery);
+          }, 300);
+        }
+      };
+      createAndSend();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.initialQuery]);
   useEffect(() => {
     if (currentView === "avatar-chat" && messages.length > 0) {
       // Update the first message (greeting) with new avatar name
@@ -1208,6 +1237,8 @@ export default function ChatScreen() {
 
       setMessages((prev) => [...prev, aiMessage]);
       await saveMessage(currentSessionId, aiResponse, "assistant");
+      // Ensure loading state is cleared immediately after message is added
+      setIsLoading(false);
     } catch (error) {
       console.error("Error calling OpenAI:", error);
       const errorMessage: Message = {
@@ -1218,7 +1249,6 @@ export default function ChatScreen() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -1965,7 +1995,9 @@ export default function ChatScreen() {
             from_video={true}
             setShowPopUp={setShowTipsModal}
             selectedLanguage={language}
-            proceed={() => {}}
+            proceed={() => {
+              setShowTipsModal(false);
+            }}
           />
         )}
       </SafeAreaView>

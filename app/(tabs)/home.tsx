@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  SafeAreaView,
   Image,
   ScrollView,
   Keyboard,
@@ -15,11 +14,11 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ResourceCard } from "../../components/ResourceCard";
 import { CustomModal } from "../../components/Modal";
-import { dummyChecklistItems, dummyResources } from "../../constants/DummyData";
+import { dummyResources } from "../../constants/DummyData";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
 
@@ -72,7 +71,7 @@ export default function HomeScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [checklistItems, setChecklistItems] = useState(dummyChecklistItems);
+  const [checklistItems, setChecklistItems] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [userName, setUserName] = useState("User");
@@ -89,12 +88,47 @@ export default function HomeScreen() {
     translations[language as keyof typeof translations] || translations.en;
   useEffect(() => {
     loadUserData();
+    loadChecklistItems();
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 400,
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const loadChecklistItems = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("checklist_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("start_date", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setChecklistItems(
+          data.map((item) => ({
+            ...item,
+            date: new Date(item.start_date),
+            startDate: new Date(item.start_date),
+            endDate: item.end_date ? new Date(item.end_date) : undefined,
+          }))
+        );
+      } else {
+        // No items found, set empty array
+        setChecklistItems([]);
+      }
+    } catch (error) {
+      console.error("Error loading checklist items:", error);
+      setChecklistItems([]);
+    }
+  };
 
   // Add this focus effect for notifications:
   useFocusEffect(
@@ -128,11 +162,14 @@ export default function HomeScreen() {
     isSameDay(item.date, selectedDate)
   );
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchQuery.trim()) {
+      const query = searchQuery.trim();
+      setSearchQuery(""); // Clear the search field
+      // Navigate to chat and pass the query
       router.push({
         pathname: "/(tabs)/chat",
-        params: { initialQuery: searchQuery },
+        params: { initialQuery: query },
       });
     }
   };
