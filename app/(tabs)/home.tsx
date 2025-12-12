@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ResourceCard } from "../../components/ResourceCard";
@@ -21,6 +20,7 @@ import { CustomModal } from "../../components/Modal";
 import { dummyResources } from "../../constants/DummyData";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
   format,
@@ -38,6 +38,11 @@ import { LanguageProvider, useLanguage } from "../../constants/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 const isTablet = width - 80 > height * 0.5;
+
+// Module-level variable to track if notification has been shown in this app session
+// This persists across component remounts but resets when app restarts
+let notificationShownThisSession = false;
+
 const translations = {
   en: {
     welcome: "Welcome",
@@ -82,6 +87,7 @@ export default function HomeScreen() {
   const [saveSuccessModalVisible, setSaveSuccessModalVisible] = useState(false);
   const saveSuccessAnim = React.useRef(new Animated.Value(0)).current;
   const saveSuccessScale = React.useRef(new Animated.Value(0.9)).current;
+  const notificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get translations based on selected language
   const t =
@@ -96,24 +102,28 @@ export default function HomeScreen() {
     }).start();
   }, []);
 
-  // Show notification every time the app/home screen is focused, after 5 seconds
-  useFocusEffect(
-    React.useCallback(() => {
-      // Reset notification state when screen is focused
-      setNotificationVisible(false);
-      
-      // Show notification after 5 seconds
-      const notificationTimer = setTimeout(() => {
-        setNotificationVisible(true);
-      }, 2000);
+  // Show notification ONLY ONCE when app opens, after 2 seconds
+  useEffect(() => {
+    // Check if notification has already been shown in this app session
+    if (notificationShownThisSession) {
+      return; // Already shown, don't show again
+    }
 
-      return () => {
-        clearTimeout(notificationTimer);
-        // Hide notification when leaving page
-        setNotificationVisible(false);
-      };
-    }, [])
-  );
+    // Show notification after 2 seconds
+    notificationTimerRef.current = setTimeout(() => {
+      if (!notificationShownThisSession) {
+        setNotificationVisible(true);
+        notificationShownThisSession = true;
+      }
+    }, 2000);
+
+    return () => {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+        notificationTimerRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array - runs only once on mount
 
   const loadChecklistItems = async () => {
     try {
@@ -480,7 +490,11 @@ export default function HomeScreen() {
 
         <NotificationPopup
           visible={notificationVisible}
-          onDismiss={() => setNotificationVisible(false)}
+          onDismiss={() => {
+            setNotificationVisible(false);
+            // Mark as shown so it won't appear again
+            notificationShownThisSession = true;
+          }}
           onSaveSuccess={() => {
             setSaveSuccessModalVisible(true);
             Animated.parallel([

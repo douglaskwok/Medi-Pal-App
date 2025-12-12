@@ -53,7 +53,7 @@ const translations = {
     month: "Futuro",
     noItems: "No hay elementos en la lista para este período",
     markAsDone: "¿Completar?",
-    noChecklistItems: "No hay elementos en la lista para este período",
+    noChecklistItems: "No hay elementos en la lista",
     confirmMarkMessage: (title: string) =>
       `¿Estás seguro de que quieres marcar "${title}" como completado?`,
   },
