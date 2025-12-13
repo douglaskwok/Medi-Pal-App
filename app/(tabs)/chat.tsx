@@ -610,31 +610,31 @@ export default function ChatScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.initialQuery]);
-  useEffect(() => {
-    if (currentView === "avatar-chat" && messages.length > 0) {
-      // Update the first message (greeting) with new avatar name
-      // Remove duplicates first
-      const uniqueMessages = Array.from(
-        new Map(messages.map((msg) => [msg.id, msg])).values()
-      );
+  // useEffect(() => {
+  //   if (currentView === "avatar-chat" && messages.length > 0) {
+  //     // Update the first message (greeting) with new avatar name
+  //     // Remove duplicates first
+  //     const uniqueMessages = Array.from(
+  //       new Map(messages.map((msg) => [msg.id, msg])).values()
+  //     );
 
-      // Update only the first assistant message (greeting)
-      if (uniqueMessages[0] && uniqueMessages[0].role === "assistant") {
-        const avatarName = getAvatarById(avatar).name;
-        const greeting =
-          language === "es"
-            ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
-            : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
+  //     // Update only the first assistant message (greeting)
+  //     if (uniqueMessages[0] && uniqueMessages[0].role === "assistant") {
+  //       const avatarName = getAvatarById(avatar).name;
+  //       const greeting =
+  //         language === "es"
+  //           ? `¡Hola! Soy ${avatarName}, tu asistente de salud con IA. ¿Cómo puedo ayudarte hoy?`
+  //           : `Hello! I'm ${avatarName}, your AI healthcare assistant. How may I help you today?`;
 
-        uniqueMessages[0] = {
-          ...uniqueMessages[0],
-          content: greeting,
-        };
-      }
+  //       uniqueMessages[0] = {
+  //         ...uniqueMessages[0],
+  //         content: greeting,
+  //       };
+  //     }
 
-      setMessages(uniqueMessages);
-    }
-  }, [avatar, currentView, messages.length]);
+  //     setMessages(uniqueMessages);
+  //   }
+  // }, [avatar, currentView, messages.length]);
 
   useEffect(() => {
     if (currentView === "avatar-chat" && isVideoReady) {
