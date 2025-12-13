@@ -1714,7 +1714,11 @@ Include nothing else in your response, just the JSON.`;
       await saveMessage(currentSessionId, aiResponse, "assistant");
       // Speak the response in avatar chat mode using avatar's voice
       if (currentView === "avatar-chat") {
+        setVideoMode("talking");
+        await switchToTalking().catch(() => {});
+        // speak(aiResponse);
         speak(aiResponse);
+
         // if (speaker) {
         //   speak(aiResponse);
         // } else {
@@ -1729,6 +1733,11 @@ Include nothing else in your response, just the JSON.`;
       setIsLoading(false);
     } catch (error) {
       console.error("Error calling OpenAI:", error);
+      setIsLoading(false);
+      if (currentView === "avatar-chat") {
+        setVideoMode("default");
+        await switchToDefault().catch(() => {});
+      }
       const errorMessageId = `error_${Date.now()}_${Math.random()
         .toString(36)
         .substr(2, 9)}`;
