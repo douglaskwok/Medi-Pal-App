@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,11 +12,8 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
-import {
-  useSafeAreaInsets,
-  SafeAreaView,
-} from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Theme } from "../../constants/Theme";
 import { ResourceCard } from "../../components/ResourceCard";
 import { CustomModal } from "../../components/Modal";

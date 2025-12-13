@@ -1810,7 +1810,7 @@ Include nothing else in your response, just the JSON.`;
       setIsRecording(true);
       // }
     } catch (error) {
-      console.warn("Error starting recording:", error);
+      console.error("Error starting recording:", error);
     }
   };
 
