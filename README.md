@@ -1,6 +1,7 @@
 # Medi-Pal
 
 A healthcare resource discovery platform for Medi-Cal beneficiaries built with React Native and Expo.
+
 Equally contributed by Siddhartha Javvaji and Douglas Kwok.
 
 ## Features
