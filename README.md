@@ -4,7 +4,7 @@ A healthcare resource discovery platform for Medi-Cal beneficiaries built with R
 
 Equally contributed by Siddhartha Javvaji and Douglas Kwok.
 
-Please check our project website for more details: https://web.stanford.edu/class/cs147/projects/AgentsofChange/MediPal/
+Please check our project website for more details: https://hci.stanford.edu/courses/cs147/2025/au/projects/AgentsofChange/MediPal/
 
 ## Features
 
